@@ -18,7 +18,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-#define MAXITER 1000
+#define MAXITER 255
 
 struct Color { int r, g, b; };
 
@@ -62,7 +62,8 @@ static struct Color grayscale(int it)
 	}*/
 	if (it < MAXITER)
 	{
-		int idx = (int)ceil( sqrt( sqrt( (double)it / (double)MAXITER ) ) * 255.0 );
+		/*int idx = (int)ceil( sqrt( sqrt( (double)it / (double)MAXITER ) ) * 255.0 );*/
+		int idx = (int)ceil( sqrt( (double)it / (double)MAXITER ) * 255.0 );
 		c.r = idx;
 		c.g = idx;
 		c.b = idx;
@@ -70,6 +71,28 @@ static struct Color grayscale(int it)
 	return c;
 }
 
+/* ----------------------------------------------------------------------------
+ *
+ */
+static struct Color gradient1(int it)
+{
+	struct Color c;
+	if (it < MAXITER)
+	{
+		double m = sqrt( (double)it / (double)MAXITER );
+		/*printf("sqrt(it/max) = %5.2f | ", m);*/
+		c.r = (int)floor((( sin(0.65 * m * 85.0) *0.5)+0.5) *255);
+		c.g = (int)floor((( sin(0.45 * m * 85.0) *0.5)+0.5) *255);
+		c.b = (int)floor((( sin(0.25 * m * 85.0) *0.5)+0.5) *255);
+		if (c.r>255 || c.g>255 || c.b>255 || c.r<0 || c.g<0 || c.b<0)
+			printf("col(%5.6f,%5.6f,%5.6f) | ",sin(0.30 * m * 20.0),sin(0.45 * m * 20.0),sin(0.65 * m * 20.0));
+	}
+	else 
+	{
+		c.r = 0; c.g = 0; c.b = 0;
+	}
+	return c;
+}
 /* ----------------------------------------------------------------------------
  * scaled - return a value in the range Xe to Xs given a location in a larger
  *          integer range
@@ -165,12 +188,20 @@ static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
 			int iter;
 
 			iter = calculate_point(x0, y0);
-			rgb = grayscale(iter);
+			/*if (iter == MAXITER)
+				iter = 0;*/
+			/*rgb = grayscale(iter);*/
+			rgb = gradient1(iter);
+			/*sh = shade(iter);*/
 			
             /* just add the rgb values to the list */
 			PyList_Append(points, PyLong_FromLong((long) rgb.r));
 			PyList_Append(points, PyLong_FromLong((long) rgb.g));
 			PyList_Append(points, PyLong_FromLong((long) rgb.b));
+
+			/*PyList_Append(points, PyLong_FromLong((long) iter));
+			PyList_Append(points, PyLong_FromLong((long) iter));
+			PyList_Append(points, PyLong_FromLong((long) iter));*/
 		}
 	}
 	return points;
