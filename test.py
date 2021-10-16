@@ -13,7 +13,7 @@ surface.fill((255,255,255))
 clock = pygame.time.Clock()
 print("initialised in ",time.time()-now)
 
-def test():
+def test1():
     buf = Image.open('/home/judge/clones/dotfiles/.local/share/icons/battery_low_dark.png').tobytes()
     print("is list? ", isinstance(buf, list), dir(buf) )
     print(buf[int(len(buf)/2):int(len(buf)/2)+32])
@@ -39,29 +39,56 @@ def test2():
     return surf,sz
 
 
-def test3():
+def test3(xs, xe, ys, ye):
     now = time.time()
-    print("start test3")
+    #print("start test3")
     sz = 640
-    frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, -2.0, 1.0, -1.5, 1.5))
+    frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, xs, xe, ys, ye))
     surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
-    print("end test3 in ",time.time()-now)
+    print("set calculated in ", time.time()-now, " secs")
     return surf,sz
 
+def scaled(x, sz, s, e):
+    return ( (float(x)/float(sz)) * (e-s) ) + s
 
-if __name__ == '__main__':
+def zoom_in(xs, xe, ys, ye, pos):
+    #print("pos ", pos)
+    loc = (scaled(pos[0], 640, xs, xe), scaled(pos[1], 640, ys, ye))
+    #print("scaled loc ", loc)
+    TL = (loc[0]-abs((xe-xs)/3), loc[1]-abs((ye-ys)/3))
+    BR = (loc[0]+abs((xe-xs)/3), loc[1]+abs((ye-ys)/3))
+    #print("new coords ", TL[0], BR[0], TL[1], BR[1])
+    return TL[0], BR[0], TL[1], BR[1]
 
-    surf,sz = test3()
+def zoom_out(xs, xe, ys, ye, pos):
+    #print("pos ", pos)
+    loc = (scaled(pos[0], 640, xs, xe), scaled(pos[1], 640, ys, ye))
+    #print("scaled loc ", loc)
+    TL = (loc[0]-abs((xe-xs)*0.75 ), loc[1]-abs((ye-ys)*0.75 ))
+    BR = (loc[0]+abs((xe-xs)*0.75 ), loc[1]+abs((ye-ys)*0.75 ))
+    #print("new coords ", TL[0], BR[0], TL[1], BR[1])
+    return TL[0], BR[0], TL[1], BR[1]
+
+def draw_plot(xs, xe, ys, ye):
+    surf,sz = test3(xs, xe, ys, ye)
 
     now = time.time()
     surface.blit(surf, (0,0))
-
     pygame.display.update()
-    #pygame.display.flip()
 
-    print("displayed in ",time.time()-now)
+    #print("displayed in ", time.time()-now, " secs")
 
+
+if __name__ == '__main__':
+    xs=-2.0
+    xe=1.0
+    ys=-1.5
+    ye=1.5
+
+    draw_plot(xs, xe, ys, ye)
+
+    zoom_level = 0
     run = False
     while not run:
         clock.tick(20)
@@ -69,10 +96,20 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT or (event.type == pygame.KEYUP and (event.key == pygame.K_q or event.key == pygame.K_ESCAPE)):
                 run = True
 
-        #window.fill(0)
-        #pygame.Surface.blit(window, surf, (sz,sz))
-        #pygame.display.update()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                pressed = pygame.mouse.get_pressed()
+                if pressed[0]: # Button 1
+                    xs, xe, ys, ye = zoom_in(xs, xe, ys, ye, mouse_pos)
+                    zoom_level += 1
+                    print("zoom level ", zoom_level)
+                    draw_plot(xs, xe, ys, ye)
 
+                if pressed[2]: # Button 3
+                    xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, mouse_pos)
+                    zoom_level -= 1
+                    print("zoom level ", zoom_level)
+                    draw_plot(xs, xe, ys, ye)
 
     pygame.quit()
     exit()
