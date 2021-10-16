@@ -5,6 +5,11 @@ import math
 import time
 import mandlebrot
 
+X1=-2.0
+X2=1.0
+Y1=-1.5
+Y2=1.5
+
 now=time.time()
 pygame.init()
 window_size = 640
@@ -65,10 +70,20 @@ def zoom_out(xs, xe, ys, ye, pos):
     #print("pos ", pos)
     loc = (scaled(pos[0], 640, xs, xe), scaled(pos[1], 640, ys, ye))
     #print("scaled loc ", loc)
-    TL = (loc[0]-abs((xe-xs)*0.75 ), loc[1]-abs((ye-ys)*0.75 ))
-    BR = (loc[0]+abs((xe-xs)*0.75 ), loc[1]+abs((ye-ys)*0.75 ))
-    #print("new coords ", TL[0], BR[0], TL[1], BR[1])
-    return TL[0], BR[0], TL[1], BR[1]
+    TLx = loc[0]-abs((xe-xs)*0.75 )
+    TLy = loc[1]-abs((ye-ys)*0.75 )
+    BRx = loc[0]+abs((xe-xs)*0.75 )
+    BRy = loc[1]+abs((ye-ys)*0.75 )
+    # if we start to hit the upper bounds then adjust the centre
+    if TLx < X1 or BRx > X2:
+        TLx = X1
+        BRx = X2
+    if TLy < Y1 or BRy > Y2:
+        TLy = Y1
+        BRy = Y2
+
+    print("new coords ", TLx, BRx, TLy, BRy)
+    return TLx, BRx, TLy, BRy
 
 def draw_plot(xs, xe, ys, ye):
     surf,sz = test3(xs, xe, ys, ye)
@@ -81,10 +96,10 @@ def draw_plot(xs, xe, ys, ye):
 
 
 if __name__ == '__main__':
-    xs=-2.0
-    xe=1.0
-    ys=-1.5
-    ye=1.5
+    xs=X1
+    xe=X2
+    ys=Y1
+    ye=Y2
 
     draw_plot(xs, xe, ys, ye)
 
@@ -96,6 +111,12 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT or (event.type == pygame.KEYUP and (event.key == pygame.K_q or event.key == pygame.K_ESCAPE)):
                 run = True
 
+            if event.type == pygame.KEYUP and event.key == pygame.K_c:
+                zoom_level = 0
+                print("zoom level ", zoom_level)
+                xs,xe,ys,ye = X1,X2,Y1,Y2
+                draw_plot(xs, xe, ys, ye)
+                
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 pressed = pygame.mouse.get_pressed()
@@ -106,7 +127,7 @@ if __name__ == '__main__':
                     draw_plot(xs, xe, ys, ye)
 
                 if pressed[2]: # Button 3
-                    xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, mouse_pos)
+                    xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, (window_size/2, window_size/2))
                     zoom_level -= 1
                     print("zoom level ", zoom_level)
                     draw_plot(xs, xe, ys, ye)
