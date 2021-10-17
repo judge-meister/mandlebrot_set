@@ -18,7 +18,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-#define MAXITER 255
+#define MAXITER 1000
 
 struct Color { int r, g, b; };
 
@@ -170,20 +170,22 @@ static PyObject * mandlebrot(PyObject *self, PyObject *args)
  */
 static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
 {
-	int ssize = 0;
+	int wsize = 0;
+    int hsize = 0;
 	double Xs, Xe, Ys, Ye;
 	
-	if (!PyArg_ParseTuple(args, "idddd", &ssize, &Xs, &Xe, &Ys, &Ye))
+	if (!PyArg_ParseTuple(args, "iidddd", &wsize, &hsize, &Xs, &Xe, &Ys, &Ye))
 		return NULL;
 
+    printf("params, %d,%d %5.2lf,%5.2lf %5.2lf,%5.2lf\n", wsize,hsize, Xs,Xe, Ys,Ye);
 	PyObject *points = PyList_New(0);
 	
-	for(int Dy = 0; Dy < ssize; Dy++)
+	for(int Dy = 0; Dy < hsize; Dy++)
 	{
-		for(int Dx = 0; Dx < ssize; Dx++)
+		for(int Dx = 0; Dx < wsize; Dx++)
 		{
-			double x0 = scaled(Dx, ssize, Xs, Xe);
-			double y0 = scaled(Dy, ssize, Ys, Ye);
+			double x0 = scaled(Dx, wsize, Xs, Xe);
+			double y0 = scaled(Dy, hsize, Ys, Ye);
 			struct Color rgb;
 			int iter;
 
