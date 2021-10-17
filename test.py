@@ -3,6 +3,8 @@ from PIL import Image
 import pygame
 import math
 import time
+import numpy
+import asyncio
 import mandlebrot
 
 X1=-2.0
@@ -48,11 +50,45 @@ def test3(xs, xe, ys, ye):
     now = time.time()
     #print("start test3")
     sz = 640
-    frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, xs, xe, ys, ye))
+    frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, xs, xe, ys, ye))
     surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
     print("set calculated in ", time.time()-now, " secs")
     return surf,sz
+
+async def mandlebrot_bytearray_async(sx, sy, xs, xe, ys, ye):
+    return mandlebrot.mandlebrot_bytearray(sx, sy, xs,xe, ys,ye)
+
+async def test4(xs, xe, ys, ye):
+    """split square into 4 horizontal strips and use asyncio to call 
+    mandlebrot module 4 times, will need to combine the returned
+    bytearrays in to a single surface.
+    """
+    now = time.time()
+
+    sz = 640
+    y4 = numpy.linspace(ys, ye, 5)
+    sz4 = int(sz/4) #numpy.linspace(1, 640, 5)
+    print(sz4, y4)
+
+    chunks = await asyncio.gather(
+        mandlebrot_bytearray_async(sz, sz4, xs,xe, y4[0],y4[1]),
+        mandlebrot_bytearray_async(sz, sz4, xs,xe, y4[1],y4[2]),
+        mandlebrot_bytearray_async(sz, sz4, xs,xe, y4[2],y4[3]),
+        mandlebrot_bytearray_async(sz, sz4, xs,xe, y4[3],y4[4])
+    )
+
+    new_y = 0
+    for frame in chunks:
+        surf = pygame.image.frombuffer(bytearray(frame), (sz,sz4), 'RGB')
+        surface.blit(surf, (0,new_y))
+        new_y += sz4
+
+    #surface.blit(surf, (0,0))
+    pygame.display.update()
+
+    print("set calculated in ", time.time()-now, " secs")
+    return surf, sz
 
 def scaled(x, sz, s, e):
     return ( (float(x)/float(sz)) * (e-s) ) + s
@@ -75,10 +111,9 @@ def zoom_out(xs, xe, ys, ye, pos):
     BRx = loc[0]+abs((xe-xs)*0.75 )
     BRy = loc[1]+abs((ye-ys)*0.75 )
     # if we start to hit the upper bounds then adjust the centre
-    if TLx < X1 or BRx > X2:
+    if TLx < X1 or BRx > X2 or TLy < Y1 or BRy > Y2:
         TLx = X1
         BRx = X2
-    if TLy < Y1 or BRy > Y2:
         TLy = Y1
         BRy = Y2
 
@@ -86,10 +121,12 @@ def zoom_out(xs, xe, ys, ye, pos):
     return TLx, BRx, TLy, BRy
 
 def draw_plot(xs, xe, ys, ye):
-    surf,sz = test3(xs, xe, ys, ye)
+    #surf,sz = test3(xs, xe, ys, ye)
 
-    now = time.time()
-    surface.blit(surf, (0,0))
+    #now = time.time()
+    #surface.blit(surf, (0,0))
+    asyncio.run(test4(xs, xe, ys, ye))
+
     pygame.display.update()
 
     #print("displayed in ", time.time()-now, " secs")
@@ -129,6 +166,8 @@ if __name__ == '__main__':
                 if pressed[2]: # Button 3
                     xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, (window_size/2, window_size/2))
                     zoom_level -= 1
+                    if zoom_level == -1:
+                        zoom_level = 0
                     print("zoom level ", zoom_level)
                     draw_plot(xs, xe, ys, ye)
 
