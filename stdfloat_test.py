@@ -60,8 +60,8 @@ if __name__ == '__main__':
 
     now = time.time()
 
-    mand = Mandlebrot_stdfloat(255)
-    mand.generate(320, 320)
+    mand = Mandlebrot_stdfloat(1000)
+    mand.generate(640, 640)
 
     print("Took ", time.time() - now, " secs")
 

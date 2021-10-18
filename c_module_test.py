@@ -23,7 +23,7 @@ if __name__ == '__main__':
     now = time.time()
 
     mand = Mandlebrot_c_module()
-    mand.generate(320, 320)
+    mand.generate(640, 640)
 
     print("Took ", time.time() - now, " secs")
 

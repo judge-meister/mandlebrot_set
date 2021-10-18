@@ -61,7 +61,7 @@ if __name__ == '__main__':
     now = time.time()
 
     mand = Mandlebrot_bigfloat(255)
-    mand.generate(320, 320)
+    mand.generate(80, 80)
 
     print("Took ", time.time() - now, " secs")
 
