@@ -49,7 +49,7 @@ def test2():
 def test3(xs, xe, ys, ye):
     now = time.time()
     #print("start test3")
-    sz = 640
+    sz = window_size
     frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, xs, xe, ys, ye))
     surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
@@ -95,7 +95,7 @@ def scaled(x, sz, s, e):
 
 def zoom_in(xs, xe, ys, ye, pos):
     #print("pos ", pos)
-    loc = (scaled(pos[0], 640, xs, xe), scaled(pos[1], 640, ys, ye))
+    loc = (scaled(pos[0], window_size, xs, xe), scaled(pos[1], window_size, ys, ye))
     #print("scaled loc ", loc)
     TL = (loc[0]-abs((xe-xs)/3), loc[1]-abs((ye-ys)/3))
     BR = (loc[0]+abs((xe-xs)/3), loc[1]+abs((ye-ys)/3))
@@ -104,7 +104,7 @@ def zoom_in(xs, xe, ys, ye, pos):
 
 def zoom_out(xs, xe, ys, ye, pos):
     #print("pos ", pos)
-    loc = (scaled(pos[0], 640, xs, xe), scaled(pos[1], 640, ys, ye))
+    loc = (scaled(pos[0], window_size, xs, xe), scaled(pos[1], window_size, ys, ye))
     #print("scaled loc ", loc)
     TLx = loc[0]-abs((xe-xs)*0.75 )
     TLy = loc[1]-abs((ye-ys)*0.75 )
@@ -121,11 +121,11 @@ def zoom_out(xs, xe, ys, ye, pos):
     return TLx, BRx, TLy, BRy
 
 def draw_plot(xs, xe, ys, ye):
-    #surf,sz = test3(xs, xe, ys, ye)
+    surf,sz = test3(xs, xe, ys, ye)
 
     #now = time.time()
-    #surface.blit(surf, (0,0))
-    asyncio.run(test4(xs, xe, ys, ye))
+    surface.blit(surf, (0,0))
+    #asyncio.run(test4(xs, xe, ys, ye))
 
     pygame.display.update()
 
