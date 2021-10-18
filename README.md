@@ -24,12 +24,12 @@ pygame as the display tool. Whether this is a good idea or not I have yet to fin
 The first improvement was to take the basic mandlebrot set calculation loop and write 
 it in C and create a new python module.  This improved the speed by quite a lot allowing
 me to implement the first zooming feature to great effect.  It is usable now that a
-640x640 image can be generated in between 0.3 secs and 0.6 secs on fairly old (circa 2021)
+640x640 image can be generated in between 0.3 secs and 0.6 secs on fairly old (circa 2012)
 hardware.
 
 The zoom level bottoms out after a while producing increasingly blocky results which I
-put down to the limits of floating point precision in either the C code or Python code
-or both.  I have yet to discover which, but then I haven't really looked yet.
+put down to the limits of floating point precision in the C code (64 bit floats). To get further I will have to learn more about arbitrary precision floating point arithmetic.
+
 
 ## Ideas for future development
 
