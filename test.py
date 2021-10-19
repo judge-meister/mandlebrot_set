@@ -131,6 +131,22 @@ def draw_plot(xs, xe, ys, ye):
 
     #print("displayed in ", time.time()-now, " secs")
 
+def display_help():
+    help = """
+    How to control the Mandlebrot Set viewer.
+    
+    Initially move the mouse to somewhere on the edge of the black region and left click, you will zoom in.  Now Repeat.
+    To zoom out again use the right mouse button.
+    
+    Alternatively once the mouse pointer is within the window you can use the keyboard.
+      cursor keys 'up', 'down', 'left', 'right' will move the mouse pointer.
+      'z' to zoom in and 'x' to zoom out again.
+      
+    Use 'c' to reset back to the start.
+    
+    To exit use 'q' or 'esc'
+    """
+    print(help)
 
 if __name__ == '__main__':
     xs=X1
@@ -138,6 +154,8 @@ if __name__ == '__main__':
     ys=Y1
     ye=Y2
 
+    display_help()
+    
     draw_plot(xs, xe, ys, ye)
 
     pygame.key.set_repeat(100,20)
