@@ -1,9 +1,18 @@
-/*
+/* ----------------------------------------------------------------------------
  *  C library with python module interface to calculate the Mandlebrot set for
  *  the area provided by a set of coordinates
  */
- 
-/*
+
+/* ----------------------------------------------------------------------------
+ * Improvements
+ *
+ * - make MAXITER an input parameter so we can decide from within python what the
+ * escape value should be.  Will also allow us to create the "MandleBhuda".
+ * - remove the PyList.Append() calls from the main loop so we can Releasing the 
+ * GIL and start to look at threading.
+ */
+
+/* ----------------------------------------------------------------------------
 from wikipedia (https://en.wikipedia.org/wiki/Mandelbrot_set) 
 pseudo code to generate the mandlebrot set
 
@@ -56,12 +65,16 @@ static int calculate_point(double x0, double y0)
 {
 	double x = 0.0;
 	double y = 0.0;
+	double xsq = 0.0;
+	double ysq = 0.0;
 	int iteration = 0;
 	double xtemp = 0.0;
 	
-	while (((x*x + y*y) <= 2*2) && iteration < MAXITER)
+	while (((xsq + ysq) <= 2*2) && iteration < MAXITER)
 	{
-		xtemp = x*x - y*y + x0;
+		xsq = x*x;
+		ysq = y*y;
+		xtemp = xsq - ysq + x0;
 		y = 2.0*x*y + y0;
 		x = xtemp;
 		iteration++;
