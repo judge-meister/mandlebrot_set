@@ -1,7 +1,28 @@
 /*
- *  C library with python module interface to calculate the Mandlemrot set for
+ *  C library with python module interface to calculate the Mandlebrot set for
  *  the area provided by a set of coordinates
  */
+ 
+/*
+from wikipedia (https://en.wikipedia.org/wiki/Mandelbrot_set) 
+pseudo code to generate the mandlebrot set
+
+for each pixel (Px, Py) on the screen do
+    x0 := scaled x coordinate of pixel (scaled to lie in the Mandelbrot X scale (-2.00, 0.47))
+    y0 := scaled y coordinate of pixel (scaled to lie in the Mandelbrot Y scale (-1.12, 1.12))
+    x := 0.0
+    y := 0.0
+    iteration := 0
+    max_iteration := 1000
+    while (x*x + y*y ≤ 2*2 AND iteration < max_iteration) do
+        xtemp := x*x - y*y + x0
+        y := 2*x*y + y0
+        x := xtemp
+        iteration := iteration + 1
+    
+    color := palette[iteration]
+    plot(Px, Py, color)
+*/
  
 /* ----------------------------------------------------------------------------
  * calculate_point
@@ -22,12 +43,20 @@
 
 struct Color { int r, g, b; };
 
+/* ----------------------------------------------------------------------------
+ * run the z = z^2 + c algorithm for the point provided to assertain if the 
+ * point is inside or outside of the mandlebrot set
+ *
+ * Params
+ * x0, y0 (double) location to calculate for
+ * Returns
+ * number of iterations (int) to achieve the answer
+ */
 static int calculate_point(double x0, double y0)
 {
 	double x = 0.0;
 	double y = 0.0;
 	int iteration = 0;
-	/*int maxiter = 1000;*/
 	double xtemp = 0.0;
 	
 	while (((x*x + y*y) <= 2*2) && iteration < MAXITER)
@@ -56,10 +85,6 @@ static struct Color grayscale(int it)
 	c.g = 0;
 	c.b = 0;
 
-	/*if (it >= MAXITER)
-	{
-		struct color c = { 0, 0, 0 };
-	}*/
 	if (it < MAXITER)
 	{
 		/*int idx = (int)ceil( sqrt( sqrt( (double)it / (double)MAXITER ) ) * 255.0 );*/
@@ -72,7 +97,12 @@ static struct Color grayscale(int it)
 }
 
 /* ----------------------------------------------------------------------------
+ * gradient1 - first attempt at a procedural color gradient
  *
+ * Params
+ * it (int) - the iteration value calculated at a point
+ * Returns
+ * color (struct if 3 ints) - RGB color value
  */
 static struct Color gradient1(int it)
 {
@@ -97,7 +127,7 @@ static struct Color gradient1(int it)
  * scaled - return a value in the range Xe to Xs given a location in a larger
  *          integer range
  * Params
- * x1 (int) - position in  large integer range
+ * x1 (int) - position in large integer range
  * sz (int) - size of integer range
  * Xs (double) - start of smaller range
  * Xe (double) - end of smaller range
@@ -109,13 +139,14 @@ static double scaled(int x1, int sz, double Xs, double Xe)
 	return ( ((double)x1 / (double)sz) * (Xe-Xs) ) + Xs;
 }
 /* ----------------------------------------------------------------------------
+ * Python function interface - mandlebrot
  *
  * Params - (contained in PyObject *args)
  * ssize (int) - size of display screen/window (assumed square)
- * Xs (double)
- * Xe (double)
- * Ys (double)
- * Ye (double)
+ * Xs, Xe, Ys, Ye (double) bounds of mandlebrot set to calculate
+ *
+ * Returns a PyList of PyTuple containing iteration, color and screen coord values 
+ *         for all the calculated points
  */
 static PyObject * mandlebrot(PyObject *self, PyObject *args)
 {
@@ -158,26 +189,27 @@ static PyObject * mandlebrot(PyObject *self, PyObject *args)
 }
 
 /* ----------------------------------------------------------------------------
+ * Python function interface - mandlebrot_bytearray
  * mandlebrot_bytearray - return the results as a list of color values to be 
  *                        converted to a bytesarray by the caller
  *
  * Params - (contained in PyObject *args)
- * ssize (int) - size of display screen/window (assumed square)
- * Xs (double)
- * Xe (double)
- * Ys (double)
- * Ye (double)
+ * wsize (int) - width of display screen/window
+ * hsize (int) - height of display screen/window
+ * Xs, Xe, Ys, Ye (double) bounds of mandlebrot set to calculate
+ *
+ * Returns a PyList containing color values for all the calculated points
  */
 static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
 {
 	int wsize = 0;
-    int hsize = 0;
+	int hsize = 0;
 	double Xs, Xe, Ys, Ye;
 	
 	if (!PyArg_ParseTuple(args, "iidddd", &wsize, &hsize, &Xs, &Xe, &Ys, &Ye))
 		return NULL;
 
-    printf("params, %d,%d %1.20lf,%1.20lf %1.20lf,%1.20lf\n", wsize,hsize, Xs,Xe, Ys,Ye);
+	printf("params, %d,%d %1.20lf,%1.20lf %1.20lf,%1.20lf\n", wsize,hsize, Xs,Xe, Ys,Ye);
 	PyObject *points = PyList_New(0);
 	
 	for(int Dy = 0; Dy < hsize; Dy++)
@@ -196,7 +228,7 @@ static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
 			rgb = gradient1(iter);
 			/*sh = shade(iter);*/
 			
-            /* just add the rgb values to the list */
+			/* just add the rgb values to the list */
 			PyList_Append(points, PyLong_FromLong((long) rgb.r));
 			PyList_Append(points, PyLong_FromLong((long) rgb.g));
 			PyList_Append(points, PyLong_FromLong((long) rgb.b));
@@ -232,39 +264,3 @@ PyInit_mandlebrot(void)
 	return PyModule_Create(&mandlebrotmodule);
 }
 
-int
-main(int argc, char *argv[])
-{
-    wchar_t *program = Py_DecodeLocale(argv[0], NULL);
-    if (program == NULL) {
-        fprintf(stderr, "Fatal error: cannot decode argv[0]\n");
-        exit(1);
-    }
-
-    /* Add a built-in module, before Py_Initialize */
-    if (PyImport_AppendInittab("mandlebrot", PyInit_mandlebrot) == -1) {
-        fprintf(stderr, "Error: could not extend in-built modules table\n");
-        exit(1);
-    }
-
-    /* Pass argv[0] to the Python interpreter */
-    Py_SetProgramName(program);
-
-    /* Initialize the Python interpreter.  Required.
-       If this step fails, it will be a fatal error. */
-    Py_Initialize();
-
-    /* Optionally import the module; alternatively,
-       import can be deferred until the embedded script
-       imports it. */
-    PyObject *pmodule = PyImport_ImportModule("mandlebrot");
-    if (!pmodule) {
-        PyErr_Print();
-        fprintf(stderr, "Error: could not import module 'mandlebrot'\n");
-    }
-
-    /* ... */
-
-    PyMem_RawFree(program);
-    return 0;
-}
