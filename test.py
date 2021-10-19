@@ -117,7 +117,7 @@ def zoom_out(xs, xe, ys, ye, pos):
         TLy = Y1
         BRy = Y2
 
-    print("new coords ", TLx, BRx, TLy, BRy)
+    #print("new coords ", TLx, BRx, TLy, BRy)
     return TLx, BRx, TLy, BRy
 
 def draw_plot(xs, xe, ys, ye):
@@ -145,6 +145,10 @@ if __name__ == '__main__':
     while not run:
         clock.tick(20)
         for event in pygame.event.get():
+
+            mouse_pos = pygame.mouse.get_pos()
+            pygame.display.set_caption("Mandlebrot (%s)" % repr(mouse_pos))
+
             if event.type == pygame.QUIT or (event.type == pygame.KEYUP and (event.key == pygame.K_q or event.key == pygame.K_ESCAPE)):
                 run = True
 
@@ -154,6 +158,20 @@ if __name__ == '__main__':
                 xs,xe,ys,ye = X1,X2,Y1,Y2
                 draw_plot(xs, xe, ys, ye)
                 
+            if event.type == pygame.KEYUP and event.key == pygame.K_z:
+                xs, xe, ys, ye = zoom_in(xs, xe, ys, ye, mouse_pos)
+                zoom_level += 1
+                print("zoom level ", zoom_level)
+                draw_plot(xs, xe, ys, ye)
+
+            if event.type == pygame.KEYUP and event.key == pygame.K_x:
+                xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, (window_size/2, window_size/2))
+                zoom_level -= 1
+                if zoom_level == -1:
+                    zoom_level = 0
+                print("zoom level ", zoom_level)
+                draw_plot(xs, xe, ys, ye)
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 pressed = pygame.mouse.get_pressed()
