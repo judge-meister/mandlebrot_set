@@ -38,3 +38,4 @@ put down to the limits of floating point precision in the C code (64 bit floats)
 1. learn about the various python math libraries to see if any of them help (numpy, numba, scipy ...)
 1. may be re-write in openGL, either with Unity or from scratch. This will help with speed but maybe not precision initially.
 1. make it multi-processor compatible (threading, processes etc...) to allow it to use more resources and calculate faster.
+1. test other languages, like Go - turns out Go is comparible in speed to C, the same order of magnitude at least.
