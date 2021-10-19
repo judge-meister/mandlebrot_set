@@ -1,12 +1,22 @@
+"""
+The Mandlebrot Set
 
-from PIL import Image
+using a custom C module and pygame to display and zoom in on the mandlebrot set
+"""
+
 import pygame
 import math
 import time
+import sys
 import numpy
 import asyncio
-import mandlebrot
-
+try:
+    import mandlebrot
+except ModuleNotFoundError:
+    print("\nHave you built the mandlebrot C module ? try running ./build.sh\n")
+    sys.exit()
+from PIL import Image
+    
 X1=-2.0
 X2=1.0
 Y1=-1.5
@@ -18,32 +28,8 @@ window_size = 640
 surface = pygame.display.set_mode((window_size, window_size))
 surface.fill((255,255,255))
 clock = pygame.time.Clock()
-print("initialised in ",time.time()-now)
-
-def test1():
-    buf = Image.open('/home/judge/clones/dotfiles/.local/share/icons/battery_low_dark.png').tobytes()
-    print("is list? ", isinstance(buf, list), dir(buf) )
-    print(buf[int(len(buf)/2):int(len(buf)/2)+32])
-    #for b in buf:
-    #    print(b)
-
-
-def test2():
-    print("start test2")
-    frame = bytearray()
-    for r in range(64,128):
-        for g in range(64,128):
-            for b in range(64,128):
-                frame.append(r)
-                frame.append(g)
-                frame.append(b)
-
-    sz = int(math.sqrt(len(frame)/3))
-    print(sz)
-
-    surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
-    print("end test2")
-    return surf,sz
+pygame.key.set_repeat(100,20)
+#print("initialised in ",time.time()-now)
 
 
 def test3(xs, xe, ys, ye):
@@ -56,8 +42,12 @@ def test3(xs, xe, ys, ye):
     print("set calculated in ", time.time()-now, " secs")
     return surf,sz
 
+
+# attempt at using asyncio to generate 4 slices of the mandlebrot set concurrently
+# - this didn't work as expected
 async def mandlebrot_bytearray_async(sx, sy, xs, xe, ys, ye):
     return mandlebrot.mandlebrot_bytearray(sx, sy, xs,xe, ys,ye)
+
 
 async def test4(xs, xe, ys, ye):
     """split square into 4 horizontal strips and use asyncio to call 
@@ -90,8 +80,10 @@ async def test4(xs, xe, ys, ye):
     print("set calculated in ", time.time()-now, " secs")
     return surf, sz
 
+
 def scaled(x, sz, s, e):
     return ( (float(x)/float(sz)) * (e-s) ) + s
+
 
 def zoom_in(xs, xe, ys, ye, pos):
     #print("pos ", pos)
@@ -101,6 +93,7 @@ def zoom_in(xs, xe, ys, ye, pos):
     BR = (loc[0]+abs((xe-xs)/3), loc[1]+abs((ye-ys)/3))
     #print("new coords ", TL[0], BR[0], TL[1], BR[1])
     return TL[0], BR[0], TL[1], BR[1]
+
 
 def zoom_out(xs, xe, ys, ye, pos):
     #print("pos ", pos)
@@ -120,6 +113,7 @@ def zoom_out(xs, xe, ys, ye, pos):
     #print("new coords ", TLx, BRx, TLy, BRy)
     return TLx, BRx, TLy, BRy
 
+
 def draw_plot(xs, xe, ys, ye):
     surf,sz = test3(xs, xe, ys, ye)
 
@@ -130,6 +124,7 @@ def draw_plot(xs, xe, ys, ye):
     pygame.display.update()
 
     #print("displayed in ", time.time()-now, " secs")
+
 
 def display_help():
     help = """
@@ -148,18 +143,8 @@ def display_help():
     """
     print(help)
 
-if __name__ == '__main__':
-    xs=X1
-    xe=X2
-    ys=Y1
-    ye=Y2
 
-    display_help()
-    
-    draw_plot(xs, xe, ys, ye)
-
-    pygame.key.set_repeat(100,20)
-    
+def event_loop(xs, xe, ys, ye):
     zoom_level = 0
     run = False
     while not run:
@@ -230,5 +215,20 @@ if __name__ == '__main__':
                     draw_plot(xs, xe, ys, ye)
 
     pygame.quit()
-    exit()
 
+
+def main():
+    display_help()
+    
+    xs=X1
+    xe=X2
+    ys=Y1
+    ye=Y2
+
+    draw_plot(xs, xe, ys, ye)
+    event_loop(xs, xe, ys, ye)
+
+
+if __name__ == '__main__':
+    main()
+    
