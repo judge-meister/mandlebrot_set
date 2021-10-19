@@ -140,6 +140,8 @@ if __name__ == '__main__':
 
     draw_plot(xs, xe, ys, ye)
 
+    pygame.key.set_repeat(100,20)
+    
     zoom_level = 0
     run = False
     while not run:
@@ -165,13 +167,33 @@ if __name__ == '__main__':
                 draw_plot(xs, xe, ys, ye)
 
             if event.type == pygame.KEYUP and event.key == pygame.K_x:
-                xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, (window_size/2, window_size/2))
-                zoom_level -= 1
-                if zoom_level == -1:
-                    zoom_level = 0
-                print("zoom level ", zoom_level)
-                draw_plot(xs, xe, ys, ye)
+                if zoom_level > 0:
+                    xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, (window_size/2, window_size/2))
+                    if xs == X1 and ys == Y1:
+                        zoom_level = 0
+                    else:
+                        zoom_level -= 1
+                        #if zoom_level == -1:
+                        #    zoom_level = 0
+                    print("zoom level ", zoom_level)
+                    draw_plot(xs, xe, ys, ye)
 
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
+                if mouse_pos[1] > 1:
+                    pygame.mouse.set_pos(mouse_pos[0], mouse_pos[1]-1)
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
+                if mouse_pos[1] < window_size-1:
+                    pygame.mouse.set_pos(mouse_pos[0], mouse_pos[1]+1)
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
+                if mouse_pos[0] > 1:
+                    pygame.mouse.set_pos(mouse_pos[0]-1, mouse_pos[1])
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
+                if mouse_pos[0] < window_size-1:
+                    pygame.mouse.set_pos(mouse_pos[0]+1, mouse_pos[1])
+                
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 pressed = pygame.mouse.get_pressed()
