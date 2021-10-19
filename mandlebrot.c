@@ -177,7 +177,7 @@ static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "iidddd", &wsize, &hsize, &Xs, &Xe, &Ys, &Ye))
 		return NULL;
 
-    printf("params, %d,%d %5.2lf,%5.2lf %5.2lf,%5.2lf\n", wsize,hsize, Xs,Xe, Ys,Ye);
+    printf("params, %d,%d %1.20lf,%1.20lf %1.20lf,%1.20lf\n", wsize,hsize, Xs,Xe, Ys,Ye);
 	PyObject *points = PyList_New(0);
 	
 	for(int Dy = 0; Dy < hsize; Dy++)
