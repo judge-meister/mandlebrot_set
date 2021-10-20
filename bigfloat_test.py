@@ -46,7 +46,7 @@ class Mandlebrot_bigfloat:
         maxiter = self.breakout
 
         while (x*x + y*y <= 4) and iteration < maxiter:
-            xtemp = x*x + y*y + x0
+            xtemp = x*x - y*y + x0
             y = 2*x*y + y0
             x = xtemp
             iteration += 1

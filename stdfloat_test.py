@@ -43,10 +43,8 @@ class Mandlebrot_stdfloat:
         iteration = 0
         maxiter = self.breakout
 
-        sq_x_plus_sq_y = 0.0
-        while (sq_x_plus_sq_y <= 4) and iteration < maxiter:
-            sq_x_plus_sq_y = x*x + y*y
-            xtemp = sq_x_plus_sq_y + x0
+        while (x*x + y*y <= 4) and iteration < maxiter:
+            xtemp = x*x - y*y + x0
             y = 2*x*y + y0
             x = xtemp
             iteration += 1

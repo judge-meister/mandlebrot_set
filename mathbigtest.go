@@ -26,10 +26,12 @@ func iterate_location(x0, y0 float64) int {
     var maxiter int = 1000
     xtemp := 0.0
 
-    sq_x_plus_sq_y := 0.0
-    for (sq_x_plus_sq_y <= 4) && (iteration < maxiter) {
-        sq_x_plus_sq_y = x*x + y*y
-        xtemp = sq_x_plus_sq_y + x0
+    sqx := 0.0
+    sqy := 0.0
+    for (sqx + sqy <= 4) && (iteration < maxiter) {
+        sqx = x*x 
+        sqy = y*y
+        xtemp = sqx - sqy + x0
         y = 2*x*y + y0
         x = xtemp
         iteration++
@@ -79,12 +81,14 @@ func mandlebrot_set(w, h int) {
             xtemp.SetFloat64(0.0)
 
             sq_x_plus_sq_y := new(big.Float).SetPrec(prec).SetInt64(0)
+            sq_x_minus_sq_y := new(big.Float).SetPrec(prec).SetInt64(0)
             for (sq_x_plus_sq_y.Cmp(four) <= 0) && (iteration < maxiter) {
                 //sq_x_plus_sq_y = x*x + y*y
                 a.Mul(x,x)
                 b.Mul(y,y)
                 sq_x_plus_sq_y.Add(a,b)
-                xtemp.Add(sq_x_plus_sq_y,x0)
+                sq_x_minus_sq_y.Minus(a,b)
+                xtemp.Add(sq_x_minus_sq_y,x0)
 
                 //y = 2*x*y + y0
                 a.Mul(x,y)

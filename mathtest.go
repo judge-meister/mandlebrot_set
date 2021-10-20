@@ -25,10 +25,8 @@ func iterate_location(x0, y0 float64) int {
     var maxiter int = 1000
     var xtemp float64 = 0.0
 
-    var sq_x_plus_sq_y float64 = 0.0
-    for (sq_x_plus_sq_y <= 4) && (iteration < maxiter) {
-        sq_x_plus_sq_y = x*x + y*y
-        xtemp = sq_x_plus_sq_y + x0
+    for (x*x + y*y <= 4) && (iteration < maxiter) {
+        xtemp = x*x - y*y + x0
         y = 2*x*y + y0
         x = xtemp
         iteration++
