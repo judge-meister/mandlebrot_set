@@ -9,7 +9,6 @@ import math
 import time
 import sys
 import numpy
-import asyncio
 try:
     import mandlebrot
 except ModuleNotFoundError:
@@ -32,55 +31,6 @@ pygame.key.set_repeat(100,20)
 #print("initialised in ",time.time()-now)
 
 
-def test3(xs, xe, ys, ye):
-    now = time.time()
-    #print("start test3")
-    sz = window_size
-    frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, xs, xe, ys, ye))
-    surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
-
-    print("set calculated in ", time.time()-now, " secs")
-    return surf,sz
-
-
-# attempt at using asyncio to generate 4 slices of the mandlebrot set concurrently
-# - this didn't work as expected
-async def mandlebrot_bytearray_async(sx, sy, xs, xe, ys, ye):
-    return mandlebrot.mandlebrot_bytearray(sx, sy, xs,xe, ys,ye)
-
-
-async def test4(xs, xe, ys, ye):
-    """split square into 4 horizontal strips and use asyncio to call 
-    mandlebrot module 4 times, will need to combine the returned
-    bytearrays in to a single surface.
-    """
-    now = time.time()
-
-    sz = 640
-    y4 = numpy.linspace(ys, ye, 5)
-    sz4 = int(sz/4) #numpy.linspace(1, 640, 5)
-    print(sz4, y4)
-
-    chunks = await asyncio.gather(
-        mandlebrot_bytearray_async(sz, sz4, xs,xe, y4[0],y4[1]),
-        mandlebrot_bytearray_async(sz, sz4, xs,xe, y4[1],y4[2]),
-        mandlebrot_bytearray_async(sz, sz4, xs,xe, y4[2],y4[3]),
-        mandlebrot_bytearray_async(sz, sz4, xs,xe, y4[3],y4[4])
-    )
-
-    new_y = 0
-    for frame in chunks:
-        surf = pygame.image.frombuffer(bytearray(frame), (sz,sz4), 'RGB')
-        surface.blit(surf, (0,new_y))
-        new_y += sz4
-
-    #surface.blit(surf, (0,0))
-    pygame.display.update()
-
-    print("set calculated in ", time.time()-now, " secs")
-    return surf, sz
-
-
 def scaled(x, sz, s, e):
     return ( (float(x)/float(sz)) * (e-s) ) + s
 
@@ -88,7 +38,7 @@ def scaled(x, sz, s, e):
 def zoom_in(xs, xe, ys, ye, pos):
     #print("pos ", pos)
     loc = (scaled(pos[0], window_size, xs, xe), scaled(pos[1], window_size, ys, ye))
-    #print("scaled loc ", loc)
+    print("scaled loc ", loc)
     TL = (loc[0]-abs((xe-xs)/3), loc[1]-abs((ye-ys)/3))
     BR = (loc[0]+abs((xe-xs)/3), loc[1]+abs((ye-ys)/3))
     #print("new coords ", TL[0], BR[0], TL[1], BR[1])
@@ -115,7 +65,13 @@ def zoom_out(xs, xe, ys, ye, pos):
 
 
 def draw_plot(xs, xe, ys, ye):
-    surf,sz = test3(xs, xe, ys, ye)
+    now = time.time()
+
+    sz = window_size
+    frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, xs, xe, ys, ye, 255))
+    surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
+
+    print("set calculated in ", time.time()-now, " secs")
 
     #now = time.time()
     surface.blit(surf, (0,0))
@@ -231,4 +187,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
     

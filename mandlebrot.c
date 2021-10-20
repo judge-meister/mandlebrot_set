@@ -33,15 +33,6 @@ for each pixel (Px, Py) on the screen do
     plot(Px, Py, color)
 */
  
-/* ----------------------------------------------------------------------------
- * calculate_point
- *
- * Params 
- * x0 (double) - the scaled x position in the rectangle ( values between -2.0 and 1.0)
- * y0 (double) - the scaled y position in the rectangle ( values between -1.5 and 1.5)
- * Returns
- * iteration - count of how many iterations it took to head to infinity
- */
 #include <stdio.h>
 #include <math.h>
 
@@ -53,15 +44,18 @@ for each pixel (Px, Py) on the screen do
 struct Color { int r, g, b; };
 
 /* ----------------------------------------------------------------------------
+ * calculate_point
  * run the z = z^2 + c algorithm for the point provided to assertain if the 
  * point is inside or outside of the mandlebrot set
  *
- * Params
+ * Params 
  * x0, y0 (double) location to calculate for
+ * maxiter (int) the escape value
+ *
  * Returns
- * number of iterations (int) to achieve the answer
+ * iteration - count of how many iterations it took to head to infinity
  */
-static int calculate_point(double x0, double y0)
+static int calculate_point(double x0, double y0, int maxiter)
 {
 	double x = 0.0;
 	double y = 0.0;
@@ -70,7 +64,7 @@ static int calculate_point(double x0, double y0)
 	int iteration = 0;
 	double xtemp = 0.0;
 	
-	while (((xsq + ysq) <= 2*2) && iteration < MAXITER)
+	while (((xsq + ysq) <= 2*2) && iteration < maxiter)
 	{
 		xsq = x*x;
 		ysq = y*y;
@@ -91,17 +85,17 @@ static int calculate_point(double x0, double y0)
  * Return
  * color (struct of 3 int vals) - RGB color value
  */
-static struct Color grayscale(int it)
+static struct Color grayscale(int it, int maxiter)
 {
 	struct Color c; /*  = { 0, 0, 0 } */
 	c.r = 0;
 	c.g = 0;
 	c.b = 0;
 
-	if (it < MAXITER)
+	if (it < maxiter)
 	{
 		/*int idx = (int)ceil( sqrt( sqrt( (double)it / (double)MAXITER ) ) * 255.0 );*/
-		int idx = (int)ceil( sqrt( (double)it / (double)MAXITER ) * 255.0 );
+		int idx = (int)ceil( sqrt( (double)it / (double)maxiter ) * 255.0 );
 		c.r = idx;
 		c.g = idx;
 		c.b = idx;
@@ -117,12 +111,12 @@ static struct Color grayscale(int it)
  * Returns
  * color (struct if 3 ints) - RGB color value
  */
-static struct Color gradient1(int it)
+static struct Color gradient1(int it, int maxiter)
 {
 	struct Color c;
-	if (it < MAXITER)
+	if (it < maxiter)
 	{
-		double m = sqrt( (double)it / (double)MAXITER );
+		double m = sqrt(sqrt( (double)it / (double)maxiter ));
 		/*printf("sqrt(it/max) = %5.2f | ", m);*/
 		c.r = (int)floor((( sin(0.65 * m * 85.0) *0.5)+0.5) *255);
 		c.g = (int)floor((( sin(0.45 * m * 85.0) *0.5)+0.5) *255);
@@ -180,8 +174,8 @@ static PyObject * mandlebrot(PyObject *self, PyObject *args)
 			struct Color rgb;
 			int iter;
 
-			iter = calculate_point(x0, y0);
-			rgb = grayscale(iter);
+			iter = calculate_point(x0, y0, MAXITER);
+			rgb = grayscale(iter, MAXITER);
 			
 			/* added color to PyList, but still need x,y coords*/
 			PyObject *pycolor = PyTuple_New(6);
@@ -217,12 +211,13 @@ static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
 {
 	int wsize = 0;
 	int hsize = 0;
+	int maxiter = 0;
 	double Xs, Xe, Ys, Ye;
 	
-	if (!PyArg_ParseTuple(args, "iidddd", &wsize, &hsize, &Xs, &Xe, &Ys, &Ye))
+	if (!PyArg_ParseTuple(args, "iiddddi", &wsize, &hsize, &Xs, &Xe, &Ys, &Ye, &maxiter))
 		return NULL;
 
-	printf("params, %d,%d %1.20lf,%1.20lf %1.20lf,%1.20lf\n", wsize,hsize, Xs,Xe, Ys,Ye);
+	/*printf("params, %d,%d %1.20lf,%1.20lf %1.20lf,%1.20lf  %d\n", wsize,hsize, Xs,Xe, Ys,Ye, maxiter);*/
 	PyObject *points = PyList_New(0);
 	
 	for(int Dy = 0; Dy < hsize; Dy++)
@@ -234,11 +229,11 @@ static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
 			struct Color rgb;
 			int iter;
 
-			iter = calculate_point(x0, y0);
+			iter = calculate_point(x0, y0, maxiter);
 			/*if (iter == MAXITER)
 				iter = 0;*/
-			/*rgb = grayscale(iter);*/
-			rgb = gradient1(iter);
+			/*rgb = grayscale(iter, maxiter);*/
+			rgb = gradient1(iter, maxiter);
 			/*sh = shade(iter);*/
 			
 			/* just add the rgb values to the list */
