@@ -23,28 +23,29 @@ def mand(c):
   return MAX
 
 def test1(params):
-  xl,xh,xs,yl,yh,ys = params
+  n, xl,xh,xs, yl,yh,ys = params
   s = []
   for y in arange(yl,yh,ys):
     for x in arange(xl,xh,xs):
       s.append(math.sqrt(mand(complex(x,y))/MAX))
-  # return s
+  return n, s
   
 def test2():
   # multiprocessing
-  cpus = 128
+  cpus = 128 # should be 2* num cpu cores, any more gives negligible benefit
   yslice = (yh-yl)/cpus
-  y8s = ys * cpus
   params = []
   for n in range(cpus):
-    params.append([xl,xh,xs, yl+(n*yslice),y1+((n+1)*yslice),y8s])
+    params.append([n, xl,xh,xs, yl+(n*yslice),y1+((n+1)*yslice),ys])
     
   pool = Pool(processes=cpus)
-  pool.map(test1,params)
+  d = pool.map(test1,params)
+  for a in d:
+    print(a[0], len(a[1]))
   
 def main():
   now = time.time()
-  test1()
+  test1([n, xl,xh,xs, yl,yh,ys])
   print("test1 ",time.time() - now)
   now = time.time()
   test2()
