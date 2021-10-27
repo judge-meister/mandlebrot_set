@@ -164,7 +164,7 @@ static PyObject * mandlebrot(PyObject *self, PyObject *args)
 		return NULL;
 
 	PyObject *points = PyList_New(0);
-	
+    
 	for(int Dy = 0; Dy < ssize; Dy++)
 	{
 		for(int Dx = 0; Dx < ssize; Dx++)
@@ -220,12 +220,19 @@ static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
 	/*printf("params, %d,%d %1.20lf,%1.20lf %1.20lf,%1.20lf  %d\n", wsize,hsize, Xs,Xe, Ys,Ye, maxiter);*/
 	PyObject *points = PyList_New(0);
 	
+	double xstep = (Xe-Xs) / (float)wsize;
+	double ystep = (Ye-Ys) / (float)hsize;
+
 	for(int Dy = 0; Dy < hsize; Dy++)
+	/*for(double y0 = Ys; y0 < Ye; y0 = y0 + ystep)*/
 	{
 		for(int Dx = 0; Dx < wsize; Dx++)
+	    /*for(double x0 = Xs; x0 < Xe; x0 = x0 + xstep)*/
 		{
-			double x0 = scaled(Dx, wsize, Xs, Xe);
-			double y0 = scaled(Dy, hsize, Ys, Ye);
+			/*double x0 = scaled(Dx, wsize, Xs, Xe);
+			double y0 = scaled(Dy, hsize, Ys, Ye);*/
+			double x0 = Dx*xstep + Xs;
+			double y0 = Dy*ystep + Ys;
 			struct Color rgb;
 			int iter;
 
