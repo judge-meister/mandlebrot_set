@@ -108,7 +108,8 @@ def event_loop(xs, xe, ys, ye):
         for event in pygame.event.get():
 
             mouse_pos = pygame.mouse.get_pos()
-            pygame.display.set_caption("Mandlebrot (%s)" % repr(mouse_pos))
+            loc = (scaled(mouse_pos[0], window_size, xs, xe), scaled(mouse_pos[1], window_size, ys, ye))
+            pygame.display.set_caption("Mandlebrot %s zoom=%s centre=%s" % (repr(mouse_pos), zoom_level, repr(loc)))
 
             if event.type == pygame.QUIT or (event.type == pygame.KEYUP and (event.key == pygame.K_q or event.key == pygame.K_ESCAPE)):
                 run = True
@@ -137,19 +138,19 @@ def event_loop(xs, xe, ys, ye):
                     print("zoom level ", zoom_level)
                     draw_plot(xs, xe, ys, ye)
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
+            if event.type == pygame.KEYUP and event.key == pygame.K_UP:
                 if mouse_pos[1] > 1:
                     pygame.mouse.set_pos(mouse_pos[0], mouse_pos[1]-1)
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
+            if event.type == pygame.KEYUP and event.key == pygame.K_DOWN:
                 if mouse_pos[1] < window_size-1:
                     pygame.mouse.set_pos(mouse_pos[0], mouse_pos[1]+1)
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
+            if event.type == pygame.KEYUP and event.key == pygame.K_LEFT:
                 if mouse_pos[0] > 1:
                     pygame.mouse.set_pos(mouse_pos[0]-1, mouse_pos[1])
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
+            if event.type == pygame.KEYUP and event.key == pygame.K_RIGHT:
                 if mouse_pos[0] < window_size-1:
                     pygame.mouse.set_pos(mouse_pos[0]+1, mouse_pos[1])
                 
