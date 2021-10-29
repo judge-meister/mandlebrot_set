@@ -97,7 +97,8 @@ def draw_plot_mpfr(xs, xe, ys, ye):
     #frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, xs, xe, ys, ye, 255))
     #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-2.0", "1.0", "-1.5", "1.5"))
     #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-1.7400623826", "-1.7400623824", "0.0281753398", "0.0281753395"))
-    frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, xs, xe, ys, ye))
+    #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, xs, xe, ys, ye))
+    frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255))
     surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
     print("set calculated in ", time.time()-now, " secs")
@@ -215,6 +216,9 @@ def main():
     ys = repr(Y1)
     ye = repr(Y2)
 
+    mandlebrot.setup()
+    mandlebrot.initialize(xs, xe, ys, ye)
+    
     draw_plot_mpfr(xs, xe, ys, ye)
     event_loop(xs, xe, ys, ye)
 

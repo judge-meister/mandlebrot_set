@@ -40,13 +40,18 @@
 #include <gmp.h>
 #include <mpfr.h>
 
+/* DEFINES */
 #define PRECISION 128
 /* if PRECISION is increased then NUMLEN needs to increase */
 #define NUMLEN 50
 
 #define MAXITER 1000
 
+/* TYPE DEFS */
 struct Color { int r, g, b; };
+
+/* STATIC VARIABLES */
+static mpfr_t Xe, Xs, Ye, Ys; /* algorithm values */
 
 /* ----------------------------------------------------------------------------
  * grayscale - return a gray scale rgb value representing the iteration count
@@ -206,6 +211,36 @@ void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/displ
 }
 
 /* ----------------------------------------------------------------------------
+ */
+void setup_c()
+{
+    /* create all mpfr_t vars */
+    mpfr_inits2(PRECISION, Xs, Xe, Ys, Ye, (mpfr_ptr)NULL); 
+    printf("called setup_c()\n");
+}
+
+/* ----------------------------------------------------------------------------
+ */
+void initialize_c( 
+       const char* Xs_str, /* string repr of mpfr_t for X top left */
+       const char* Xe_str, /* string repr of mpfr_t for X top right */
+       const char* Ys_str, /* string repr of mpfr_t for Y bottom left */
+       const char* Ye_str  /* string repr of mpfr_t for Y bottom right */
+     )
+{
+    printf("called init_c()\n");
+	mpfr_set_str(Xs, Xs_str, 10, MPFR_RNDD);
+    printf("called init_c(Xs)\n");
+	mpfr_set_str(Xe, Xe_str, 10, MPFR_RNDD);
+    printf("called init_c(Xe)\n");
+	mpfr_set_str(Ys, Ys_str, 10, MPFR_RNDD);
+    printf("called init_c(Ys)\n");
+	mpfr_set_str(Ye, Ye_str, 10, MPFR_RNDD);
+    printf("called init_c(Ye)\n");
+	
+}
+
+/* ----------------------------------------------------------------------------
  * mandlebrot set using mpfr library
  *
  * Params
@@ -217,17 +252,17 @@ void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/displ
  *
  * Return int
  */
-void mandlebrot_mpfr_c(const unsigned int xsize,   /* width of screen/display/window */
+void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/window */
                          const unsigned int ysize,   /* height of screen/display/window */
                          const unsigned int maxiter, /* max iterations before escape */
-                         const char* Xs_str, /* string repr of mpfr_t for X top left */
-                         const char* Xe_str, /* string repr of mpfr_t for X top right */
-                         const char* Ys_str, /* string repr of mpfr_t for Y bottom left */
-                         const char* Ye_str, /* string repr of mpfr_t for Y bottom right */
+                         /*const char* Xs_str, / * string repr of mpfr_t for X top left */
+                         /*const char* Xe_str, / * string repr of mpfr_t for X top right */
+                         /*const char* Ys_str, / * string repr of mpfr_t for Y bottom left */
+                         /*const char* Ye_str, / * string repr of mpfr_t for Y bottom right */
                          int bytearray[] /* reference/pointer to result list of color values*/
                          )
 {
-    mpfr_t x, y, xsq, ysq, xtmp, x0, y0, Xe, Xs, Ye, Ys; /* algorithm values */
+    mpfr_t x, y, xsq, ysq, xtmp, x0, y0/*, Xe, Xs, Ye, Ys*/; /* algorithm values */
     mpfr_t a, two, four, sum_xsq_ysq;                    /* tmp vals */
     unsigned int iteration = 0;
     unsigned int bc = 0;
@@ -236,18 +271,18 @@ void mandlebrot_mpfr_c(const unsigned int xsize,   /* width of screen/display/wi
     //printf("mand_mpfr_c %s %s   %s %s   %d x %d %d\n", Xs_str, Xe_str, Ys_str, Ye_str, xsize, ysize, maxiter);
 
     /* create all mpfr_t vars */
-    mpfr_inits2(PRECISION, x, y, xsq, ysq, xtmp, x0, y0, Xs, Xe, Ys, Ye, (mpfr_ptr)NULL); 
+    mpfr_inits2(PRECISION, x, y, xsq, ysq, xtmp, x0, y0/*, Xs, Xe, Ys, Ye*/, (mpfr_ptr)NULL); 
     mpfr_inits2(PRECISION, a, two, four, sum_xsq_ysq, (mpfr_ptr)NULL);
 
-    /* get hight precision floats from input strings */
+    /* get high precision floats from input strings */
     /*mpfr_strtofr(Xs, Xs_str, NULL, 10, MPFR_RNDD);
     mpfr_strtofr(Xe, Xe_str, NULL, 10, MPFR_RNDD);
     mpfr_strtofr(Ys, Ys_str, NULL, 10, MPFR_RNDD);
     mpfr_strtofr(Ye, Ye_str, NULL, 10, MPFR_RNDD);*/
-	mpfr_set_str(Xs, Xs_str, 10, MPFR_RNDD);
+	/*mpfr_set_str(Xs, Xs_str, 10, MPFR_RNDD);
 	mpfr_set_str(Xe, Xe_str, 10, MPFR_RNDD);
 	mpfr_set_str(Ys, Ys_str, 10, MPFR_RNDD);
-	mpfr_set_str(Ye, Ye_str, 10, MPFR_RNDD);
+	mpfr_set_str(Ye, Ye_str, 10, MPFR_RNDD);*/
 	
 	printf("mandlebrot_mpfr_c (in) \n");
     mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDD); putchar('\n');
@@ -336,9 +371,9 @@ void mpfr_zoom_in(       const char** Xs_str, /* string repr of mpfr_t for X top
 {
     mpfr_t Xe, Xs, Ye, Ys; /* inputs converted from strings */
 	mpfr_t lx, ly, TLx, TLy, BRx, BRy;
-	mpfr_exp_t exp;
+	/*mpfr_exp_t exp;*/
 	
-	mpfr_inits2(PRECISION, Xe, Xs, Ye, Ys, (mpfr_ptr)NULL);
+	/*mpfr_inits2(PRECISION, Xe, Xs, Ye, Ys, (mpfr_ptr)NULL);*/
 	mpfr_inits2(PRECISION, lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
 	
 	/*mpfr_strtofr(Xs, *Xs_str, NULL, 10, MPFR_RNDD);
@@ -409,10 +444,10 @@ void mpfr_zoom_in(       const char** Xs_str, /* string repr of mpfr_t for X top
 	*Ye_str = mpfr_get_str(NULL, &exp, 10, 0, Ye, MPFR_RNDD);
 	printf("exp = %ld\n", exp);*/
 	
-	mpfr_snprintf(*Xs_str,50, "%.45RNf", Xs);
+	/*mpfr_snprintf(*Xs_str,50, "%.45RNf", Xs);
 	mpfr_snprintf(*Xe_str,50, "%.45RNf", Xe);
 	mpfr_snprintf(*Ys_str,50, "%.45RNf", Ys);
-	mpfr_snprintf(*Ye_str,50, "%.45RNf", Ye);
+	mpfr_snprintf(*Ye_str,50, "%.45RNf", Ye);*/
 }/* -2.000000000000000000000000000000000000000e0 */
 /*
     loc_x = scaled(pos[0], window_size, xs, xe)
