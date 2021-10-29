@@ -45,7 +45,7 @@ def zoom_in(xs, xe, ys, ye, pos):
     return TL[0], BR[0], TL[1], BR[1]
 
 
-def zoom_out(xs, xe, ys, ye, pos):
+def zoom_out(xs, xe, ys, ye, pos): # pos(x,y) window_size(x,y)
     #print("pos ", pos)
     loc = (scaled(pos[0], window_size, xs, xe), scaled(pos[1], window_size, ys, ye))
     #print("scaled loc ", loc)
@@ -68,7 +68,36 @@ def draw_plot(xs, xe, ys, ye):
     now = time.time()
 
     sz = window_size
-    frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, xs, xe, ys, ye, 255))
+    #frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, xs, xe, ys, ye, 255))
+    #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-2.0", "1.0", "-1.5", "1.5"))
+    frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-1.7400623826", "-1.7400623824", "0.0281753398", "0.0281753395"))
+    surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
+
+    print("set calculated in ", time.time()-now, " secs")
+
+    #now = time.time()
+    surface.blit(surf, (0,0))
+    #asyncio.run(test4(xs, xe, ys, ye))
+
+    pygame.display.update()
+
+    #print("displayed in ", time.time()-now, " secs")
+
+def zoom_in_mpfr(xs, xe, ys, ye, pos):
+    """string params for mpfr"""
+    TL_BR = mandlebrot.mandlebrot_zoom_in(xs, xe, ys, ye, pos[0], pos[1], window_size, window_size)
+    return TL_BR
+
+def draw_plot_mpfr(xs, xe, ys, ye):
+    """params are strings representing real/imag value ranges"""
+    
+    now = time.time()
+
+    sz = window_size
+    #frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, xs, xe, ys, ye, 255))
+    #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-2.0", "1.0", "-1.5", "1.5"))
+    #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-1.7400623826", "-1.7400623824", "0.0281753398", "0.0281753395"))
+    frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, xs, xe, ys, ye))
     surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
     print("set calculated in ", time.time()-now, " secs")
@@ -101,6 +130,7 @@ def display_help():
 
 
 def event_loop(xs, xe, ys, ye):
+    """all params are strings"""
     zoom_level = 0
     run = False
     while not run:
@@ -108,7 +138,7 @@ def event_loop(xs, xe, ys, ye):
         for event in pygame.event.get():
 
             mouse_pos = pygame.mouse.get_pos()
-            loc = (scaled(mouse_pos[0], window_size, xs, xe), scaled(mouse_pos[1], window_size, ys, ye))
+            loc = (0.0, 0.0) #(scaled(mouse_pos[0], window_size, xs, xe), scaled(mouse_pos[1], window_size, ys, ye))
             pygame.display.set_caption("Mandlebrot %s zoom=%s centre=%s" % (repr(mouse_pos), zoom_level, repr(loc)))
 
             if event.type == pygame.QUIT or (event.type == pygame.KEYUP and (event.key == pygame.K_q or event.key == pygame.K_ESCAPE)):
@@ -118,25 +148,28 @@ def event_loop(xs, xe, ys, ye):
                 zoom_level = 0
                 print("zoom level ", zoom_level)
                 xs,xe,ys,ye = X1,X2,Y1,Y2
-                draw_plot(xs, xe, ys, ye)
+                #draw_plot(xs, xe, ys, ye)
+                draw_plot_mpfr(xs, xe, ys, ye)
                 
             if event.type == pygame.KEYUP and event.key == pygame.K_z:
-                xs, xe, ys, ye = zoom_in(xs, xe, ys, ye, mouse_pos)
+                #xs, xe, ys, ye = zoom_in(xs, xe, ys, ye, mouse_pos)
+                xs, xe, ys, ye = zoom_in_mpfr(xs, xe, ys, ye, mouse_pos)
                 zoom_level += 1
                 print("zoom level ", zoom_level)
-                draw_plot(xs, xe, ys, ye)
+                #draw_plot(xs, xe, ys, ye)
+                draw_plot_mpfr(xs, xe, ys, ye)
 
-            if event.type == pygame.KEYUP and event.key == pygame.K_x:
-                if zoom_level > 0:
-                    xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, (window_size/2, window_size/2))
-                    if xs == X1 and ys == Y1:
-                        zoom_level = 0
-                    else:
-                        zoom_level -= 1
-                        #if zoom_level == -1:
-                        #    zoom_level = 0
-                    print("zoom level ", zoom_level)
-                    draw_plot(xs, xe, ys, ye)
+            #if event.type == pygame.KEYUP and event.key == pygame.K_x:
+            #    if zoom_level > 0:
+            #        xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, (window_size/2, window_size/2))
+            #        if xs == X1 and ys == Y1:
+            #            zoom_level = 0
+            #        else:
+            #            zoom_level -= 1
+            #            #if zoom_level == -1:
+            #            #    zoom_level = 0
+            #        print("zoom level ", zoom_level)
+            #        draw_plot(xs, xe, ys, ye)
 
             if event.type == pygame.KEYUP and event.key == pygame.K_UP:
                 if mouse_pos[1] > 1:
@@ -158,18 +191,18 @@ def event_loop(xs, xe, ys, ye):
                 mouse_pos = pygame.mouse.get_pos()
                 pressed = pygame.mouse.get_pressed()
                 if pressed[0]: # Button 1
-                    xs, xe, ys, ye = zoom_in(xs, xe, ys, ye, mouse_pos)
+                    #xs, xe, ys, ye = zoom_in(xs, xe, ys, ye, mouse_pos)
                     zoom_level += 1
                     print("zoom level ", zoom_level)
-                    draw_plot(xs, xe, ys, ye)
+                    #draw_plot(xs, xe, ys, ye)
 
-                if pressed[2]: # Button 3
-                    xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, (window_size/2, window_size/2))
-                    zoom_level -= 1
-                    if zoom_level == -1:
-                        zoom_level = 0
-                    print("zoom level ", zoom_level)
-                    draw_plot(xs, xe, ys, ye)
+                #if pressed[2]: # Button 3
+                #    xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, (window_size/2, window_size/2))
+                #    zoom_level -= 1
+                #    if zoom_level == -1:
+                #        zoom_level = 0
+                #    print("zoom level ", zoom_level)
+                #    draw_plot(xs, xe, ys, ye)
 
     pygame.quit()
 
@@ -177,12 +210,12 @@ def event_loop(xs, xe, ys, ye):
 def main():
     display_help()
     
-    xs=X1
-    xe=X2
-    ys=Y1
-    ye=Y2
+    xs = repr(X1)
+    xe = repr(X2)
+    ys = repr(Y1)
+    ye = repr(Y2)
 
-    draw_plot(xs, xe, ys, ye)
+    draw_plot_mpfr(xs, xe, ys, ye)
     event_loop(xs, xe, ys, ye)
 
 
@@ -190,3 +223,65 @@ if __name__ == '__main__':
     main()
     
     
+"""
+Values to aim for
+    
+real=-1.7400623825
+7933990522
+0844167065
+8256382966
+4172043617
+1866879862
+4184611829
+1964415305
+6054840718
+3394832257
+4345000825
+9172138785
+4929836778
+9336650341
+7299549623
+7388383033
+4646546129
+0768441055
+4861368707
+1985055926
+9507357211
+7902436669
+4013479375
+3068611574
+7459438207
+1288525822
+2629105433
+6486959460
+03865
+    
+img=0.0281753397
+7921104899
+2411521144
+3195096875
+3907674299
+0608570401
+3095958801
+7432409201
+8638540081
+4658560553
+6156950844
+8677407700
+0669037710
+1916653380
+6041899932
+4320867147
+0287689837
+0483131652
+7873719459
+2645920846
+0043315033
+3362859318
+1020170329
+5807479996
+6721030307
+0821501719
+9479847808
+9798638258
+639934"""

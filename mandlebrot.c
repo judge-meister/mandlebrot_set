@@ -13,35 +13,111 @@
  */
 
 /* ----------------------------------------------------------------------------
-from wikipedia (https://en.wikipedia.org/wiki/Mandelbrot_set) 
-pseudo code to generate the mandlebrot set
-
-for each pixel (Px, Py) on the screen do
-    x0 := scaled x coordinate of pixel (scaled to lie in the Mandelbrot X scale (-2.00, 0.47))
-    y0 := scaled y coordinate of pixel (scaled to lie in the Mandelbrot Y scale (-1.12, 1.12))
-    x := 0.0
-    y := 0.0
-    iteration := 0
-    max_iteration := 1000
-    while (x*x + y*y ≤ 2*2 AND iteration < max_iteration) do
-        xtemp := x*x - y*y + x0
-        y := 2*x*y + y0
-        x := xtemp
-        iteration := iteration + 1
-    
-    color := palette[iteration]
-    plot(Px, Py, color)
-*/
+ * from wikipedia (https://en.wikipedia.org/wiki/Mandelbrot_set) 
+ * pseudo code to generate the mandlebrot set
+ *
+ * for each pixel (Px, Py) on the screen do
+ *     x0 := scaled x coordinate of pixel (scaled to lie in the Mandelbrot X scale (-2.00, 0.47))
+ *     y0 := scaled y coordinate of pixel (scaled to lie in the Mandelbrot Y scale (-1.12, 1.12))
+ *     x := 0.0
+ *     y := 0.0
+ *     iteration := 0
+ *     max_iteration := 1000
+ *     while (x*x + y*y ≤ 2*2 AND iteration < max_iteration) do
+ *         xtemp := x*x - y*y + x0
+ *         y := 2*x*y + y0
+ *         x := xtemp
+ *         iteration := iteration + 1
+ *     
+ *     color := palette[iteration]
+ *     plot(Px, Py, color)
+ */
  
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#include <gmp.h>
+#include <mpfr.h>
+
+#define PRECISION 128
+/* if PRECISION is increased then NUMLEN needs to increase */
+#define NUMLEN 50
 
 #define MAXITER 1000
 
 struct Color { int r, g, b; };
+
+/* ----------------------------------------------------------------------------
+ * grayscale - return a gray scale rgb value representing the iteration count
+ *             value obtained by calculate_point
+ *
+ * Params
+ * iteration (int) - interation value calculated at a point
+ * Return
+ * color (struct of 3 int vals) - RGB color value
+ */
+static struct Color grayscale(int it, int maxiter)
+{
+	struct Color c; /*  = { 0, 0, 0 } */
+	c.r = 0;
+	c.g = 0;
+	c.b = 0;
+
+	if (it < maxiter)
+	{
+		/*int idx = (int)ceil( sqrt( sqrt( (double)it / (double)MAXITER ) ) * 255.0 );*/
+		int idx = (int)ceil( sqrt( (double)it / (double)maxiter ) * 255.0 );
+		c.r = idx;
+		c.g = idx;
+		c.b = idx;
+	}
+	return c;
+}
+
+/* ----------------------------------------------------------------------------
+ * sqrt_gradient - first attempt at a procedural color gradient
+ *
+ * Params
+ * it (int) - the iteration value calculated at a point
+ * Returns
+ * color (struct if 3 ints) - RGB color value
+ */
+static struct Color sqrt_gradient(int it, int maxiter)
+{
+	struct Color c;
+	if (it < maxiter)
+	{
+		double m = sqrt(sqrt( (double)it / (double)maxiter ));
+		/*printf("sqrt(it/max) = %5.2f | ", m);*/
+		c.r = (int)floor((( sin(0.65 * m * 85.0) *0.5)+0.5) *255);
+		c.g = (int)floor((( sin(0.45 * m * 85.0) *0.5)+0.5) *255);
+		c.b = (int)floor((( sin(0.25 * m * 85.0) *0.5)+0.5) *255);
+		if (c.r>255 || c.g>255 || c.b>255 || c.r<0 || c.g<0 || c.b<0)
+			printf("col(%5.6f,%5.6f,%5.6f) | ",sin(0.30 * m * 20.0),sin(0.45 * m * 20.0),sin(0.65 * m * 20.0));
+	}
+	else 
+	{
+		c.r = 0; c.g = 0; c.b = 0;
+	}
+	return c;
+}
+
+/* ----------------------------------------------------------------------------
+ * scaled - return a value in the range Xe to Xs given a location in a larger
+ *          integer range
+ * Params
+ * x1 (int) - position in large integer range
+ * sz (int) - size of integer range
+ * Xs (double) - start of smaller range
+ * Xe (double) - end of smaller range
+ * Returns
+ * (double) - the calculated scaled value
+ */
+static double scaled(int x1, int sz, double Xs, double Xe)
+{
+	return ( ((double)x1 / (double)sz) * (Xe-Xs) ) + Xs;
+}
 
 /* ----------------------------------------------------------------------------
  * calculate_point
@@ -77,205 +153,280 @@ static int calculate_point(double x0, double y0, int maxiter)
 }
 
 /* ----------------------------------------------------------------------------
- * grayscale - return a gray scale rgb value representing the iteration count
- *             value obtained by calculate_point
- *
- * Params
- * iteration (int) - interation value calculated at a point
- * Return
- * color (struct of 3 int vals) - RGB color value
- */
-static struct Color grayscale(int it, int maxiter)
-{
-	struct Color c; /*  = { 0, 0, 0 } */
-	c.r = 0;
-	c.g = 0;
-	c.b = 0;
-
-	if (it < maxiter)
-	{
-		/*int idx = (int)ceil( sqrt( sqrt( (double)it / (double)MAXITER ) ) * 255.0 );*/
-		int idx = (int)ceil( sqrt( (double)it / (double)maxiter ) * 255.0 );
-		c.r = idx;
-		c.g = idx;
-		c.b = idx;
-	}
-	return c;
-}
-
-/* ----------------------------------------------------------------------------
- * gradient1 - first attempt at a procedural color gradient
- *
- * Params
- * it (int) - the iteration value calculated at a point
- * Returns
- * color (struct if 3 ints) - RGB color value
- */
-static struct Color gradient1(int it, int maxiter)
-{
-	struct Color c;
-	if (it < maxiter)
-	{
-		double m = sqrt(sqrt( (double)it / (double)maxiter ));
-		/*printf("sqrt(it/max) = %5.2f | ", m);*/
-		c.r = (int)floor((( sin(0.65 * m * 85.0) *0.5)+0.5) *255);
-		c.g = (int)floor((( sin(0.45 * m * 85.0) *0.5)+0.5) *255);
-		c.b = (int)floor((( sin(0.25 * m * 85.0) *0.5)+0.5) *255);
-		if (c.r>255 || c.g>255 || c.b>255 || c.r<0 || c.g<0 || c.b<0)
-			printf("col(%5.6f,%5.6f,%5.6f) | ",sin(0.30 * m * 20.0),sin(0.45 * m * 20.0),sin(0.65 * m * 20.0));
-	}
-	else 
-	{
-		c.r = 0; c.g = 0; c.b = 0;
-	}
-	return c;
-}
-/* ----------------------------------------------------------------------------
- * scaled - return a value in the range Xe to Xs given a location in a larger
- *          integer range
- * Params
- * x1 (int) - position in large integer range
- * sz (int) - size of integer range
- * Xs (double) - start of smaller range
- * Xe (double) - end of smaller range
- * Returns
- * (double) - the calculated scaled value
- */
-static double scaled(int x1, int sz, double Xs, double Xe)
-{
-	return ( ((double)x1 / (double)sz) * (Xe-Xs) ) + Xs;
-}
-/* ----------------------------------------------------------------------------
- * Python function interface - mandlebrot
- *
- * Params - (contained in PyObject *args)
- * ssize (int) - size of display screen/window (assumed square)
- * Xs, Xe, Ys, Ye (double) bounds of mandlebrot set to calculate
- *
- * Returns a PyList of PyTuple containing iteration, color and screen coord values 
- *         for all the calculated points
- */
-static PyObject * mandlebrot(PyObject *self, PyObject *args)
-{
-	int ssize = 0;
-	double Xs, Xe, Ys, Ye;
-	
-	if (!PyArg_ParseTuple(args, "idddd", &ssize, &Xs, &Xe, &Ys, &Ye))
-		return NULL;
-
-	PyObject *points = PyList_New(0);
-    
-	for(int Dy = 0; Dy < ssize; Dy++)
-	{
-		for(int Dx = 0; Dx < ssize; Dx++)
-		{
-			double x0 = scaled(Dx, ssize, Xs, Xe);
-			double y0 = scaled(Dy, ssize, Ys, Ye);
-			struct Color rgb;
-			int iter;
-
-			iter = calculate_point(x0, y0, MAXITER);
-			rgb = grayscale(iter, MAXITER);
-			
-			/* added color to PyList, but still need x,y coords*/
-			PyObject *pycolor = PyTuple_New(6);
-			PyTuple_SetItem(pycolor, 0, PyLong_FromLong((long) iter));
-			PyTuple_SetItem(pycolor, 1, PyLong_FromLong((long) rgb.r));
-			PyTuple_SetItem(pycolor, 2, PyLong_FromLong((long) rgb.g));
-			PyTuple_SetItem(pycolor, 3, PyLong_FromLong((long) rgb.b));
-			PyTuple_SetItem(pycolor, 4, PyLong_FromLong((long) Dx));
-			PyTuple_SetItem(pycolor, 5, PyLong_FromLong((long) Dy));
-			/*PyTuple_SetItem(pycolor, 0, PyLong_FromLong((long) iter));
-			PyTuple_SetItem(pycolor, 1, PyFloat_FromDouble((double) x0));
-			PyTuple_SetItem(pycolor, 2, PyFloat_FromDouble((double) y0));*/
-			PyList_Append(points, pycolor);
-			Py_DECREF(pycolor);
-		}
-	}
-	return points;
-}
-
-/* ----------------------------------------------------------------------------
- * Python function interface - mandlebrot_bytearray
  * mandlebrot_bytearray - return the results as a list of color values to be 
  *                        converted to a bytesarray by the caller
  *
- * Params - (contained in PyObject *args)
+ * Params (in)
  * wsize (int) - width of display screen/window
  * hsize (int) - height of display screen/window
+ * maxiter (int) - escape value for mandlebrot calc
  * Xs, Xe, Ys, Ye (double) bounds of mandlebrot set to calculate
- *
- * Returns a PyList containing color values for all the calculated points
+ * Params (out)
+ * bytearray (array of ints) for storing color values of calculated points
  */
-static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
+void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/display/window */
+                            const unsigned int hsize,   /* height of screen/display/window */
+                            const unsigned int maxiter, /* max iterations before escape */
+                            const double Xs, /* string repr of mpfr_t for X top left */
+                            const double Xe, /* string repr of mpfr_t for X top right */
+                            const double Ys, /* string repr of mpfr_t for Y bottom left */
+                            const double Ye, /* string repr of mpfr_t for Y bottom right */
+                            int bytearray[]  /* reference/pointer to result list of color values */
+                            )
 {
-	int wsize = 0;
-	int hsize = 0;
-	int maxiter = 0;
-	double Xs, Xe, Ys, Ye;
-	
-	if (!PyArg_ParseTuple(args, "iiddddi", &wsize, &hsize, &Xs, &Xe, &Ys, &Ye, &maxiter))
-		return NULL;
-
-	/*printf("params, %d,%d %1.20lf,%1.20lf %1.20lf,%1.20lf  %d\n", wsize,hsize, Xs,Xe, Ys,Ye, maxiter);*/
-	PyObject *points = PyList_New(0);
-	
+	unsigned int bc = 0;
 	double xstep = (Xe-Xs) / (float)wsize;
 	double ystep = (Ye-Ys) / (float)hsize;
 
-	for(int Dy = 0; Dy < hsize; Dy++)
-	/*for(double y0 = Ys; y0 < Ye; y0 = y0 + ystep)*/
+	for(unsigned int Dy = 0; Dy < hsize; Dy++)
 	{
-		for(int Dx = 0; Dx < wsize; Dx++)
-	    /*for(double x0 = Xs; x0 < Xe; x0 = x0 + xstep)*/
+		for(unsigned int Dx = 0; Dx < wsize; Dx++)
 		{
-			/*double x0 = scaled(Dx, wsize, Xs, Xe);
-			double y0 = scaled(Dy, hsize, Ys, Ye);*/
 			double x0 = Dx*xstep + Xs;
 			double y0 = Dy*ystep + Ys;
 			struct Color rgb;
 			int iter;
 
 			iter = calculate_point(x0, y0, maxiter);
-			/*if (iter == MAXITER)
-				iter = 0;*/
+
 			/*rgb = grayscale(iter, maxiter);*/
-			rgb = gradient1(iter, maxiter);
-			/*sh = shade(iter);*/
+			rgb = sqrt_gradient(iter, maxiter);
 			
 			/* just add the rgb values to the list */
-			PyList_Append(points, PyLong_FromLong((long) rgb.r));
-			PyList_Append(points, PyLong_FromLong((long) rgb.g));
-			PyList_Append(points, PyLong_FromLong((long) rgb.b));
-
-			/*PyList_Append(points, PyLong_FromLong((long) iter));
-			PyList_Append(points, PyLong_FromLong((long) iter));
-			PyList_Append(points, PyLong_FromLong((long) iter));*/
+			bytearray[bc] = rgb.r;
+			bc++;
+			//printf("bc %d g %d\n", bc, rgb.g);
+			bytearray[bc] = rgb.g;
+			bc++;
+			//printf("bc %d b %d\n", bc, rgb.b);
+			bytearray[bc] = rgb.b;
+			bc++;
 		}
 	}
-	return points;
 }
 
 /* ----------------------------------------------------------------------------
- * Python Module Stuff  - from docs.python.org/3/extending/extending.html
+ * mandlebrot set using mpfr library
+ *
+ * Params
+ * xsize, ysize   - 
+ * maxiter        - 
+ * Xs, Xe, Ys, Ye - 
+ *
+ * (out)bytearray - 
+ *
+ * Return int
  */
-static PyMethodDef MandlebrotMethods[] = { 
-	{"mandlebrot",           mandlebrot,           METH_VARARGS, "calculate mandlebrot set" },
-	{"mandlebrot_bytearray", mandlebrot_bytearray, METH_VARARGS, "calculate mandlebrot set into a bytearray" },
-	{NULL, NULL, 0 , NULL} 
-};
-
-static struct PyModuleDef mandlebrotmodule = {
-	PyModuleDef_HEAD_INIT,
-	"mandlebrot",
-	"Python interface for the mandlebrot set C library", /* module documentation */
-	-1, 
-	MandlebrotMethods
-};
-
-PyMODINIT_FUNC
-PyInit_mandlebrot(void)
+void mandlebrot_mpfr_c(const unsigned int xsize,   /* width of screen/display/window */
+                         const unsigned int ysize,   /* height of screen/display/window */
+                         const unsigned int maxiter, /* max iterations before escape */
+                         const char* Xs_str, /* string repr of mpfr_t for X top left */
+                         const char* Xe_str, /* string repr of mpfr_t for X top right */
+                         const char* Ys_str, /* string repr of mpfr_t for Y bottom left */
+                         const char* Ye_str, /* string repr of mpfr_t for Y bottom right */
+                         int bytearray[] /* reference/pointer to result list of color values*/
+                         )
 {
-	return PyModule_Create(&mandlebrotmodule);
+    mpfr_t x, y, xsq, ysq, xtmp, x0, y0, Xe, Xs, Ye, Ys; /* algorithm values */
+    mpfr_t a, two, four, sum_xsq_ysq;                    /* tmp vals */
+    unsigned int iteration = 0;
+    unsigned int bc = 0;
+    struct Color rgb;
+
+    //printf("mand_mpfr_c %s %s   %s %s   %d x %d %d\n", Xs_str, Xe_str, Ys_str, Ye_str, xsize, ysize, maxiter);
+
+    /* create all mpfr_t vars */
+    mpfr_inits2(PRECISION, x, y, xsq, ysq, xtmp, x0, y0, Xs, Xe, Ys, Ye, (mpfr_ptr)NULL); 
+    mpfr_inits2(PRECISION, a, two, four, sum_xsq_ysq, (mpfr_ptr)NULL);
+
+    /* get hight precision floats from input strings */
+    /*mpfr_strtofr(Xs, Xs_str, NULL, 10, MPFR_RNDD);
+    mpfr_strtofr(Xe, Xe_str, NULL, 10, MPFR_RNDD);
+    mpfr_strtofr(Ys, Ys_str, NULL, 10, MPFR_RNDD);
+    mpfr_strtofr(Ye, Ye_str, NULL, 10, MPFR_RNDD);*/
+	mpfr_set_str(Xs, Xs_str, 10, MPFR_RNDD);
+	mpfr_set_str(Xe, Xe_str, 10, MPFR_RNDD);
+	mpfr_set_str(Ys, Ys_str, 10, MPFR_RNDD);
+	mpfr_set_str(Ye, Ye_str, 10, MPFR_RNDD);
+	
+	printf("mandlebrot_mpfr_c (in) \n");
+    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDD); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDD); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDD); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDD); putchar('\n');
+    putchar('\n');
+
+    /* initialise all mpfr_t vars */
+    mpfr_set_d(x, 0.0, MPFR_RNDD);
+    mpfr_set_d(y, 0.0, MPFR_RNDD);
+    mpfr_set_d(xsq, 0.0, MPFR_RNDD);
+    mpfr_set_d(ysq, 0.0, MPFR_RNDD);
+    mpfr_set_d(xtmp, 0.0, MPFR_RNDD);
+    mpfr_set_d(x0, 0.0, MPFR_RNDD);
+    mpfr_set_d(y0, 0.0, MPFR_RNDD);
+    mpfr_set_d(a, 0.0, MPFR_RNDD);
+    mpfr_set_d(two, 2.0, MPFR_RNDD);
+    mpfr_set_d(four, 4.0, MPFR_RNDD);
+    mpfr_set_d(sum_xsq_ysq, 0.0, MPFR_RNDD);
+
+    for (unsigned int Dy = 0; Dy < ysize; Dy++)
+    {
+        for (unsigned int Dx = 0; Dx < xsize; Dx++)
+        {
+            iteration = 0;
+
+            /* double x0 = scaled(Dx, xsize, Xs, Xe); */
+            mpfr_sub(a, Xe, Xs, MPFR_RNDD);
+            mpfr_mul_d(a, a, ((double)Dx/(double)xsize), MPFR_RNDD);
+            mpfr_add(x0, a, Xs, MPFR_RNDD);
+
+            /* double y0 = scaled(Dy, ysize, Ys, Ye); */
+            mpfr_sub(a, Ye, Ys, MPFR_RNDD);
+            mpfr_mul_d(a, a, ((double)Dy/(double)ysize), MPFR_RNDD);
+            mpfr_add(y0, a, Ys, MPFR_RNDD);
+
+            /* reset some vars for each pixel */
+            mpfr_set_d(x, 0.0, MPFR_RNDD);
+            mpfr_set_d(y, 0.0, MPFR_RNDD);
+            mpfr_set_d(sum_xsq_ysq, 0.0, MPFR_RNDD);
+
+            /* while (xsq+ysq <= 4 && iteration < maxiter */
+            while ((mpfr_cmp(sum_xsq_ysq, four) <= 0) && (iteration < maxiter))  
+            {
+                mpfr_mul(xsq, x, x, MPFR_RNDD);      /* xsq = x*x; */
+                mpfr_mul(ysq, y, y, MPFR_RNDD);      /* ysq = y*y; */
+                mpfr_sub(xtmp, xsq, ysq, MPFR_RNDD); /* xtemp = xsq - ysq + x0; */
+                mpfr_add(xtmp, xtmp, x0, MPFR_RNDD);
+                mpfr_mul(a, two, x, MPFR_RNDD);      /* y = 2.0*x*y + y0; */
+                mpfr_mul(a, a, y, MPFR_RNDD);
+                mpfr_add(y, a, y0, MPFR_RNDD);
+                mpfr_swap(x, xtmp);                  /* x = xtemp; */
+
+                /* calcs for while test */
+                mpfr_add(sum_xsq_ysq, xsq, ysq, MPFR_RNDD);
+                iteration++;
+                //printf("iteration %d\n", iteration);
+            }
+            /* create a color value and add to result list */
+            rgb = sqrt_gradient(iteration, maxiter);
+            //printf("bc %d r %d\n", bc, rgb.r);
+            bytearray[bc] = rgb.r;
+            bc++;
+            //printf("bc %d g %d\n", bc, rgb.g);
+            bytearray[bc] = rgb.g;
+            bc++;
+            //printf("bc %d b %d\n", bc, rgb.b);
+            bytearray[bc] = rgb.b;
+            bc++;
+        }
+    }
 }
 
+/* ----------------------------------------------------------------------------
+ */
+void mpfr_zoom_in(       const char** Xs_str, /* string repr of mpfr_t for X top left */
+                         const char** Xe_str, /* string repr of mpfr_t for X top right */
+                         const char** Ys_str, /* string repr of mpfr_t for Y bottom left */
+                         const char** Ye_str, /* string repr of mpfr_t for Y bottom right */
+                         const unsigned int pX, /* */
+                         const unsigned int pY, /* */
+                         const unsigned int w, /* */
+                         const unsigned int h  /* */
+                        )
+{
+    mpfr_t Xe, Xs, Ye, Ys; /* inputs converted from strings */
+	mpfr_t lx, ly, TLx, TLy, BRx, BRy;
+	mpfr_exp_t exp;
+	
+	mpfr_inits2(PRECISION, Xe, Xs, Ye, Ys, (mpfr_ptr)NULL);
+	mpfr_inits2(PRECISION, lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
+	
+	/*mpfr_strtofr(Xs, *Xs_str, NULL, 10, MPFR_RNDD);
+	mpfr_strtofr(Xe, *Xe_str, NULL, 10, MPFR_RNDD);
+	mpfr_strtofr(Ys, *Ys_str, NULL, 10, MPFR_RNDD);
+	mpfr_strtofr(Ye, *Ye_str, NULL, 10, MPFR_RNDD);*/
+
+	mpfr_set_str(Xs, *Xs_str, 10, MPFR_RNDD);
+	mpfr_set_str(Xe, *Xe_str, 10, MPFR_RNDD);
+	mpfr_set_str(Ys, *Ys_str, 10, MPFR_RNDD);
+	mpfr_set_str(Ye, *Ye_str, 10, MPFR_RNDD);
+
+	printf("mpfr_zoom_in (in) \n");
+    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDD); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDD); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDD); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDD); putchar('\n');
+    putchar('\n');
+
+	/* double y0 = scaled(pX, xsz, Xs, Xe); */
+	mpfr_sub(lx, Xe, Xs, MPFR_RNDD);
+	mpfr_mul_d(lx, lx, ((double)pX/(double)w), MPFR_RNDD);
+	mpfr_add(lx, lx, Xs, MPFR_RNDD);
+
+	/* double x0 = scaled(pX, xsz, Xs, Xe); */
+	mpfr_sub(ly, Xe, Xs, MPFR_RNDD);
+	mpfr_mul_d(ly, ly, ((double)pY/(double)h), MPFR_RNDD);
+	mpfr_add(ly, ly, Xs, MPFR_RNDD);
+
+	/* TLx = loc_x - abs((xe-xs)/3) */
+	mpfr_sub(TLx, Xe, Xs, MPFR_RNDD);
+	mpfr_div_ui(TLx, TLx, 3, MPFR_RNDD);
+	mpfr_abs(TLx, TLx, MPFR_RNDD);
+	mpfr_sub(Xs, lx, TLx, MPFR_RNDD);
+	
+	/* TLy = loc_y - abs((ye-ys)/3) */
+	mpfr_sub(TLy, Ye, Ys, MPFR_RNDD);
+	mpfr_div_ui(TLy, TLy, 3, MPFR_RNDD);
+	mpfr_abs(TLy, TLy, MPFR_RNDD);
+	mpfr_sub(Ys, ly, TLy, MPFR_RNDD);
+	
+	/* BRx = loc_x + abs((xe-xs)/3) */
+	mpfr_sub(BRx, Xe, Xs, MPFR_RNDD);
+	mpfr_div_ui(BRx, BRx, 3, MPFR_RNDD);
+	mpfr_abs(BRx, BRx, MPFR_RNDD);
+	mpfr_add(Xe, lx, BRx, MPFR_RNDD);
+	
+	/* BRy = loc_y + abs((ye-ys)/3) */
+	mpfr_sub(BRy, Ye, Ys, MPFR_RNDD);
+	mpfr_div_ui(BRy, BRy, 3, MPFR_RNDD);
+	mpfr_abs(BRy, BRy, MPFR_RNDD);
+	mpfr_add(Ye, lx, BRy, MPFR_RNDD);
+	
+	printf("mpfr_zoom_in (out) \n");
+    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDD); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDD); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDD); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDD); putchar('\n');
+    putchar('\n');
+	
+	/* convert Xs, Xe, Ys, Ye back into strings for output */
+	/* *Xs_str = mpfr_get_str(NULL, &exp, 10, 0, Xs, MPFR_RNDD);
+	printf("exp = %ld\n", exp);
+	*Xe_str = mpfr_get_str(NULL, &exp, 10, 0, Xe, MPFR_RNDD);
+	printf("exp = %ld\n", exp);
+	*Ys_str = mpfr_get_str(NULL, &exp, 10, 0, Ys, MPFR_RNDD);
+	printf("exp = %ld\n", exp);
+	*Ye_str = mpfr_get_str(NULL, &exp, 10, 0, Ye, MPFR_RNDD);
+	printf("exp = %ld\n", exp);*/
+	
+	mpfr_snprintf(*Xs_str,50, "%.45RNf", Xs);
+	mpfr_snprintf(*Xe_str,50, "%.45RNf", Xe);
+	mpfr_snprintf(*Ys_str,50, "%.45RNf", Ys);
+	mpfr_snprintf(*Ye_str,50, "%.45RNf", Ye);
+}/* -2.000000000000000000000000000000000000000e0 */
+/*
+    loc_x = scaled(pos[0], window_size, xs, xe)
+    loc_y = scaled(pos[1], window_size, ys, ye)
+
+    TLx = loc_x - abs((xe-xs)/3)
+    TLy = loc_y - abs((ye-ys)/3)
+    BRx = loc_x + abs((xe-xs)/3)
+    BRy = loc_y + abs((ye-ys)/3)
+
+    return TL[0], BR[0], TL[1], BR[1]
+*/
+
+
+
+/* ----------------------------------------------------------------------------
+ */
