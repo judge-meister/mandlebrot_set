@@ -15,7 +15,7 @@ except ModuleNotFoundError:
     print("\nHave you built the mandlebrot C module ? try running ./build.sh\n")
     sys.exit()
 from PIL import Image
-    
+
 X1=-2.0
 X2=1.0
 Y1=-1.5
@@ -83,14 +83,14 @@ def draw_plot(xs, xe, ys, ye):
 
     #print("displayed in ", time.time()-now, " secs")
 
-def zoom_in_mpfr(xs, xe, ys, ye, pos):
+def zoom_in_mpfr(pos):
     """string params for mpfr"""
-    TL_BR = mandlebrot.mandlebrot_zoom_in(xs, xe, ys, ye, pos[0], pos[1], window_size, window_size)
+    TL_BR = mandlebrot.mandlebrot_zoom_in(pos[0], pos[1], window_size, window_size)
     return TL_BR
 
 def draw_plot_mpfr(xs, xe, ys, ye):
     """params are strings representing real/imag value ranges"""
-    
+
     now = time.time()
 
     sz = window_size
@@ -115,16 +115,16 @@ def draw_plot_mpfr(xs, xe, ys, ye):
 def display_help():
     help = """
     How to control the Mandlebrot Set viewer.
-    
+
     Initially move the mouse to somewhere on the edge of the black region and left click, you will zoom in.  Now Repeat.
     To zoom out again use the right mouse button.
-    
+
     Alternatively once the mouse pointer is within the window you can use the keyboard.
       cursor keys 'up', 'down', 'left', 'right' will move the mouse pointer.
       'z' to zoom in and 'x' to zoom out again.
-      
+
     Use 'c' to reset back to the start.
-    
+
     To exit use 'q' or 'esc'
     """
     print(help)
@@ -151,10 +151,10 @@ def event_loop(xs, xe, ys, ye):
                 xs,xe,ys,ye = X1,X2,Y1,Y2
                 #draw_plot(xs, xe, ys, ye)
                 draw_plot_mpfr(xs, xe, ys, ye)
-                
+
             if event.type == pygame.KEYUP and event.key == pygame.K_z:
                 #xs, xe, ys, ye = zoom_in(xs, xe, ys, ye, mouse_pos)
-                xs, xe, ys, ye = zoom_in_mpfr(xs, xe, ys, ye, mouse_pos)
+                zoom_in_mpfr(mouse_pos)
                 zoom_level += 1
                 print("zoom level ", zoom_level)
                 #draw_plot(xs, xe, ys, ye)
@@ -187,12 +187,12 @@ def event_loop(xs, xe, ys, ye):
             if event.type == pygame.KEYUP and event.key == pygame.K_RIGHT:
                 if mouse_pos[0] < window_size-1:
                     pygame.mouse.set_pos(mouse_pos[0]+1, mouse_pos[1])
-                
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 pressed = pygame.mouse.get_pressed()
                 if pressed[0]: # Button 1
-                    #xs, xe, ys, ye = zoom_in(xs, xe, ys, ye, mouse_pos)
+                    mandlebrot_zoom_in(mouse_pos)
                     zoom_level += 1
                     print("zoom level ", zoom_level)
                     #draw_plot(xs, xe, ys, ye)
@@ -210,7 +210,7 @@ def event_loop(xs, xe, ys, ye):
 
 def main():
     display_help()
-    
+
     xs = repr(X1)
     xe = repr(X2)
     ys = repr(Y1)
@@ -218,18 +218,18 @@ def main():
 
     mandlebrot.setup()
     mandlebrot.initialize(xs, xe, ys, ye)
-    
+
     draw_plot_mpfr(xs, xe, ys, ye)
     event_loop(xs, xe, ys, ye)
 
 
 if __name__ == '__main__':
     main()
-    
-    
+
+
 """
 Values to aim for
-    
+
 real=-1.7400623825
 7933990522
 0844167065
@@ -259,7 +259,7 @@ real=-1.7400623825
 2629105433
 6486959460
 03865
-    
+
 img=0.0281753397
 7921104899
 2411521144

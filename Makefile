@@ -11,6 +11,7 @@ pymodule:
 	python3 setup.py build_ext --inplace
 
 
+.PHONY: test
 test:
 	rm -f test_mandlebrot_main
 	gcc  test_mandlebrot_main.c mandlebrot.c -lmpfr -lm   -o test_mandlebrot_main
@@ -18,5 +19,3 @@ test:
 
 valgrind: test
 	valgrind --leak-check=full ./test_mandlebrot_main
-
-

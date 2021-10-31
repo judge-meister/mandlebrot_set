@@ -8,12 +8,12 @@
  *
  * - make MAXITER an input parameter so we can decide from within python what the
  * escape value should be.  Will also allow us to create the "MandleBhuda".
- * - remove the PyList.Append() calls from the main loop so we can Releasing the 
+ * - remove the PyList.Append() calls from the main loop so we can Releasing the
  * GIL and start to look at threading.
  */
 
 /* ----------------------------------------------------------------------------
- * from wikipedia (https://en.wikipedia.org/wiki/Mandelbrot_set) 
+ * from wikipedia (https://en.wikipedia.org/wiki/Mandelbrot_set)
  * pseudo code to generate the mandlebrot set
  *
  * for each pixel (Px, Py) on the screen do
@@ -28,11 +28,11 @@
  *         y := 2*x*y + y0
  *         x := xtemp
  *         iteration := iteration + 1
- *     
+ *
  *     color := palette[iteration]
  *     plot(Px, Py, color)
  */
- 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -101,7 +101,7 @@ static struct Color sqrt_gradient(int it, int maxiter)
 		if (c.r>255 || c.g>255 || c.b>255 || c.r<0 || c.g<0 || c.b<0)
 			printf("col(%5.6f,%5.6f,%5.6f) | ",sin(0.30 * m * 20.0),sin(0.45 * m * 20.0),sin(0.65 * m * 20.0));
 	}
-	else 
+	else
 	{
 		c.r = 0; c.g = 0; c.b = 0;
 	}
@@ -121,15 +121,15 @@ static struct Color sqrt_gradient(int it, int maxiter)
  */
 static double scaled(int x1, int sz, double Xs, double Xe)
 {
-	return ( ((double)x1 / (double)sz) * (Xe-Xs) ) + Xs;
+    return ( ((double)x1 / (double)sz) * (Xe-Xs) ) + Xs;
 }
 
 /* ----------------------------------------------------------------------------
  * calculate_point
- * run the z = z^2 + c algorithm for the point provided to assertain if the 
+ * run the z = z^2 + c algorithm for the point provided to assertain if the
  * point is inside or outside of the mandlebrot set
  *
- * Params 
+ * Params
  * x0, y0 (double) location to calculate for
  * maxiter (int) the escape value
  *
@@ -144,7 +144,7 @@ static int calculate_point(double x0, double y0, int maxiter)
 	double ysq = 0.0;
 	int iteration = 0;
 	double xtemp = 0.0;
-	
+
 	while (((xsq + ysq) <= 2*2) && iteration < maxiter)
 	{
 		xsq = x*x;
@@ -158,7 +158,7 @@ static int calculate_point(double x0, double y0, int maxiter)
 }
 
 /* ----------------------------------------------------------------------------
- * mandlebrot_bytearray - return the results as a list of color values to be 
+ * mandlebrot_bytearray - return the results as a list of color values to be
  *                        converted to a bytesarray by the caller
  *
  * Params (in)
@@ -196,7 +196,7 @@ void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/displ
 
 			/*rgb = grayscale(iter, maxiter);*/
 			rgb = sqrt_gradient(iter, maxiter);
-			
+
 			/* just add the rgb values to the list */
 			bytearray[bc] = rgb.r;
 			bc++;
@@ -215,13 +215,13 @@ void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/displ
 void setup_c()
 {
     /* create all mpfr_t vars */
-    mpfr_inits2(PRECISION, Xs, Xe, Ys, Ye, (mpfr_ptr)NULL); 
+    mpfr_inits2(PRECISION, Xs, Xe, Ys, Ye, (mpfr_ptr)NULL);
     printf("called setup_c()\n");
 }
 
 /* ----------------------------------------------------------------------------
  */
-void initialize_c( 
+void initialize_c(
        const char* Xs_str, /* string repr of mpfr_t for X top left */
        const char* Xe_str, /* string repr of mpfr_t for X top right */
        const char* Ys_str, /* string repr of mpfr_t for Y bottom left */
@@ -229,26 +229,26 @@ void initialize_c(
      )
 {
     printf("called init_c()\n");
-	mpfr_set_str(Xs, Xs_str, 10, MPFR_RNDD);
-    printf("called init_c(Xs)\n");
-	mpfr_set_str(Xe, Xe_str, 10, MPFR_RNDD);
-    printf("called init_c(Xe)\n");
-	mpfr_set_str(Ys, Ys_str, 10, MPFR_RNDD);
-    printf("called init_c(Ys)\n");
-	mpfr_set_str(Ye, Ye_str, 10, MPFR_RNDD);
-    printf("called init_c(Ye)\n");
-	
+    mpfr_set_str(Xs, Xs_str, 10, MPFR_RNDD);
+    //printf("called init_c(Xs)\n");
+    mpfr_set_str(Xe, Xe_str, 10, MPFR_RNDD);
+    //printf("called init_c(Xe)\n");
+    mpfr_set_str(Ys, Ys_str, 10, MPFR_RNDD);
+    //printf("called init_c(Ys)\n");
+    mpfr_set_str(Ye, Ye_str, 10, MPFR_RNDD);
+    //printf("called init_c(Ye)\n");
+
 }
 
 /* ----------------------------------------------------------------------------
  * mandlebrot set using mpfr library
  *
  * Params
- * xsize, ysize   - 
- * maxiter        - 
- * Xs, Xe, Ys, Ye - 
+ * xsize, ysize   -
+ * maxiter        -
+ * Xs, Xe, Ys, Ye -
  *
- * (out)bytearray - 
+ * (out)bytearray -
  *
  * Return int
  */
@@ -271,7 +271,7 @@ void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/
     //printf("mand_mpfr_c %s %s   %s %s   %d x %d %d\n", Xs_str, Xe_str, Ys_str, Ye_str, xsize, ysize, maxiter);
 
     /* create all mpfr_t vars */
-    mpfr_inits2(PRECISION, x, y, xsq, ysq, xtmp, x0, y0/*, Xs, Xe, Ys, Ye*/, (mpfr_ptr)NULL); 
+    mpfr_inits2(PRECISION, x, y, xsq, ysq, xtmp, x0, y0/*, Xs, Xe, Ys, Ye*/, (mpfr_ptr)NULL);
     mpfr_inits2(PRECISION, a, two, four, sum_xsq_ysq, (mpfr_ptr)NULL);
 
     /* get high precision floats from input strings */
@@ -279,12 +279,12 @@ void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/
     mpfr_strtofr(Xe, Xe_str, NULL, 10, MPFR_RNDD);
     mpfr_strtofr(Ys, Ys_str, NULL, 10, MPFR_RNDD);
     mpfr_strtofr(Ye, Ye_str, NULL, 10, MPFR_RNDD);*/
-	/*mpfr_set_str(Xs, Xs_str, 10, MPFR_RNDD);
-	mpfr_set_str(Xe, Xe_str, 10, MPFR_RNDD);
-	mpfr_set_str(Ys, Ys_str, 10, MPFR_RNDD);
-	mpfr_set_str(Ye, Ye_str, 10, MPFR_RNDD);*/
-	
-	printf("mandlebrot_mpfr_c (in) \n");
+    /*mpfr_set_str(Xs, Xs_str, 10, MPFR_RNDD);
+    mpfr_set_str(Xe, Xe_str, 10, MPFR_RNDD);
+    mpfr_set_str(Ys, Ys_str, 10, MPFR_RNDD);
+    mpfr_set_str(Ye, Ye_str, 10, MPFR_RNDD);*/
+
+    printf("mandlebrot_mpfr_c (in) \n");
     mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDD); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDD); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDD); putchar('\n');
@@ -326,7 +326,7 @@ void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/
             mpfr_set_d(sum_xsq_ysq, 0.0, MPFR_RNDD);
 
             /* while (xsq+ysq <= 4 && iteration < maxiter */
-            while ((mpfr_cmp(sum_xsq_ysq, four) <= 0) && (iteration < maxiter))  
+            while ((mpfr_cmp(sum_xsq_ysq, four) <= 0) && (iteration < maxiter))
             {
                 mpfr_mul(xsq, x, x, MPFR_RNDD);      /* xsq = x*x; */
                 mpfr_mul(ysq, y, y, MPFR_RNDD);      /* ysq = y*y; */
@@ -359,96 +359,99 @@ void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/
 
 /* ----------------------------------------------------------------------------
  */
-void mpfr_zoom_in(       const char** Xs_str, /* string repr of mpfr_t for X top left */
-                         const char** Xe_str, /* string repr of mpfr_t for X top right */
-                         const char** Ys_str, /* string repr of mpfr_t for Y bottom left */
-                         const char** Ye_str, /* string repr of mpfr_t for Y bottom right */
+void mpfr_zoom_in(      /* const char** Xs_str, / * string repr of mpfr_t for X top left */
+                        /* const char** Xe_str, / * string repr of mpfr_t for X top right */
+                        /* const char** Ys_str, / * string repr of mpfr_t for Y bottom left */
+                        /* const char** Ye_str, / * string repr of mpfr_t for Y bottom right */
                          const unsigned int pX, /* */
                          const unsigned int pY, /* */
                          const unsigned int w, /* */
                          const unsigned int h  /* */
                         )
 {
-    mpfr_t Xe, Xs, Ye, Ys; /* inputs converted from strings */
-	mpfr_t lx, ly, TLx, TLy, BRx, BRy;
-	/*mpfr_exp_t exp;*/
-	
-	/*mpfr_inits2(PRECISION, Xe, Xs, Ye, Ys, (mpfr_ptr)NULL);*/
-	mpfr_inits2(PRECISION, lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
-	
-	/*mpfr_strtofr(Xs, *Xs_str, NULL, 10, MPFR_RNDD);
-	mpfr_strtofr(Xe, *Xe_str, NULL, 10, MPFR_RNDD);
-	mpfr_strtofr(Ys, *Ys_str, NULL, 10, MPFR_RNDD);
-	mpfr_strtofr(Ye, *Ye_str, NULL, 10, MPFR_RNDD);*/
+    /*mpfr_t Xe, Xs, Ye, Ys; / * inputs converted from strings */
+    mpfr_t lx, ly, TLx, TLy, BRx, BRy;
+    /*mpfr_exp_t exp;*/
 
-	mpfr_set_str(Xs, *Xs_str, 10, MPFR_RNDD);
-	mpfr_set_str(Xe, *Xe_str, 10, MPFR_RNDD);
-	mpfr_set_str(Ys, *Ys_str, 10, MPFR_RNDD);
-	mpfr_set_str(Ye, *Ye_str, 10, MPFR_RNDD);
+    /*mpfr_inits2(PRECISION, Xe, Xs, Ye, Ys, (mpfr_ptr)NULL);*/
+    mpfr_inits2(PRECISION, lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
 
-	printf("mpfr_zoom_in (in) \n");
+    /*mpfr_strtofr(Xs, *Xs_str, NULL, 10, MPFR_RNDD);
+    mpfr_strtofr(Xe, *Xe_str, NULL, 10, MPFR_RNDD);
+    mpfr_strtofr(Ys, *Ys_str, NULL, 10, MPFR_RNDD);
+    mpfr_strtofr(Ye, *Ye_str, NULL, 10, MPFR_RNDD);*/
+
+    /*mpfr_set_str(Xs, *Xs_str, 10, MPFR_RNDD);
+    mpfr_set_str(Xe, *Xe_str, 10, MPFR_RNDD);
+    mpfr_set_str(Ys, *Ys_str, 10, MPFR_RNDD);
+    mpfr_set_str(Ye, *Ye_str, 10, MPFR_RNDD);*/
+
+    printf("mpfr_zoom_in (in) \n");
     mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDD); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDD); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDD); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDD); putchar('\n');
     putchar('\n');
 
-	/* double y0 = scaled(pX, xsz, Xs, Xe); */
-	mpfr_sub(lx, Xe, Xs, MPFR_RNDD);
-	mpfr_mul_d(lx, lx, ((double)pX/(double)w), MPFR_RNDD);
-	mpfr_add(lx, lx, Xs, MPFR_RNDD);
+    /* scaled ( ((double)x1 / (double)sz) * (Xe-Xs) ) + Xs; */
+    /* double X0 = scaled(pX, xsz, Xs, Xe); */
+    mpfr_sub(lx, Xe, Xs, MPFR_RNDD);
+    mpfr_mul_d(lx, lx, ((double)pX/(double)w), MPFR_RNDD);
+    mpfr_add(lx, lx, Xs, MPFR_RNDD);
 
-	/* double x0 = scaled(pX, xsz, Xs, Xe); */
-	mpfr_sub(ly, Xe, Xs, MPFR_RNDD);
-	mpfr_mul_d(ly, ly, ((double)pY/(double)h), MPFR_RNDD);
-	mpfr_add(ly, ly, Xs, MPFR_RNDD);
+    /* double y0 = scaled(pY, ysz, Ys, Ye); */
+    mpfr_sub(ly, Ye, Ys, MPFR_RNDD);
+    mpfr_mul_d(ly, ly, ((double)pY/(double)h), MPFR_RNDD);
+    mpfr_add(ly, ly, Ys, MPFR_RNDD);
 
-	/* TLx = loc_x - abs((xe-xs)/3) */
-	mpfr_sub(TLx, Xe, Xs, MPFR_RNDD);
-	mpfr_div_ui(TLx, TLx, 3, MPFR_RNDD);
-	mpfr_abs(TLx, TLx, MPFR_RNDD);
-	mpfr_sub(Xs, lx, TLx, MPFR_RNDD);
-	
-	/* TLy = loc_y - abs((ye-ys)/3) */
-	mpfr_sub(TLy, Ye, Ys, MPFR_RNDD);
-	mpfr_div_ui(TLy, TLy, 3, MPFR_RNDD);
-	mpfr_abs(TLy, TLy, MPFR_RNDD);
-	mpfr_sub(Ys, ly, TLy, MPFR_RNDD);
-	
-	/* BRx = loc_x + abs((xe-xs)/3) */
-	mpfr_sub(BRx, Xe, Xs, MPFR_RNDD);
-	mpfr_div_ui(BRx, BRx, 3, MPFR_RNDD);
-	mpfr_abs(BRx, BRx, MPFR_RNDD);
-	mpfr_add(Xe, lx, BRx, MPFR_RNDD);
-	
-	/* BRy = loc_y + abs((ye-ys)/3) */
-	mpfr_sub(BRy, Ye, Ys, MPFR_RNDD);
-	mpfr_div_ui(BRy, BRy, 3, MPFR_RNDD);
-	mpfr_abs(BRy, BRy, MPFR_RNDD);
-	mpfr_add(Ye, lx, BRy, MPFR_RNDD);
-	
-	printf("mpfr_zoom_in (out) \n");
+    /* TLx = loc_x - abs((xe-xs)/3) */
+    mpfr_sub(TLx, Xe, Xs, MPFR_RNDD);
+    mpfr_div_ui(TLx, TLx, 3, MPFR_RNDD);
+    mpfr_abs(TLx, TLx, MPFR_RNDD);
+    mpfr_sub(Xs, lx, TLx, MPFR_RNDD);
+
+    /* TLy = loc_y - abs((ye-ys)/3) */
+    mpfr_sub(TLy, Ye, Ys, MPFR_RNDD);
+    mpfr_div_ui(TLy, TLy, 3, MPFR_RNDD);
+    mpfr_abs(TLy, TLy, MPFR_RNDD);
+    mpfr_sub(Ys, ly, TLy, MPFR_RNDD);
+
+    /* BRx = loc_x + abs((xe-xs)/3) */
+    mpfr_sub(BRx, Xe, Xs, MPFR_RNDD);
+    mpfr_div_ui(BRx, BRx, 3, MPFR_RNDD);
+    mpfr_abs(BRx, BRx, MPFR_RNDD);
+    mpfr_add(Xe, lx, BRx, MPFR_RNDD);
+
+    /* BRy = loc_y + abs((ye-ys)/3) */
+    mpfr_sub(BRy, Ye, Ys, MPFR_RNDD);
+    mpfr_div_ui(BRy, BRy, 3, MPFR_RNDD);
+    mpfr_abs(BRy, BRy, MPFR_RNDD);
+    mpfr_add(Ye, ly, BRy, MPFR_RNDD);
+
+    printf("mpfr_zoom_in (out) \n");
     mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDD); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDD); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDD); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDD); putchar('\n');
     putchar('\n');
-	
-	/* convert Xs, Xe, Ys, Ye back into strings for output */
-	/* *Xs_str = mpfr_get_str(NULL, &exp, 10, 0, Xs, MPFR_RNDD);
-	printf("exp = %ld\n", exp);
-	*Xe_str = mpfr_get_str(NULL, &exp, 10, 0, Xe, MPFR_RNDD);
-	printf("exp = %ld\n", exp);
-	*Ys_str = mpfr_get_str(NULL, &exp, 10, 0, Ys, MPFR_RNDD);
-	printf("exp = %ld\n", exp);
-	*Ye_str = mpfr_get_str(NULL, &exp, 10, 0, Ye, MPFR_RNDD);
-	printf("exp = %ld\n", exp);*/
-	
-	/*mpfr_snprintf(*Xs_str,50, "%.45RNf", Xs);
-	mpfr_snprintf(*Xe_str,50, "%.45RNf", Xe);
-	mpfr_snprintf(*Ys_str,50, "%.45RNf", Ys);
-	mpfr_snprintf(*Ye_str,50, "%.45RNf", Ye);*/
-}/* -2.000000000000000000000000000000000000000e0 */
+
+    /* convert Xs, Xe, Ys, Ye back into strings for output */
+    /* *Xs_str = mpfr_get_str(NULL, &exp, 10, 0, Xs, MPFR_RNDD);
+    printf("exp = %ld\n", exp);
+    *Xe_str = mpfr_get_str(NULL, &exp, 10, 0, Xe, MPFR_RNDD);
+    printf("exp = %ld\n", exp);
+    *Ys_str = mpfr_get_str(NULL, &exp, 10, 0, Ys, MPFR_RNDD);
+    printf("exp = %ld\n", exp);
+    *Ye_str = mpfr_get_str(NULL, &exp, 10, 0, Ye, MPFR_RNDD);
+    printf("exp = %ld\n", exp);*/
+
+    /*mpfr_snprintf(*Xs_str,50, "%.45RNf", Xs);
+    mpfr_snprintf(*Xe_str,50, "%.45RNf", Xe);
+    mpfr_snprintf(*Ys_str,50, "%.45RNf", Ys);
+    mpfr_snprintf(*Ye_str,50, "%.45RNf", Ye);*/
+}
+
+/* -2.000000000000000000000000000000000000000e0 */
 /*
     loc_x = scaled(pos[0], window_size, xs, xe)
     loc_y = scaled(pos[1], window_size, ys, ye)
