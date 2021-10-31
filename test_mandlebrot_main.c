@@ -23,6 +23,8 @@ int main(int argc, char *argv[])
     mandlebrot_mpfr_c(wsize, hsize, maxiter, bytearray);
     mpfr_zoom_in(4, 4, wsize, hsize, factor);
     mandlebrot_mpfr_c(wsize, hsize, maxiter, bytearray);
+    mpfr_zoom_out(4, 4, wsize, hsize, factor);
+    mandlebrot_mpfr_c(wsize, hsize, maxiter, bytearray);
 
     free_mpfr_mem_c();
 
