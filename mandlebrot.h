@@ -23,6 +23,14 @@ void mpfr_zoom_in( const unsigned int pX, /* */
                    const unsigned int h, /* */
                    const unsigned int factor /* */
                   );
+
+void mpfr_zoom_out( const unsigned int pX, /* */
+                    const unsigned int pY, /* */
+                    const unsigned int w, /* */
+                    const unsigned int h, /* */
+                    const unsigned int factor /* */
+                   );
+
 void setup_c();
 
 void initialize_c( const char* Xs_str, /* string repr of mpfr_t for X top left */
