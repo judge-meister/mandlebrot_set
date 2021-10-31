@@ -139,7 +139,7 @@ class mandlebrot_c_mpfr:
 
     def zoom_out(self, pos):
         """"""
-        mandlebrot.mandlebrot_zoom_out(pos[0], pos[1], window_size, window_size, self.factor)
+        mandlebrot.mandlebrot_zoom_out(int(pos[0]), int(pos[1]), window_size, window_size, self.factor)
 
 
     def draw_plot(self):
@@ -186,6 +186,8 @@ def event_loop(mand):
     """takes a class instance that supports draw_plot, zoom_in, zoom_out methods"""
 
     zoom_level = 0
+    pygame.mouse.set_cursor(pygame.cursors.broken_x)
+    
     run = False
     while not run:
         clock.tick(20)
