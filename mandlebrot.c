@@ -239,6 +239,14 @@ void initialize_c(
     //printf("called init_c(Ye)\n");
 
 }
+/* ----------------------------------------------------------------------------
+ */
+void free_mpfr_mem_c()
+{
+    mpfr_clears(Xs, Xe, Ys, Ye, (mpfr_ptr)NULL);
+    mpfr_free_cache();
+    //mpfr_free_cache2();
+}
 
 /* ----------------------------------------------------------------------------
  * mandlebrot set using mpfr library
@@ -355,6 +363,8 @@ void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/
             bc++;
         }
     }
+    mpfr_clears(x, y, xsq, ysq, xtmp, x0, y0/*, Xs, Xe, Ys, Ye*/, (mpfr_ptr)NULL);
+    mpfr_clears(a, two, four, sum_xsq_ysq, (mpfr_ptr)NULL);
 }
 
 /* ----------------------------------------------------------------------------
@@ -439,6 +449,7 @@ void mpfr_zoom_in(       const unsigned int pX, /* x mouse pos in display */
     printf("display size: %d %d\n", w1, h1);
     //mpfr_out_str(stdout, 10, 0, lx, MPFR_RNDN); printf(" x ");
     //mpfr_out_str(stdout, 10, 0, ly, MPFR_RNDN); putchar('\n');
+    mpfr_clears(lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
 }
 
 /* -2.000000000000000000000000000000000000000e0 */

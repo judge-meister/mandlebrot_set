@@ -143,6 +143,11 @@ static PyObject * initialize(PyObject *self, PyObject *args)
     return PyLong_FromLong(0);
 }
 
+static PyObject * free_mpfr_mem(PyObject *self, PyObject *args)
+{
+    free_mpfr_mem_c();
+    return PyLong_FromLong(0);
+}
 
 /* ----------------------------------------------------------------------------
  * Python Module Stuff  - from docs.python.org/3/extending/extending.html
@@ -153,8 +158,9 @@ static PyMethodDef MandlebrotMethods[] = {
     {"mandlebrot_mpfr",        mandlebrot_mpfr,       METH_VARARGS, "calculate mandlebrot set using mpfr lib" },
     {"mandlebrot_zoom_in",     mandlebrot_zoom_in,    METH_VARARGS, "calculate next mandlebrot set zoom values" },
     {"mandlebrot_zoom_out",    mandlebrot_zoom_out,   METH_VARARGS, "calculate previous mandlebrot set zoom values" },
-    {"initialize",    initialize,   METH_VARARGS, "" },
-    {"setup",         setup,        METH_VARARGS, "" },
+    {"initialize",    initialize,    METH_VARARGS, "" },
+    {"setup",         setup,         METH_VARARGS, "" },
+    {"free_mpfr_mem", free_mpfr_mem, METH_VARARGS, "" },
     {NULL, NULL, 0 , NULL}
 };
 

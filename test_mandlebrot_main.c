@@ -6,10 +6,11 @@
 
 int main(int argc, char *argv[])
 {
-    int wsize, hsize, maxiter;
+    unsigned int wsize, hsize, maxiter, factor;
 
     wsize = 32; //640;
     hsize = 32; //640;
+    factor = 5;
     maxiter = 1000;
 
     setup_c();
@@ -20,8 +21,10 @@ int main(int argc, char *argv[])
 
     /* call mandlebrot_bytearray */
     mandlebrot_mpfr_c(wsize, hsize, maxiter, bytearray);
+    mpfr_zoom_in(4, 4, wsize, hsize, factor);
+    mandlebrot_mpfr_c(wsize, hsize, maxiter, bytearray);
 
-    mpfr_zoom_in(4,4,32,32,5);
+    free_mpfr_mem_c();
 
     printf("End\n");
 }

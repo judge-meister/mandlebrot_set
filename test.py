@@ -255,17 +255,19 @@ def event_loop(mand):
                     print("zoom level ", zoom_level)
                     mand.draw_plot()
 
-    pygame.quit()
 
 def main_mpfr():
     mand = mandlebrot_c_mpfr()
     mand.draw_plot()
     event_loop(mand)
+    mandlebrot.free_mpfr_mem()
+
 
 def main_python():
     mand = mandlebrot_python_float()
     mand.draw_plot()
     event_loop(mand)
+
 
 def main():
     display_help()
@@ -276,6 +278,7 @@ def main():
     else:
         main_python()
 
+    pygame.quit()
 
 
 if __name__ == '__main__':

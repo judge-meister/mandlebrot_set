@@ -30,3 +30,5 @@ void initialize_c( const char* Xs_str, /* string repr of mpfr_t for X top left *
                    const char* Ys_str, /* string repr of mpfr_t for Y bottom left */
                    const char* Ye_str  /* string repr of mpfr_t for Y bottom right */
                   );
+
+void free_mpfr_mem_c();
