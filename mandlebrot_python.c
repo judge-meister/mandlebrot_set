@@ -112,12 +112,12 @@ static PyObject * mandlebrot_zoom_in(PyObject *self, PyObject *args)
  */
 static PyObject * mandlebrot_zoom_out(PyObject *self, PyObject *args)
 {
-    unsigned int pX, pY, w, h;
+    unsigned int pX, pY, w, h, factor;
 
-    if (!PyArg_ParseTuple(args, "iiii", &pX, &pY, &w, &h))
+    if (!PyArg_ParseTuple(args, "iiiii", &pX, &pY, &w, &h, &factor))
         return NULL;
 
-    //mpfr_zoom_out(pX, pY, w, h);
+    mpfr_zoom_out(pX, pY, w, h, factor);
 
     return PyLong_FromLong(0);
 }
