@@ -12,7 +12,7 @@ import numpy
 try:
     import mandlebrot
 except ModuleNotFoundError:
-    print("\nHave you built the mandlebrot C module ? try running ./build.sh\n")
+    print("\nHave you built the mandlebrot C module ? try running 'make'\n")
     sys.exit()
 from PIL import Image
 
@@ -31,85 +31,136 @@ pygame.key.set_repeat(100,20)
 #print("initialised in ",time.time()-now)
 
 
-def scaled(x, sz, s, e):
-    return ( (float(x)/float(sz)) * (e-s) ) + s
+class mandlebrot_python_float:
+    """"""
+    def __init__(self):
+        """"""
+        self.Xs = X1 #-2.0
+        self.Xe = X2 #1.0
+        self.Ys = Y1 #-1.5
+        self.Ye = Y2 #1.5
+        self.factor = 10
+        self.maxiter = 255
+
+    @classmethod
+    def scaled(cls, x, sz, s, e):
+        return ( (float(x)/float(sz)) * (e-s) ) + s
+
+    def reset(self):
+        self.Xs = X1 #-2.0
+        self.Xe = X2 #1.0
+        self.Ys = Y1 #-1.5
+        self.Ye = Y2 #1.5
+
+    #def zoom_in(xs, xe, ys, ye, pos, factor):
+    def zoom_in(self, pos):
+        #print("pos ", pos)
+        loc = (self.scaled(pos[0], window_size, self.Xs, self.Xe), self.scaled(pos[1], window_size, self.Ys, self.Ye))
+        print("scaled loc ", loc)
+        TLx = loc[0]-abs((self.Xe-self.Xs)/self.factor)
+        TLy = loc[1]-abs((self.Ye-self.Ys)/self.factor)
+        BRx = loc[0]+abs((self.Xe-self.Xs)/self.factor)
+        BRy = loc[1]+abs((self.Ye-self.Ys)/self.factor)
+        print("new coords %2.9f %2.9f %2.9f %2.9f" % ( TLx, BRx, TLy, BRy))
+        #return TLx, BRx, TLy, BRy
+        self.Xs, self.Xe, self.Ys, self.Ye = TLx, BRx, TLy, BRy
 
 
-def zoom_in(xs, xe, ys, ye, pos):
-    #print("pos ", pos)
-    loc = (scaled(pos[0], window_size, xs, xe), scaled(pos[1], window_size, ys, ye))
-    print("scaled loc ", loc)
-    TL = (loc[0]-abs((xe-xs)/3), loc[1]-abs((ye-ys)/3))
-    BR = (loc[0]+abs((xe-xs)/3), loc[1]+abs((ye-ys)/3))
-    #print("new coords ", TL[0], BR[0], TL[1], BR[1])
-    return TL[0], BR[0], TL[1], BR[1]
+    #def zoom_out(xs, xe, ys, ye, pos): # pos(x,y) window_size(x,y)
+    def zoom_out(self, pos): # pos(x,y) window_size(x,y)
+        #print("pos ", pos)
+        loc = (self.scaled(pos[0], window_size, self.Xs, self.Xe), self.scaled(pos[1], window_size, self.Ys, self.Ye))
+        #print("scaled loc ", loc)
+        TLx = loc[0]-abs((self.Xe-self.Xs)*self.factor )
+        TLy = loc[1]-abs((self.Ye-self.Ys)*self.factor )
+        BRx = loc[0]+abs((self.Xe-self.Xs)*self.factor )
+        BRy = loc[1]+abs((self.Ye-self.Ys)*self.factor )
+        # if we start to hit the upper bounds then adjust the centre
+        if TLx < X1 or BRx > X2 or TLy < Y1 or BRy > Y2:
+            TLx = X1
+            BRx = X2
+            TLy = Y1
+            BRy = Y2
+
+        #print("new coords ", TLx, BRx, TLy, BRy)
+        #return TLx, BRx, TLy, BRy
+        self.Xs, self.Xe, self.Ys, self.Ye = TLx, BRx, TLy, BRy
 
 
-def zoom_out(xs, xe, ys, ye, pos): # pos(x,y) window_size(x,y)
-    #print("pos ", pos)
-    loc = (scaled(pos[0], window_size, xs, xe), scaled(pos[1], window_size, ys, ye))
-    #print("scaled loc ", loc)
-    TLx = loc[0]-abs((xe-xs)*0.75 )
-    TLy = loc[1]-abs((ye-ys)*0.75 )
-    BRx = loc[0]+abs((xe-xs)*0.75 )
-    BRy = loc[1]+abs((ye-ys)*0.75 )
-    # if we start to hit the upper bounds then adjust the centre
-    if TLx < X1 or BRx > X2 or TLy < Y1 or BRy > Y2:
-        TLx = X1
-        BRx = X2
-        TLy = Y1
-        BRy = Y2
+    def draw_plot(self):
+        now = time.time()
 
-    #print("new coords ", TLx, BRx, TLy, BRy)
-    return TLx, BRx, TLy, BRy
+        sz = window_size
+        frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
+        #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-2.0", "1.0", "-1.5", "1.5"))
+        #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-1.7400623826", "-1.7400623824", "0.0281753398", "0.0281753395"))
+        surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
+
+        print("set calculated in ", time.time()-now, " secs")
+
+        #now = time.time()
+        surface.blit(surf, (0,0))
+        #asyncio.run(test4(xs, xe, ys, ye))
+
+        pygame.display.update()
+
+        #print("displayed in ", time.time()-now, " secs")
 
 
-def draw_plot(xs, xe, ys, ye):
-    now = time.time()
+class mandlebrot_c_mpfr:
+    """"""
+    def __init__(self):
+        """"""
+        self.Xs = repr(X1)
+        self.Xe = repr(X2)
+        self.Ys = repr(Y1)
+        self.Ye = repr(Y2)
+        self.factor = 10
+        self.maxiter = 1000
 
-    sz = window_size
-    #frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, xs, xe, ys, ye, 255))
-    #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-2.0", "1.0", "-1.5", "1.5"))
-    frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-1.7400623826", "-1.7400623824", "0.0281753398", "0.0281753395"))
-    surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
+        mandlebrot.setup()
+        mandlebrot.initialize(self.Xs, self.Xe, self.Ys, self.Ye)
 
-    print("set calculated in ", time.time()-now, " secs")
 
-    #now = time.time()
-    surface.blit(surf, (0,0))
-    #asyncio.run(test4(xs, xe, ys, ye))
+    def reset(self):
+        """"""
+        xs = repr(X1)
+        xe = repr(X2)
+        ys = repr(Y1)
+        ye = repr(Y2)
+        mandlebrot.initialize(self.Xs, self.Xe, self.Ys, self.Ye)
 
-    pygame.display.update()
 
-    #print("displayed in ", time.time()-now, " secs")
+    def zoom_in(self, pos):
+        """string params for mpfr"""
+        #factor = 10
+        #zoom_in(-2.0, 1.0, -1.5, 1.5, pos, self.factor)
+        mandlebrot.mandlebrot_zoom_in(pos[0], pos[1], window_size, window_size, self.factor)
 
-def zoom_in_mpfr(pos):
-    """string params for mpfr"""
-    TL_BR = mandlebrot.mandlebrot_zoom_in(pos[0], pos[1], window_size, window_size)
-    return TL_BR
+    def zoom_out(self, pos):
+        """"""
+        mandlebrot.mandlebrot_zoom_out(pos[0], pos[1], window_size, window_size, self.factor)
 
-def draw_plot_mpfr(xs, xe, ys, ye):
-    """params are strings representing real/imag value ranges"""
 
-    now = time.time()
+    def draw_plot(self):
+        """params are strings representing real/imag value ranges"""
 
-    sz = window_size
-    #frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, xs, xe, ys, ye, 255))
-    #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-2.0", "1.0", "-1.5", "1.5"))
-    #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-1.7400623826", "-1.7400623824", "0.0281753398", "0.0281753395"))
-    #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, xs, xe, ys, ye))
-    frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255))
-    surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
+        now = time.time()
 
-    print("set calculated in ", time.time()-now, " secs")
+        sz = window_size
+        frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, self.maxiter))
+        print("bytearray len ",len(frame))
+        surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
-    #now = time.time()
-    surface.blit(surf, (0,0))
-    #asyncio.run(test4(xs, xe, ys, ye))
+        print("set calculated in ", time.time()-now, " secs")
 
-    pygame.display.update()
+        #now = time.time()
+        surface.blit(surf, (0,0))
+        #asyncio.run(test4(xs, xe, ys, ye))
 
-    #print("displayed in ", time.time()-now, " secs")
+        pygame.display.update()
+
+        #print("displayed in ", time.time()-now, " secs")
 
 
 def display_help():
@@ -130,8 +181,10 @@ def display_help():
     print(help)
 
 
-def event_loop(xs, xe, ys, ye):
-    """all params are strings"""
+#def event_loop(xs, xe, ys, ye):
+def event_loop(mand):
+    """takes a class instance that supports draw_plot, zoom_in, zoom_out methods"""
+
     zoom_level = 0
     run = False
     while not run:
@@ -148,29 +201,26 @@ def event_loop(xs, xe, ys, ye):
             if event.type == pygame.KEYUP and event.key == pygame.K_c:
                 zoom_level = 0
                 print("zoom level ", zoom_level)
-                xs,xe,ys,ye = X1,X2,Y1,Y2
-                #draw_plot(xs, xe, ys, ye)
-                draw_plot_mpfr(xs, xe, ys, ye)
+                mand.reset()
+                mand.draw_plot()
 
             if event.type == pygame.KEYUP and event.key == pygame.K_z:
-                #xs, xe, ys, ye = zoom_in(xs, xe, ys, ye, mouse_pos)
-                zoom_in_mpfr(mouse_pos)
+                mand.zoom_in(mouse_pos)
                 zoom_level += 1
                 print("zoom level ", zoom_level)
-                #draw_plot(xs, xe, ys, ye)
-                draw_plot_mpfr(xs, xe, ys, ye)
+                mand.draw_plot()
 
-            #if event.type == pygame.KEYUP and event.key == pygame.K_x:
-            #    if zoom_level > 0:
-            #        xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, (window_size/2, window_size/2))
-            #        if xs == X1 and ys == Y1:
-            #            zoom_level = 0
-            #        else:
-            #            zoom_level -= 1
-            #            #if zoom_level == -1:
-            #            #    zoom_level = 0
-            #        print("zoom level ", zoom_level)
-            #        draw_plot(xs, xe, ys, ye)
+            if event.type == pygame.KEYUP and event.key == pygame.K_x:
+                if zoom_level > 0:
+                    mand.zoom_out((window_size/2, window_size/2))
+                    #if xs == X1 and ys == Y1:
+                    #    zoom_level = 0
+                    #else:
+                    #    zoom_level -= 1
+                        #if zoom_level == -1:
+                        #    zoom_level = 0
+                    print("zoom level ", zoom_level)
+                    mand.draw_plot()
 
             if event.type == pygame.KEYUP and event.key == pygame.K_UP:
                 if mouse_pos[1] > 1:
@@ -192,35 +242,40 @@ def event_loop(xs, xe, ys, ye):
                 mouse_pos = pygame.mouse.get_pos()
                 pressed = pygame.mouse.get_pressed()
                 if pressed[0]: # Button 1
-                    mandlebrot_zoom_in(mouse_pos)
+                    mand.zoom_in(mouse_pos)
                     zoom_level += 1
                     print("zoom level ", zoom_level)
-                    #draw_plot(xs, xe, ys, ye)
+                    mand.draw_plot()
 
-                #if pressed[2]: # Button 3
-                #    xs, xe, ys, ye = zoom_out(xs, xe, ys, ye, (window_size/2, window_size/2))
-                #    zoom_level -= 1
-                #    if zoom_level == -1:
-                #        zoom_level = 0
-                #    print("zoom level ", zoom_level)
-                #    draw_plot(xs, xe, ys, ye)
+                if pressed[2]: # Button 3
+                    mand.zoom_out((window_size/2, window_size/2))
+                    zoom_level -= 1
+                    if zoom_level == -1:
+                        zoom_level = 0
+                    print("zoom level ", zoom_level)
+                    mand.draw_plot()
 
     pygame.quit()
 
+def main_mpfr():
+    mand = mandlebrot_c_mpfr()
+    mand.draw_plot()
+    event_loop(mand)
+
+def main_python():
+    mand = mandlebrot_python_float()
+    mand.draw_plot()
+    event_loop(mand)
 
 def main():
     display_help()
 
-    xs = repr(X1)
-    xe = repr(X2)
-    ys = repr(Y1)
-    ye = repr(Y2)
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "-mpfr":
+            main_mpfr()
+    else:
+        main_python()
 
-    mandlebrot.setup()
-    mandlebrot.initialize(xs, xe, ys, ye)
-
-    draw_plot_mpfr(xs, xe, ys, ye)
-    event_loop(xs, xe, ys, ye)
 
 
 if __name__ == '__main__':
