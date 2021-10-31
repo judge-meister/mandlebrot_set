@@ -27,30 +27,30 @@
  */
 static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
 {
-	int wsize = 0;
-	int hsize = 0;
-	int maxiter = 0;
-	double Xs, Xe, Ys, Ye;
+    int wsize = 0;
+    int hsize = 0;
+    int maxiter = 0;
+    double Xs, Xe, Ys, Ye;
 
-	if (!PyArg_ParseTuple(args, "iiidddd", &wsize, &hsize, &maxiter, &Xs, &Xe, &Ys, &Ye))
-		return NULL;
+    if (!PyArg_ParseTuple(args, "iiidddd", &wsize, &hsize, &maxiter, &Xs, &Xe, &Ys, &Ye))
+        return NULL;
 
-	/*printf("params, %d,%d %1.20lf,%1.20lf %1.20lf,%1.20lf  %d\n", wsize,hsize, Xs,Xe, Ys,Ye, maxiter);*/
-	PyObject *points = PyList_New(0);
+    /*printf("params, %d,%d %1.20lf,%1.20lf %1.20lf,%1.20lf  %d\n", wsize,hsize, Xs,Xe, Ys,Ye, maxiter);*/
+    PyObject *points = PyList_New(0);
 
-	/* create an array of integers to store the result of the mandlebrot calculation */
+    /* create an array of integers to store the result of the mandlebrot calculation */
     int bytearray[wsize * hsize * 3];
 
-	/* call mandlebrot_bytearray */
-	mandlebrot_bytearray_c(wsize, hsize, maxiter, Xs, Xe, Ys, Ye, bytearray);
+    /* call mandlebrot_bytearray */
+    mandlebrot_bytearray_c(wsize, hsize, maxiter, Xs, Xe, Ys, Ye, bytearray);
 
-	/* transfer returned values into PyList for return */
-	for(int i = 0; i < (wsize * hsize * 3); i++)
-	{
-		PyList_Append(points, PyLong_FromLong((long) bytearray[i]));
-	}
+    /* transfer returned values into PyList for return */
+    for(int i = 0; i < (wsize * hsize * 3); i++)
+    {
+        PyList_Append(points, PyLong_FromLong((long) bytearray[i]));
+    }
 
-	return points;
+    return points;
 }
 
 /* ----------------------------------------------------------------------------
@@ -68,105 +68,79 @@ static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
  */
 static PyObject * mandlebrot_mpfr(PyObject *self, PyObject *args)
 {
-	int wsize = 0;
-	int hsize = 0;
-	int maxiter = 0;
-	/*const char *Xs, *Xe, *Ys, *Ye;*/
+    int wsize = 0;
+    int hsize = 0;
+    int maxiter = 0;
 
-	if (!PyArg_ParseTuple(args, "iii", &wsize, &hsize, &maxiter))
-		return NULL;
+    if (!PyArg_ParseTuple(args, "iii", &wsize, &hsize, &maxiter))
+        return NULL;
 
-	//printf("params, %d x %d, %d %s, %s  %s, %s\n", wsize,hsize, maxiter, Xs,Xe, Ys,Ye);
+    //printf("params, %d x %d, %d %s, %s  %s, %s\n", wsize,hsize, maxiter, Xs,Xe, Ys,Ye);
 
-	PyObject *points = PyList_New(0);
+    PyObject *points = PyList_New(0);
 
-	/* create an array of integers to store the result of the mandlebrot calculation */
-	int bytearray[wsize * hsize * 3];
+    /* create an array of integers to store the result of the mandlebrot calculation */
+    int bytearray[wsize * hsize * 3];
 
-	/* call mandlebrot_bytearray */
-	mandlebrot_mpfr_c(wsize, hsize, maxiter, bytearray);
+    /* call mandlebrot_bytearray */
+    mandlebrot_mpfr_c(wsize, hsize, maxiter, bytearray);
 
-	/* transfer returned values into PyList for return */
-	for(int i = 0; i < (wsize * hsize * 3); i++)
-	{
-		PyList_Append(points, PyLong_FromLong((long) bytearray[i]));
-	}
+    /* transfer returned values into PyList for return */
+    for(int i = 0; i < (wsize * hsize * 3); i++)
+    {
+        PyList_Append(points, PyLong_FromLong((long) bytearray[i]));
+    }
 
-	return points;
+    return points;
 }
 
 /* ----------------------------------------------------------------------------
  */
 static PyObject * mandlebrot_zoom_in(PyObject *self, PyObject *args)
 {
-	//const char *Xs, *Xe, *Ys, *Ye; /* do i need to free these at the end of the func */
-    unsigned int pX, pY, w, h;
+    unsigned int pX, pY, w, h, factor;
 
-	if (!PyArg_ParseTuple(args, "iiii", &pX, &pY, &w, &h))
-		return NULL;
+    if (!PyArg_ParseTuple(args, "iiiii", &pX, &pY, &w, &h, &factor))
+        return NULL;
 
-	mpfr_zoom_in(pX, pY, w, h);
+    mpfr_zoom_in(pX, pY, w, h, factor);
 
-	//printf("mandlebrot_zoom_in (out) \n%s\n%s\n%s\n%s\n", Xs, Xe, Ys, Ye);
-
-	//PyObject *coords = PyTuple_New(4);
-	//PyObject *pval;
-
-	/* need to confirm whether I need to use PyDECREF() on pval */
-
-	//pval = Py_BuildValue("s#", Xs, (Py_ssize_t)strlen(Xs));
-	//PyTuple_SetItem(coords, 0, pval);
-
-	//pval = Py_BuildValue("s#", Xe, (Py_ssize_t)strlen(Xe));
-	//PyTuple_SetItem(coords, 1, pval);
-
-	//pval = Py_BuildValue("s#", Ys, (Py_ssize_t)strlen(Ys));
-	//PyTuple_SetItem(coords, 2, pval);
-
-	//pval = Py_BuildValue("s#", Ye, (Py_ssize_t)strlen(Ye));
-	//PyTuple_SetItem(coords, 3, pval);
-
-	return PyLong_FromLong(0);//coords;
+    return PyLong_FromLong(0);
 }
 
 /* ----------------------------------------------------------------------------
  */
 static PyObject * mandlebrot_zoom_out(PyObject *self, PyObject *args)
 {
-		unsigned int pX, pY, w, h;
+    unsigned int pX, pY, w, h;
 
-		if (!PyArg_ParseTuple(args, "iiii", &pX, &pY, &w, &h))
-			return NULL;
+    if (!PyArg_ParseTuple(args, "iiii", &pX, &pY, &w, &h))
+        return NULL;
 
-		//mpfr_zoom_out(pX, pY, w, h);
+    //mpfr_zoom_out(pX, pY, w, h);
 
-		//printf("mandlebrot_zoom_in (out) \n%s\n%s\n%s\n%s\n", Xs, Xe, Ys, Ye);
-
-		//PyObject *coords = PyTuple_New(4);
-		//PyObject *pval;
-
-		return PyLong_FromLong(0);
+    return PyLong_FromLong(0);
 }
 /* ----------------------------------------------------------------------------
  */
 static PyObject * setup(PyObject *self, PyObject *args)
 {
-	setup_c();
-	printf("setup_c()\n");
-	return PyLong_FromLong(0);
+    setup_c();
+    printf("setup_c()\n");
+    return PyLong_FromLong(0);
 }
 /* ----------------------------------------------------------------------------
  */
 static PyObject * initialize(PyObject *self, PyObject *args)
 {
-	const char *Xs, *Xe, *Ys, *Ye; /* do i need to free these at the end of the func */
+    const char *Xs, *Xe, *Ys, *Ye; /* do i need to free these at the end of the func */
 
-	if (!PyArg_ParseTuple(args, "ssss", &Xs, &Xe, &Ys, &Ye))
-		return NULL;
+    if (!PyArg_ParseTuple(args, "ssss", &Xs, &Xe, &Ys, &Ye))
+        return NULL;
 
-	initialize_c(Xs, Xe, Ys, Ye);
+    initialize_c(Xs, Xe, Ys, Ye);
 
-	return PyLong_FromLong(0);
+    return PyLong_FromLong(0);
 }
 
 
@@ -174,24 +148,28 @@ static PyObject * initialize(PyObject *self, PyObject *args)
  * Python Module Stuff  - from docs.python.org/3/extending/extending.html
  */
 static PyMethodDef MandlebrotMethods[] = {
-	//{"mandlebrot",           mandlebrot,             METH_VARARGS, "calculate mandlebrot set" },
-	{"mandlebrot_bytearray",   mandlebrot_bytearray,  METH_VARARGS, "calculate mandlebrot set into a bytearray" },
-	{"mandlebrot_mpfr",        mandlebrot_mpfr,       METH_VARARGS, "calculate mandlebrot set using mpfr lib" },
-	{"mandlebrot_zoom_in",     mandlebrot_zoom_in,    METH_VARARGS, "calculate next mandlebrot set zoom values" },
-	{"mandlebrot_zoom_out",    mandlebrot_zoom_out,   METH_VARARGS, "calculate previous mandlebrot set zoom values" },
-	{"initialize",    initialize,   METH_VARARGS, "" },
-	{"setup",         setup,        METH_VARARGS, "" },
-	{NULL, NULL, 0 , NULL}
+    //{"mandlebrot",           mandlebrot,             METH_VARARGS, "calculate mandlebrot set" },
+    {"mandlebrot_bytearray",   mandlebrot_bytearray,  METH_VARARGS, "calculate mandlebrot set into a bytearray" },
+    {"mandlebrot_mpfr",        mandlebrot_mpfr,       METH_VARARGS, "calculate mandlebrot set using mpfr lib" },
+    {"mandlebrot_zoom_in",     mandlebrot_zoom_in,    METH_VARARGS, "calculate next mandlebrot set zoom values" },
+    {"mandlebrot_zoom_out",    mandlebrot_zoom_out,   METH_VARARGS, "calculate previous mandlebrot set zoom values" },
+    {"initialize",    initialize,   METH_VARARGS, "" },
+    {"setup",         setup,        METH_VARARGS, "" },
+    {NULL, NULL, 0 , NULL}
 };
 
+/* ----------------------------------------------------------------------------
+*/
 static struct PyModuleDef mandlebrotmodule = {
-	PyModuleDef_HEAD_INIT,
-	"mandlebrot",
-	"Python interface for the mandlebrot set C library", /* module documentation */
-	-1,
-	MandlebrotMethods
+    PyModuleDef_HEAD_INIT,
+    "mandlebrot",
+    "Python interface for the mandlebrot set C library", /* module documentation */
+    -1,
+    MandlebrotMethods
 };
 
+/* ----------------------------------------------------------------------------
+*/
 PyMODINIT_FUNC PyInit_mandlebrot(void)
 {
     PyObject *m;
@@ -212,6 +190,8 @@ PyMODINIT_FUNC PyInit_mandlebrot(void)
     return m;
 }
 
+/* ----------------------------------------------------------------------------
+*/
 int main(int argc, char *argv[])
 {
     wchar_t *program = Py_DecodeLocale(argv[0], NULL);
@@ -221,7 +201,7 @@ int main(int argc, char *argv[])
     }
 
     /* Add a built-in module, before Py_Initialize */
-    if (PyImport_AppendInittab("spam", PyInit_mandlebrot) == -1) {
+    if (PyImport_AppendInittab("mandlebrot", PyInit_mandlebrot) == -1) {
         fprintf(stderr, "Error: could not extend in-built modules table\n");
         exit(1);
     }
