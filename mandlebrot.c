@@ -52,6 +52,7 @@ struct Color { int r, g, b; };
 
 /* STATIC VARIABLES */
 static mpfr_t Xe, Xs, Ye, Ys; /* algorithm values */
+static int zoom_level;
 
 /* ----------------------------------------------------------------------------
  * grayscale - return a gray scale rgb value representing the iteration count
@@ -119,10 +120,10 @@ static struct Color sqrt_gradient(int it, int maxiter)
  * Returns
  * (double) - the calculated scaled value
  */
-static double scaled(int x1, int sz, double Xs, double Xe)
+/*static double scaled(int x1, int sz, double Xs, double Xe)
 {
     return ( ((double)x1 / (double)sz) * (Xe-Xs) ) + Xs;
-}
+}*/
 
 /* ----------------------------------------------------------------------------
  * calculate_point
@@ -237,6 +238,7 @@ void initialize_c(
     //printf("called init_c(Ys)\n");
     mpfr_set_str(Ye, Ye_str, 10, MPFR_RNDN);
     //printf("called init_c(Ye)\n");
+    zoom_level = 0;
 
 }
 /* ----------------------------------------------------------------------------
@@ -439,10 +441,15 @@ void mpfr_zoom_in(       const unsigned int pX, /* x mouse pos in display */
     mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
     putchar('\n');
 
+    zoom_level = zoom_level + 1;
+
     mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
-    mpfr_mul_ui(lx, lx, w, MPFR_RNDN);
+    mpfr_mul_ui(lx, lx, zoom_level*10*w, MPFR_RNDN);
+    //mpfr_mul_ui(lx, lx, w, MPFR_RNDN);
+
     mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
-    mpfr_mul_ui(ly, ly, h, MPFR_RNDN);
+    mpfr_mul_ui(ly, ly, zoom_level*10*h, MPFR_RNDN);
+    //mpfr_mul_ui(ly, ly, h, MPFR_RNDN);
 
     w1 = mpfr_get_ui(lx, MPFR_RNDN);
     h1 = mpfr_get_ui(ly, MPFR_RNDN);
@@ -452,6 +459,100 @@ void mpfr_zoom_in(       const unsigned int pX, /* x mouse pos in display */
     mpfr_clears(lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
 }
 
+/* ----------------------------------------------------------------------------
+ */
+void mpfr_zoom_out(      const unsigned int pX, /* x mouse pos in display */
+                         const unsigned int pY, /* y mouse pos in display */
+                         const unsigned int w,  /* width of display */
+                         const unsigned int h,  /* height of display */
+                         const unsigned int factor /* scaling factor */
+                        )
+{
+    unsigned int w1, h1;
+    mpfr_t lx, ly, TLx, TLy, BRx, BRy;
+
+    mpfr_inits2(PRECISION, lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
+
+    /* #def zoom_out(xs, xe, ys, ye, pos): # pos(x,y) window_size(x,y)
+    def zoom_out(self, pos): # pos(x,y) window_size(x,y)
+        #print("pos ", pos)*/
+
+    /*lx = self.scaled(pos[0], window_size, self.Xs, self.Xe)*/
+    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
+    mpfr_mul_d(lx, lx, ((double)pX/(double)w), MPFR_RNDN);
+    mpfr_add(lx, lx, Xs, MPFR_RNDN);
+
+    /*ly = self.scaled(pos[1], window_size, self.Ys, self.Ye)*/
+    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
+    mpfr_mul_d(ly, ly, ((double)pY/(double)h), MPFR_RNDN);
+    mpfr_add(ly, ly, Ys, MPFR_RNDN);
+
+    /*TLx = loc[0]-abs((self.Xe-self.Xs)*self.factor )*/
+    mpfr_sub(TLx, Xe, Xs, MPFR_RNDN);
+    mpfr_mul_ui(TLx, TLx, factor, MPFR_RNDN);
+    mpfr_abs(TLx, TLx, MPFR_RNDN);
+    mpfr_sub(TLx, lx, TLx, MPFR_RNDN);
+
+    /*TLy = loc[1]-abs((self.Ye-self.Ys)*self.factor )*/
+    mpfr_sub(TLy, Ye, Ys, MPFR_RNDN);
+    mpfr_mul_ui(TLy, TLy, factor, MPFR_RNDN);
+    mpfr_abs(TLy, TLy, MPFR_RNDN);
+    mpfr_sub(TLy, ly, TLy, MPFR_RNDN);
+
+    /*BRx = loc[0]+abs((self.Xe-self.Xs)*self.factor )*/
+    mpfr_sub(BRx, Xe, Xs, MPFR_RNDN);
+    mpfr_mul_ui(BRx, BRx, factor, MPFR_RNDN);
+    mpfr_abs(BRx, BRx, MPFR_RNDN);
+    mpfr_add(BRx, lx, BRx, MPFR_RNDN);
+
+    /*BRy = loc[1]+abs((self.Ye-self.Ys)*self.factor )*/
+    mpfr_sub(BRy, Ye, Ys, MPFR_RNDN);
+    mpfr_mul_ui(BRy, BRy, factor, MPFR_RNDN);
+    mpfr_abs(BRy, BRy, MPFR_RNDN);
+    mpfr_add(BRy, ly, BRy, MPFR_RNDN);
+
+    mpfr_set(Xs, TLx, MPFR_RNDN);
+    mpfr_set(Xe, BRx, MPFR_RNDN);
+    mpfr_set(Ys, TLy, MPFR_RNDN);
+    mpfr_set(Ye, BRy, MPFR_RNDN);
+
+    /*# if we start to hit the upper bounds then adjust the centre
+    if TLx < X1 or BRx > X2 or TLy < Y1 or BRy > Y2:*/
+    if ((mpfr_cmp_d(Xs, -2.0) < 0) && (mpfr_cmp_d(Xe, 1.0) > 0) &&
+        (mpfr_cmp_d(Ys, -1.5) < 0) && (mpfr_cmp_d(Ye, 1.5) > 0))
+    {
+        mpfr_set_d(Xs, -2.0, MPFR_RNDN);
+        mpfr_set_d(Xe,  1.0, MPFR_RNDN);
+        mpfr_set_d(Ys, -1.5, MPFR_RNDN);
+        mpfr_set_d(Ye,  1.5, MPFR_RNDN);
+    }
+    /*  #print("new coords ", TLx, BRx, TLy, BRy)
+        #return TLx, BRx, TLy, BRy
+        self.Xs, self.Xe, self.Ys, self.Ye = TLx, BRx, TLy, BRy
+    */
+    printf("mpfr_zoom_out (out) \n");
+    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
+    putchar('\n');
+
+    zoom_level = zoom_level - 1;
+
+    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
+    mpfr_mul_ui(lx, lx, zoom_level*10*w, MPFR_RNDN);
+    //mpfr_mul_ui(lx, lx, w, MPFR_RNDN);
+
+    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
+    mpfr_mul_ui(ly, ly, zoom_level*10*h, MPFR_RNDN);
+    //mpfr_mul_ui(ly, ly, h, MPFR_RNDN);
+
+    w1 = mpfr_get_ui(lx, MPFR_RNDN);
+    h1 = mpfr_get_ui(ly, MPFR_RNDN);
+    printf("display size: %d %d\n", w1, h1);
+
+    mpfr_clears(lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
+}
 /* -2.000000000000000000000000000000000000000e0 */
 /*
     loc_x = scaled(pos[0], window_size, xs, xe)
