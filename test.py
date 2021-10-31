@@ -22,8 +22,9 @@ Y1=-1.5
 Y2=1.5
 
 now=time.time()
-pygame.init()
 window_size = 640
+
+pygame.init()
 surface = pygame.display.set_mode((window_size, window_size))
 surface.fill((255,255,255))
 clock = pygame.time.Clock()
@@ -187,7 +188,7 @@ def event_loop(mand):
 
     zoom_level = 0
     pygame.mouse.set_cursor(pygame.cursors.broken_x)
-    
+
     run = False
     while not run:
         clock.tick(20)
@@ -275,10 +276,12 @@ def main():
     display_help()
 
     if len(sys.argv) > 1:
-        if sys.argv[1] == "-mpfr":
-            main_mpfr()
+        if sys.argv[1] == "-float":
+            main_python()
+        else:
+            print("Invalid option. [%s]" % (sys.argv[1]))
     else:
-        main_python()
+        main_mpfr()
 
     pygame.quit()
 
