@@ -8,7 +8,9 @@ import pygame
 import math
 import time
 import sys
-import numpy
+import getopt
+import functools
+
 try:
     import mandlebrot
 except ModuleNotFoundError:
@@ -16,25 +18,52 @@ except ModuleNotFoundError:
     sys.exit()
 from PIL import Image
 
+
 X1=-2.0
 X2=1.0
 Y1=-1.5
 Y2=1.5
 
-now=time.time()
-window_size = 640
 
-pygame.init()
-surface = pygame.display.set_mode((window_size, window_size))
-surface.fill((255,255,255))
-clock = pygame.time.Clock()
-pygame.key.set_repeat(100,20)
-#print("initialised in ",time.time()-now)
+def timer(func):
+    """decorator function to display the time taken to run a func"""
+    functools.wraps(func)
+    def wrapper_func(*args, **kwargs):
+        start_time = time.perf_counter()
+        value = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        run_time = end_time - start_time
+        print(f"Finished {func.__name__!r} in {run_time:.4f} secs")
+        return value
+    return wrapper_func
+
+class PyGameWindow:
+    """"""
+    def __init__(self, size):
+        """"""
+        pygame.init()
+        self.pygameSurface = pygame.display.set_mode((size, size))
+        self.pygameSurface.fill((255,255,255))
+        self.pygameClock = pygame.time.Clock()
+        pygame.key.set_repeat(100,20)
+        self.windowsize = size
+
+    def surface(self):
+        """"""
+        return self.pygameSurface
+
+    def clock(self):
+        """"""
+        return self.pygameClock
+
+    def winsize(self):
+        """"""
+        return self.windowsize
 
 
 class mandlebrot_python_float:
     """"""
-    def __init__(self):
+    def __init__(self, pgwin):
         """"""
         self.Xs = X1 #-2.0
         self.Xe = X2 #1.0
@@ -42,75 +71,71 @@ class mandlebrot_python_float:
         self.Ye = Y2 #1.5
         self.factor = 10
         self.maxiter = 255
+        self.pgwin = pgwin
+
 
     @classmethod
     def scaled(cls, x, sz, s, e):
+        """"""
         return ( (float(x)/float(sz)) * (e-s) ) + s
 
+
     def reset(self):
+        """"""
         self.Xs = X1 #-2.0
         self.Xe = X2 #1.0
         self.Ys = Y1 #-1.5
         self.Ye = Y2 #1.5
 
-    #def zoom_in(xs, xe, ys, ye, pos, factor):
+
     def zoom_in(self, pos):
-        #print("pos ", pos)
-        loc = (self.scaled(pos[0], window_size, self.Xs, self.Xe), self.scaled(pos[1], window_size, self.Ys, self.Ye))
+        """"""
+        sz = self.pgwin.winsize()
+        loc = (self.scaled(pos[0], sz, self.Xs, self.Xe), self.scaled(pos[1], sz, self.Ys, self.Ye))
+
         print("scaled loc ", loc)
         TLx = loc[0]-abs((self.Xe-self.Xs)/self.factor)
         TLy = loc[1]-abs((self.Ye-self.Ys)/self.factor)
         BRx = loc[0]+abs((self.Xe-self.Xs)/self.factor)
         BRy = loc[1]+abs((self.Ye-self.Ys)/self.factor)
         print("new coords %2.9f %2.9f %2.9f %2.9f" % ( TLx, BRx, TLy, BRy))
-        #return TLx, BRx, TLy, BRy
+
         self.Xs, self.Xe, self.Ys, self.Ye = TLx, BRx, TLy, BRy
 
 
-    #def zoom_out(xs, xe, ys, ye, pos): # pos(x,y) window_size(x,y)
-    def zoom_out(self, pos): # pos(x,y) window_size(x,y)
-        #print("pos ", pos)
-        loc = (self.scaled(pos[0], window_size, self.Xs, self.Xe), self.scaled(pos[1], window_size, self.Ys, self.Ye))
-        #print("scaled loc ", loc)
+    def zoom_out(self, pos):
+        """"""
+        sz = self.pgwin.winsize()
+        loc = (self.scaled(pos[0], sz, self.Xs, self.Xe), self.scaled(pos[1], sz, self.Ys, self.Ye))
+
         TLx = loc[0]-abs((self.Xe-self.Xs)*self.factor )
         TLy = loc[1]-abs((self.Ye-self.Ys)*self.factor )
         BRx = loc[0]+abs((self.Xe-self.Xs)*self.factor )
         BRy = loc[1]+abs((self.Ye-self.Ys)*self.factor )
-        # if we start to hit the upper bounds then adjust the centre
-        if TLx < X1 or BRx > X2 or TLy < Y1 or BRy > Y2:
-            TLx = X1
-            BRx = X2
-            TLy = Y1
-            BRy = Y2
 
-        #print("new coords ", TLx, BRx, TLy, BRy)
-        #return TLx, BRx, TLy, BRy
+        # if we start to hit the upper bounds then adjust the centre
+        if TLx < X1 and BRx > X2 and TLy < Y1 and BRy > Y2:
+            TLx, BRx, TLy, BRy = X1, X2, Y1, Y2
+
         self.Xs, self.Xe, self.Ys, self.Ye = TLx, BRx, TLy, BRy
 
 
+    @timer
     def draw_plot(self):
-        now = time.time()
-
-        sz = window_size
+        """"""
+        sz = self.pgwin.winsize()
         frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
-        #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-2.0", "1.0", "-1.5", "1.5"))
-        #frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, 255, "-1.7400623826", "-1.7400623824", "0.0281753398", "0.0281753395"))
+
         surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
-        print("set calculated in ", time.time()-now, " secs")
-
-        #now = time.time()
-        surface.blit(surf, (0,0))
-        #asyncio.run(test4(xs, xe, ys, ye))
+        self.pgwin.surface().blit(surf, (0,0))
 
         pygame.display.update()
-
-        #print("displayed in ", time.time()-now, " secs")
 
 
 class mandlebrot_c_mpfr:
     """"""
-    def __init__(self):
+    def __init__(self, pgwin):
         """"""
         self.Xs = repr(X1)
         self.Xe = repr(X2)
@@ -118,7 +143,8 @@ class mandlebrot_c_mpfr:
         self.Ye = repr(Y2)
         self.factor = 10
         self.maxiter = 1000
-
+        self.pgwin = pgwin
+        
         mandlebrot.setup()
         mandlebrot.initialize(self.Xs, self.Xe, self.Ys, self.Ye)
 
@@ -133,35 +159,33 @@ class mandlebrot_c_mpfr:
 
 
     def zoom_in(self, pos):
-        """string params for mpfr"""
-        #factor = 10
-        #zoom_in(-2.0, 1.0, -1.5, 1.5, pos, self.factor)
-        mandlebrot.mandlebrot_zoom_in(pos[0], pos[1], window_size, window_size, self.factor)
+        """"""
+        sz = self.pgwin.winsize()
+        mandlebrot.mandlebrot_zoom_in(pos[0], pos[1], sz, sz, self.factor)
+
 
     def zoom_out(self, pos):
         """"""
-        mandlebrot.mandlebrot_zoom_out(int(pos[0]), int(pos[1]), window_size, window_size, self.factor)
+        sz = self.pgwin.winsize()
+        mandlebrot.mandlebrot_zoom_out(int(pos[0]), int(pos[1]), sz, sz, self.factor)
 
 
+    @timer
     def draw_plot(self):
         """params are strings representing real/imag value ranges"""
-
-        now = time.time()
-
-        sz = window_size
-        frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, self.maxiter))
-        print("bytearray len ",len(frame))
-        surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
-
-        print("set calculated in ", time.time()-now, " secs")
-
         #now = time.time()
-        surface.blit(surf, (0,0))
-        #asyncio.run(test4(xs, xe, ys, ye))
+
+        sz = self.pgwin.winsize()
+        frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, self.maxiter))
+
+        print("bytearray len ",len(frame))
+        surf = pygame.image.frombuffer(frame, (sz, sz), 'RGB')
+
+        #print("set calculated in ", time.time()-now, " secs")
+
+        self.pgwin.surface().blit(surf, (0,0))
 
         pygame.display.update()
-
-        #print("displayed in ", time.time()-now, " secs")
 
 
 def display_help():
@@ -182,16 +206,16 @@ def display_help():
     print(help)
 
 
-#def event_loop(xs, xe, ys, ye):
-def event_loop(mand):
+def event_loop(mand, pgwin):
     """takes a class instance that supports draw_plot, zoom_in, zoom_out methods"""
 
     zoom_level = 0
     pygame.mouse.set_cursor(pygame.cursors.broken_x)
-
+    window_size = pgwin.winsize()
+    
     run = False
     while not run:
-        clock.tick(20)
+        pgwin.clock().tick(20)
         for event in pygame.event.get():
 
             mouse_pos = pygame.mouse.get_pos()
@@ -259,41 +283,101 @@ def event_loop(mand):
                     mand.draw_plot()
 
 
-def main_mpfr():
-    mand = mandlebrot_c_mpfr()
+def main_mpfr(pgwin):
+    """"""
+    mand = mandlebrot_c_mpfr(pgwin)
     mand.draw_plot()
-    event_loop(mand)
+    event_loop(mand, pgwin)
     mandlebrot.free_mpfr_mem()
 
 
-def main_python():
-    mand = mandlebrot_python_float()
+def main_python(pgwin):
+    """"""
+    mand = mandlebrot_python_float(pgwin)
     mand.draw_plot()
-    event_loop(mand)
+    event_loop(mand, pgwin)
 
 
-def main():
+def usage():
+    """"""
+    print("mandlebrot_set.py")
+    print("   -h  this help")
+    print("   -z  zoom level to start with")
+    print("   -r  real value of point to zoom in to")
+    print("   -i  imaginary value of point to zoom in to")
+    print("   -d  display size (assumes a square)")
+    print("   -a  which algorithm (float, mpfr)")
+
+
+def getOptions(options):
+    """"""
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "hz:r:i:a:d:", ["help", "zoom=", "real=", "imag=", "algo:", "disp:"])
+    except getopt.GetoptError as err:
+        print(err)
+        usage()
+        sys.exit(2)
+
+    options['algo'] = 'mpfr'
+    options['disp'] = 640
+
+    for o, a in opts:
+        if o == "-h" or o == "-help":
+            usage()
+            sys.exit()
+        elif o == "-z" or o == "-zoom":
+            try:
+                options['zoom'] = int(a)
+            except ValueError:
+                print("\nERROR: zoom must be a positive integer\n")
+                usage()
+                sys.exit(2)
+        elif o == "-r" or o == "-real":
+            options['real'] = a
+        elif o == "-i" or o == "-imag":
+            options['imag'] = a
+        elif o == "-a" or o == "-algo":
+            if a in ['float', 'mpfr']:
+                options['algo'] = a
+            else:
+                print("\nERROR: invalid value for the -algo option\n")
+                usage()
+                sys.exit(2)
+        elif o == "-d" or o == "-disp":
+            try:
+                options['disp'] = int(a)
+            except ValueError:
+                print("\nERROR: disp must be a positive integer\n")
+                usage()
+                sys.exit(2)
+
+
+def main(options):
+    """"""
     display_help()
 
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "-float":
-            main_python()
-        else:
-            print("Invalid option. [%s]" % (sys.argv[1]))
-    else:
-        main_mpfr()
+    pygwin = PyGameWindow(options['disp'])
+
+    if options['algo'] == "float":
+        main_python(pygwin)
+
+    elif options['algo'] == 'mpfr':
+        main_mpfr(pygwin)
 
     pygame.quit()
 
 
 if __name__ == '__main__':
-    main()
+    options = {}
+    getOptions(options)
+    main(options)
 
 
 """
 Values to aim for
-
-real=-1.7400623825
+"""
+    
+real="""-1.7400623825
 7933990522
 0844167065
 8256382966
@@ -321,9 +405,9 @@ real=-1.7400623825
 1288525822
 2629105433
 6486959460
-03865
+03865"""
 
-img=0.0281753397
+img="""0.0281753397
 7921104899
 2411521144
 3195096875
