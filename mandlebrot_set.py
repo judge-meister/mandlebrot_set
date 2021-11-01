@@ -27,7 +27,7 @@ Y2=1.5
 
 def timer(func):
     """decorator function to display the time taken to run a func"""
-    functools.wraps(func)
+    @functools.wraps(func)
     def wrapper_func(*args, **kwargs):
         start_time = time.perf_counter()
         value = func(*args, **kwargs)
@@ -173,15 +173,10 @@ class mandlebrot_c_mpfr:
     @timer
     def draw_plot(self):
         """params are strings representing real/imag value ranges"""
-        #now = time.time()
-
         sz = self.pgwin.winsize()
         frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, self.maxiter))
 
-        print("bytearray len ",len(frame))
         surf = pygame.image.frombuffer(frame, (sz, sz), 'RGB')
-
-        #print("set calculated in ", time.time()-now, " secs")
 
         self.pgwin.surface().blit(surf, (0,0))
 
@@ -216,6 +211,7 @@ def event_loop(mand, pgwin):
     run = False
     while not run:
         pgwin.clock().tick(20)
+
         for event in pygame.event.get():
 
             mouse_pos = pygame.mouse.get_pos()
@@ -268,6 +264,7 @@ def event_loop(mand, pgwin):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 pressed = pygame.mouse.get_pressed()
+
                 if pressed[0]: # Button 1
                     mand.zoom_in(mouse_pos)
                     zoom_level += 1
@@ -325,17 +322,24 @@ def getOptions(options):
         if o == "-h" or o == "-help":
             usage()
             sys.exit()
+
         elif o == "-z" or o == "-zoom":
             try:
                 options['zoom'] = int(a)
+                print("WARNING: option -zoom is still to be implemented")
             except ValueError:
                 print("\nERROR: zoom must be a positive integer\n")
                 usage()
                 sys.exit(2)
+
         elif o == "-r" or o == "-real":
             options['real'] = a
+            print("WARNING: option -real is still to be implemented")
+
         elif o == "-i" or o == "-imag":
             options['imag'] = a
+            print("WARNING: option -imag is still to be implemented")
+
         elif o == "-a" or o == "-algo":
             if a in ['float', 'mpfr']:
                 options['algo'] = a
@@ -343,6 +347,7 @@ def getOptions(options):
                 print("\nERROR: invalid value for the -algo option\n")
                 usage()
                 sys.exit(2)
+
         elif o == "-d" or o == "-disp":
             try:
                 options['disp'] = int(a)
@@ -377,7 +382,7 @@ if __name__ == '__main__':
 Values to aim for
 """
     
-real="""-1.7400623825
+real = """-1.7400623825
 7933990522
 0844167065
 8256382966
@@ -407,7 +412,7 @@ real="""-1.7400623825
 6486959460
 03865"""
 
-img="""0.0281753397
+imag = """0.0281753397
 7921104899
 2411521144
 3195096875
