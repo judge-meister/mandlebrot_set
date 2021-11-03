@@ -30,11 +30,7 @@ longer it will take.
 
 ## Ideas for future development
 
-1. Display the current centre location in the terminal as you zoom in/out.  I can show the
-pixel location of the mouse, but I can only show the mandlebrot set real/imag coordinate
-for floating point number calculations currently and not the MPFR.
-
-1. Learn about arbitrary precision arithmatic to extend the possible zoom level. Done. Using MPFR.
+### Oustanding ###
 
 1. Learn about the various python math libraries to see if any of them help (numpy, numba, scipy ...)
 
@@ -43,19 +39,8 @@ precision initially.
 
 1. Make it multi-processor compatible (threading, processes etc...) to allow it to use more resources and
 calculate faster.  The python multiprocessing module works quite nicely and I have a test program for it, but
-still need to implement it in the main program.  Also on MacOS it seems to get slower if you try to run the
+still need to implement it in the main program.  Although, on MacOS it seems to get slower if you try to run the
 multiprocessing module.
-
-1. Test other languages, like Go - turns out Go is comparible in speed to C, the same order of magnitude at least.
-But I don't think I'll be moving to Go as it has some odd querks which I'm not sure I could get used to.
-
-1. Move all test programs to sub folder - Done, although I need a better folder name then 'test'.
-
-1. Create python interface c file that includes the mandlebrot_set and mandlebrot_mpfr c files. Done.
-
-1. Figure out a whether we can have a init function for the mpfr stuff to save from re-initialising everything
-for every zoom level (image) calculated. Obviously we will need to also have a tidy-up/finish method to free all
-the items - yes we can.  Done.
 
 1. Could also do with learning how to run a function on module import. there is example code for this but it
 doesn't seem to activate.
@@ -66,6 +51,24 @@ doesn't seem to activate.
 
 1. Is it possible display the OpenGL image inside a python window? - Yes, apparently pygame can do that
 see https://www.stechies.com/opengl-python/
+
+### Achieved ###
+
+1. Display the current centre location in the terminal as you zoom in/out.  I can show the
+pixel location of the mouse, but I can only show the mandlebrot set real/imag coordinate
+for floating point number calculations currently and not the MPFR. made a bodge for the MPFR
+class.
+
+1. Learn about arbitrary precision arithmatic to extend the possible zoom level. Done. Using MPFR.
+
+1. Move all test programs to sub folder - Done, although I need a better folder name than 'test'.
+
+1. Create python interface c file that includes the mandlebrot_set and mandlebrot_mpfr c files. Done.
+
+1. Figure out a whether we can have a init function for the mpfr stuff to save from re-initialising everything
+for every zoom level (image) calculated. Obviously we will need to also have a tidy-up/finish method to free all
+the items - yes we can.  Done.
+
 
 ## Lessons Learnt ##
 
@@ -81,10 +84,26 @@ Firstly, the mandlebrot python module needs compiling;
 
     make
 
-Then to run the latest version;
+Then to run the latest version. without any options it will runthe MPFR library version. Add -h to see options;
 
     python3 ./mandlebrot_set.py
 
-To run the python float version which is significantly faster but has limited zoom ranges before pixelation;
+To run the 64bit float version which is significantly faster but has limited zoom ranges before pixelation;
 
-    python3 ./mandlebrot_set.py -float
+    python3 ./mandlebrot_set.py -a float
+
+## Desired Feature List ##
+
+ * get the window displayed while initial image calculation is happening. this will also stop the window hanging while the calculation happens. 
+   * threading maybe
+ * as MPFR calculations take a while use either the 64bit float algorithm or values from the currently displayed image to setup an initial approximation of the next image while waiting for the true image to finish calculating.
+ * have an option that either saves the current image as a file or just generates an image file instead of displaying it 
+   * could be the start of creating a video of a zoom in.
+ * provide the desired centre point, zoom level and zoom factor as input values (initially as command line options)
+   * partially done, still need to apply it to the MPFR library code.
+ * split the mandlebrot.c file up into a MPFR module and a 64bit float module.
+ * add use of the multiprocessing module to speed up calculation.
+   * need to trial distributed multiprocessing across multiple machines.
+ * display other fractals related to mandlebrot sets
+   * mandlebudha
+   * julia sets
