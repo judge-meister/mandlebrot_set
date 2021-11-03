@@ -107,3 +107,5 @@ To run the 64bit float version which is significantly faster but has limited zoo
  * display other fractals related to mandlebrot sets
    * mandlebudha
    * julia sets
+ * use a color gradient image file instead of calculating the color values. might be faster once the file is loaded.
+ 
