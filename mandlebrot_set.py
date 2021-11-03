@@ -70,14 +70,23 @@ class mandlebrot_python_float:
         self.Ys = Y1 #-1.5
         self.Ye = Y2 #1.5
         self.factor = 10
-        self.maxiter = 255
+        self.zoom = 1
+        self.maxiter = 1000
         self.pgwin = pgwin
+        self.centre = {'r': -0.5, 'i': 0.0} # not used in this version
 
 
     @classmethod
-    def scaled(cls, x, sz, s, e):
+    def _scaled(cls, x, sz, s, e):
         """"""
         return ( (float(x)/float(sz)) * (e-s) ) + s
+
+
+    def scaled_pos(self, pos):
+        """"""
+        sz = self.pgwin.winsize()
+        loc = (self._scaled(pos[0], sz, self.Xs, self.Xe), self._scaled(pos[1], sz, self.Ys, self.Ye))
+        return {'r': loc[0], 'i': loc[1]}
 
 
     def reset(self):
@@ -90,9 +99,11 @@ class mandlebrot_python_float:
 
     def zoom_in(self, pos):
         """"""
+        self.zoom +=1
         sz = self.pgwin.winsize()
-        loc = (self.scaled(pos[0], sz, self.Xs, self.Xe), self.scaled(pos[1], sz, self.Ys, self.Ye))
-
+        loc = (self._scaled(pos[0], sz, self.Xs, self.Xe), self._scaled(pos[1], sz, self.Ys, self.Ye))
+        self.centre = {'r': loc[0], 'i': loc[1]}
+        
         print("scaled loc ", loc)
         TLx = loc[0]-abs((self.Xe-self.Xs)/self.factor)
         TLy = loc[1]-abs((self.Ye-self.Ys)/self.factor)
@@ -105,8 +116,10 @@ class mandlebrot_python_float:
 
     def zoom_out(self, pos):
         """"""
+        self.zoom -=1
         sz = self.pgwin.winsize()
-        loc = (self.scaled(pos[0], sz, self.Xs, self.Xe), self.scaled(pos[1], sz, self.Ys, self.Ye))
+        loc = (self._scaled(pos[0], sz, self.Xs, self.Xe), self._scaled(pos[1], sz, self.Ys, self.Ye))
+        self.centre = {'r': loc[0], 'i': loc[1]}
 
         TLx = loc[0]-abs((self.Xe-self.Xs)*self.factor )
         TLy = loc[1]-abs((self.Ye-self.Ys)*self.factor )
@@ -115,9 +128,112 @@ class mandlebrot_python_float:
 
         # if we start to hit the upper bounds then adjust the centre
         if TLx < X1 and BRx > X2 and TLy < Y1 and BRy > Y2:
-            TLx, BRx, TLy, BRy = X1, X2, Y1, Y2
+            #TLx, BRx, TLy, BRy = X1, X2, Y1, Y2
+            self.reset()
+        else:
+            self.Xs, self.Xe, self.Ys, self.Ye = TLx, BRx, TLy, BRy
 
-        self.Xs, self.Xe, self.Ys, self.Ye = TLx, BRx, TLy, BRy
+
+    @timer
+    def draw_plot(self):
+        """"""
+        sz = self.pgwin.winsize()
+        frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
+
+        surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
+
+        self.pgwin.surface().blit(surf, (0,0))
+
+        pygame.display.update()
+
+
+class mandlebrot_python_float_centre:
+    """"""
+    def __init__(self, pgwin):
+        """"""
+        self.Xs = X1 #-2.0
+        self.Xe = X2 #1.0
+        self.Ys = Y1 #-1.5
+        self.Ye = Y2 #1.5
+        self.factor = 6
+        self._zoom = -1
+        self.maxiter = 1000
+        self.pgwin = pgwin
+        self._centre = {'r': -0.5, 'i': 0.0}
+
+    @property
+    def zoom(self):
+        """"""
+        return self._zoom
+
+    @zoom.setter
+    def zoom(self, value):
+        """"""
+        self._zoom = value
+        
+    @property
+    def centre(self):
+        """"""
+        return self._centre
+
+    @centre.setter
+    def centre(self, value):
+        self._centre = value
+
+
+    def _scaledX(self, x):
+        """"""
+        return ( (float(x)/float( self.pgwin.winsize() )) * (self.Xe - self.Xs) ) + self.Xs
+
+
+    def _scaledY(self, y):
+        """"""
+        return ( (float(y)/float( self.pgwin.winsize() )) * (self.Ye - self.Ys) ) + self.Ys
+
+
+    def scaled_pos(self, pos):
+        """"""
+        loc = (self._scaledX(pos[0]), self._scaledY(pos[1]))
+        return {'r': loc[0], 'i': loc[1]}
+
+
+    def create_corners(self):
+        """"""
+        offset = 1.0 / (math.pow(self.factor, self._zoom))
+        self.Xs = self._centre['r'] - offset
+        self.Xe = self._centre['r'] + offset
+        self.Ys = self._centre['i'] - offset
+        self.Ye = self._centre['i'] + offset
+        print("centre ",self._centre, "offset ",offset)
+        print("corners ",self.Xs, self.Xe, self.Ys, self.Ye)
+
+
+    def reset(self):
+        """"""
+        self._centre = {'r': -0.5, 'i': 0.0}
+        self._zoom = 0
+        self.Xs, self.Xe, self.Ys, self.Ye = X1, X2, Y1, Y2
+        
+
+    def zoom_in(self, pos):
+        """"""
+        self._centre = {'r': self._scaledX(pos[0]), 'i': self._scaledY(pos[1])}
+        self._zoom +=1
+        print("zoom in ", self._zoom)
+        self.create_corners()
+
+
+    def zoom_out(self, pos):
+        """"""
+        self._zoom -=1
+        print("zoom out ", self._zoom)
+        self.create_corners()
+        #if self._zoom <= 0:
+        #    self.reset()
+        #    print("zoom out ", self._zoom)
+        #else:
+        #    print("zoom out ", self._zoom)
+        #    self.create_corners()
 
 
     @timer
@@ -142,11 +258,29 @@ class mandlebrot_c_mpfr:
         self.Ys = repr(Y1)
         self.Ye = repr(Y2)
         self.factor = 10
+        self.zoom = 1
         self.maxiter = 1000
         self.pgwin = pgwin
+        self.centre = {'r': -0.5, 'i': 0.0}
         
         mandlebrot.setup()
         mandlebrot.initialize(self.Xs, self.Xe, self.Ys, self.Ye)
+
+
+    def _scaledX(self, x):
+        """"""
+        return ( (float(x)/float( self.pgwin.winsize() )) * (float(self.Xe) - float(self.Xs)) ) + float(self.Xs)
+
+
+    def _scaledY(self, y):
+        """"""
+        return ( (float(y)/float( self.pgwin.winsize() )) * (float(self.Ye) - float(self.Ys)) ) + float(self.Ys)
+
+
+    def scaled_pos(self, pos):
+        """"""
+        loc = (self._scaledX(pos[0]), self._scaledY(pos[1]))
+        return {'r': loc[0], 'i': loc[1]}
 
 
     def reset(self):
@@ -215,35 +349,26 @@ def event_loop(mand, pgwin):
         for event in pygame.event.get():
 
             mouse_pos = pygame.mouse.get_pos()
-            loc = (0.0, 0.0) #(scaled(mouse_pos[0], window_size, xs, xe), scaled(mouse_pos[1], window_size, ys, ye))
-            pygame.display.set_caption("Mandlebrot %s zoom=%s centre=%s" % (repr(mouse_pos), zoom_level, repr(loc)))
+            centre_pos = mand.scaled_pos(mouse_pos)
+            pygame.display.set_caption("Mandlebrot %s zoom=%s centre=%s" % (repr(mouse_pos), mand.zoom, repr(centre_pos)))
 
             if event.type == pygame.QUIT or (event.type == pygame.KEYUP and (event.key == pygame.K_q or event.key == pygame.K_ESCAPE)):
                 run = True
 
             if event.type == pygame.KEYUP and event.key == pygame.K_c:
-                zoom_level = 0
-                print("zoom level ", zoom_level)
+                print("zoom level ", mand.zoom)
                 mand.reset()
                 mand.draw_plot()
 
             if event.type == pygame.KEYUP and event.key == pygame.K_z:
                 mand.zoom_in(mouse_pos)
-                zoom_level += 1
-                print("zoom level ", zoom_level)
+                print("zoom level ", mand.zoom)
                 mand.draw_plot()
 
             if event.type == pygame.KEYUP and event.key == pygame.K_x:
-                if zoom_level > 0:
-                    mand.zoom_out((window_size/2, window_size/2))
-                    #if xs == X1 and ys == Y1:
-                    #    zoom_level = 0
-                    #else:
-                    #    zoom_level -= 1
-                        #if zoom_level == -1:
-                        #    zoom_level = 0
-                    print("zoom level ", zoom_level)
-                    mand.draw_plot()
+                mand.zoom_out((window_size/2, window_size/2))
+                print("zoom level ", mand.zoom)
+                mand.draw_plot()
 
             if event.type == pygame.KEYUP and event.key == pygame.K_UP:
                 if mouse_pos[1] > 1:
@@ -267,20 +392,16 @@ def event_loop(mand, pgwin):
 
                 if pressed[0]: # Button 1
                     mand.zoom_in(mouse_pos)
-                    zoom_level += 1
-                    print("zoom level ", zoom_level)
+                    print("zoom level ", mand.zoom)
                     mand.draw_plot()
 
                 if pressed[2]: # Button 3
                     mand.zoom_out((window_size/2, window_size/2))
-                    zoom_level -= 1
-                    if zoom_level == -1:
-                        zoom_level = 0
-                    print("zoom level ", zoom_level)
+                    print("zoom level ", mand.zoom)
                     mand.draw_plot()
 
 
-def main_mpfr(pgwin):
+def main_mpfr(pgwin, options):
     """"""
     mand = mandlebrot_c_mpfr(pgwin)
     mand.draw_plot()
@@ -288,9 +409,20 @@ def main_mpfr(pgwin):
     mandlebrot.free_mpfr_mem()
 
 
-def main_python(pgwin):
+def main_python(pgwin, options):
     """"""
     mand = mandlebrot_python_float(pgwin)
+    mand.draw_plot()
+    event_loop(mand, pgwin)
+
+
+def main_python_centre(pgwin, options):
+    """"""
+    mand = mandlebrot_python_float_centre(pgwin)
+    if 'real' in options and 'imag' in options:
+        mand.centre = {'r': float(options['real']), 'i': float(options['imag'])}
+        mand.zoom = options['zoom']
+        mand.create_corners()
     mand.draw_plot()
     event_loop(mand, pgwin)
 
@@ -304,12 +436,13 @@ def usage():
     print("   -i  imaginary value of point to zoom in to")
     print("   -d  display size (assumes a square)")
     print("   -a  which algorithm (float, mpfr)")
+    print("   -f  zoom factor")
 
 
 def getOptions(options):
     """"""
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hz:r:i:a:d:", ["help", "zoom=", "real=", "imag=", "algo:", "disp:"])
+        opts, args = getopt.getopt(sys.argv[1:], "hz:r:i:a:d:f:", ["help", "zoom=", "real=", "imag=", "algo=", "disp=", "factor="])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -328,20 +461,28 @@ def getOptions(options):
                 options['zoom'] = int(a)
                 print("WARNING: option -zoom is still to be implemented")
             except ValueError:
-                print("\nERROR: zoom must be a positive integer\n")
+                print("\nERROR: -zoom must be a positive integer\n")
                 usage()
                 sys.exit(2)
 
         elif o == "-r" or o == "-real":
-            options['real'] = a
-            print("WARNING: option -real is still to be implemented")
+            try:
+                r = float(a)
+                options['real'] = a # value is stored as a string
+            except ValueError:
+                print("\nERROR: -real must be a floating point number\n")
+            #print("WARNING: option -real is still to be implemented")
 
         elif o == "-i" or o == "-imag":
-            options['imag'] = a
-            print("WARNING: option -imag is still to be implemented")
+            try:
+                r = float(a)
+                options['imag'] = a # value is stored as a string
+            except ValueError:
+                print("\nERROR: -imag must be a floating point number\n")
+            #print("WARNING: option -imag is still to be implemented")
 
         elif o == "-a" or o == "-algo":
-            if a in ['float', 'mpfr']:
+            if a in ['float', 'mpfr', 'centre']:
                 options['algo'] = a
             else:
                 print("\nERROR: invalid value for the -algo option\n")
@@ -352,7 +493,15 @@ def getOptions(options):
             try:
                 options['disp'] = int(a)
             except ValueError:
-                print("\nERROR: disp must be a positive integer\n")
+                print("\nERROR: -disp must be a positive integer\n")
+                usage()
+                sys.exit(2)
+
+        elif o == "-f" or o == "-factor":
+            try:
+                options['factor'] = int(a)
+            except ValueError:
+                print("\nERROR: -factor must be a positive integer\n")
                 usage()
                 sys.exit(2)
 
@@ -364,10 +513,13 @@ def main(options):
     pygwin = PyGameWindow(options['disp'])
 
     if options['algo'] == "float":
-        main_python(pygwin)
+        main_python(pygwin, options)
+
+    if options['algo'] == "centre":
+        main_python_centre(pygwin, options)
 
     elif options['algo'] == 'mpfr':
-        main_mpfr(pygwin)
+        main_mpfr(pygwin, options)
 
     pygame.quit()
 
