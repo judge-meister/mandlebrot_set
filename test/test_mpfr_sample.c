@@ -3,7 +3,7 @@
  *
  * use the following to build it.
  *
- *    gcc -o run_sample_mpfr -lmpfr test_mpfr_sample.c 
+     gcc -o run_sample_mpfr -lmpfr test_mpfr_sample.c 
  */
 
 #include <stdio.h>
