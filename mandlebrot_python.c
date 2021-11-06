@@ -35,7 +35,6 @@ static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "iiidddd", &wsize, &hsize, &maxiter, &Xs, &Xe, &Ys, &Ye))
         return NULL;
 
-    /*printf("params, %d,%d %1.20lf,%1.20lf %1.20lf,%1.20lf  %d\n", wsize,hsize, Xs,Xe, Ys,Ye, maxiter);*/
     PyObject *points = PyList_New(0);
 
     /* create an array of integers to store the result of the mandlebrot calculation */
@@ -74,8 +73,6 @@ static PyObject * mandlebrot_mpfr(PyObject *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "iii", &wsize, &hsize, &maxiter))
         return NULL;
-
-    //printf("params, %d x %d, %d %s, %s  %s, %s\n", wsize,hsize, maxiter, Xs,Xe, Ys,Ye);
 
     PyObject *points = PyList_New(0);
 
@@ -126,7 +123,6 @@ static PyObject * mandlebrot_zoom_out(PyObject *self, PyObject *args)
 static PyObject * setup(PyObject *self, PyObject *args)
 {
     setup_c();
-    printf("setup_c()\n");
     return PyLong_FromLong(0);
 }
 /* ----------------------------------------------------------------------------

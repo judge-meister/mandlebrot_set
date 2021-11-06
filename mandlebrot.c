@@ -41,6 +41,19 @@
 #include <mpfr.h>
 
 /* DEFINES */
+
+// TRACE DEBUG macro
+#ifdef TRACE
+#define TRACE_DEBUGV(formatstring, ...) \
+    { printf("-D- " formatstring, __VA_ARGS__); }
+#define TRACE_DEBUG(formatstring) \
+	{ printf("-D- " formatstring); }
+#else
+#define TRACE_DEBUGV(formatstring, ...)
+#define TRACE_DEBUG(formatstring)
+#endif
+
+
 #define PRECISION 128
 /* if PRECISION is increased then NUMLEN needs to increase */
 #define NUMLEN 50
@@ -100,7 +113,7 @@ static struct Color sqrt_gradient(int it, int maxiter)
         c.g = (int)floor((( sin(0.45 * m * 85.0) *0.5)+0.5) *255);
         c.b = (int)floor((( sin(0.25 * m * 85.0) *0.5)+0.5) *255);
         if (c.r>255 || c.g>255 || c.b>255 || c.r<0 || c.g<0 || c.b<0)
-            printf("col(%5.6f,%5.6f,%5.6f) | ",sin(0.30 * m * 20.0),sin(0.45 * m * 20.0),sin(0.65 * m * 20.0));
+            TRACE_DEBUGV("col(%5.6f,%5.6f,%5.6f) | ",sin(0.30 * m * 20.0),sin(0.45 * m * 20.0),sin(0.65 * m * 20.0));
     }
     else
     {
@@ -201,10 +214,10 @@ void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/displ
             /* just add the rgb values to the list */
             bytearray[bc] = rgb.r;
             bc++;
-            //printf("bc %d g %d\n", bc, rgb.g);
+
             bytearray[bc] = rgb.g;
             bc++;
-            //printf("bc %d b %d\n", bc, rgb.b);
+
             bytearray[bc] = rgb.b;
             bc++;
         }
@@ -217,7 +230,7 @@ void setup_c()
 {
     /* create all mpfr_t vars */
     mpfr_inits2(PRECISION, Xs, Xe, Ys, Ye, (mpfr_ptr)NULL);
-    printf("called setup_c()\n");
+    TRACE_DEBUG("called setup_c()\n");
 }
 
 /* ----------------------------------------------------------------------------
@@ -229,15 +242,11 @@ void initialize_c(
        const char* Ye_str  /* string repr of mpfr_t for Y bottom right */
      )
 {
-    printf("called init_c()\n");
+    TRACE_DEBUG("called init_c()\n");
     mpfr_set_str(Xs, Xs_str, 10, MPFR_RNDN);
-    //printf("called init_c(Xs)\n");
     mpfr_set_str(Xe, Xe_str, 10, MPFR_RNDN);
-    //printf("called init_c(Xe)\n");
     mpfr_set_str(Ys, Ys_str, 10, MPFR_RNDN);
-    //printf("called init_c(Ys)\n");
     mpfr_set_str(Ye, Ye_str, 10, MPFR_RNDN);
-    //printf("called init_c(Ye)\n");
     zoom_level = 0;
 
 }
@@ -247,7 +256,6 @@ void free_mpfr_mem_c()
 {
     mpfr_clears(Xs, Xe, Ys, Ye, (mpfr_ptr)NULL);
     mpfr_free_cache();
-    //mpfr_free_cache2();
 }
 
 /* ----------------------------------------------------------------------------
@@ -272,34 +280,24 @@ void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/
                          int bytearray[] /* reference/pointer to result list of color values*/
                          )
 {
-    mpfr_t x, y, xsq, ysq, xtmp, x0, y0/*, Xe, Xs, Ye, Ys*/; /* algorithm values */
-    mpfr_t a, two, four, sum_xsq_ysq;                    /* tmp vals */
+    mpfr_t x, y, xsq, ysq, xtmp, x0, y0; /* algorithm values */
+    mpfr_t a, two, four, sum_xsq_ysq;    /* tmp vals */
     unsigned int iteration = 0;
     unsigned int bc = 0;
     struct Color rgb;
 
-    //printf("mand_mpfr_c %s %s   %s %s   %d x %d %d\n", Xs_str, Xe_str, Ys_str, Ye_str, xsize, ysize, maxiter);
-
     /* create all mpfr_t vars */
-    mpfr_inits2(PRECISION, x, y, xsq, ysq, xtmp, x0, y0/*, Xs, Xe, Ys, Ye*/, (mpfr_ptr)NULL);
+    mpfr_inits2(PRECISION, x, y, xsq, ysq, xtmp, x0, y0, (mpfr_ptr)NULL);
     mpfr_inits2(PRECISION, a, two, four, sum_xsq_ysq, (mpfr_ptr)NULL);
 
-    /* get high precision floats from input strings */
-    /*mpfr_strtofr(Xs, Xs_str, NULL, 10, MPFR_RNDN);
-    mpfr_strtofr(Xe, Xe_str, NULL, 10, MPFR_RNDN);
-    mpfr_strtofr(Ys, Ys_str, NULL, 10, MPFR_RNDN);
-    mpfr_strtofr(Ye, Ye_str, NULL, 10, MPFR_RNDN);*/
-    /*mpfr_set_str(Xs, Xs_str, 10, MPFR_RNDN);
-    mpfr_set_str(Xe, Xe_str, 10, MPFR_RNDN);
-    mpfr_set_str(Ys, Ys_str, 10, MPFR_RNDN);
-    mpfr_set_str(Ye, Ye_str, 10, MPFR_RNDN);*/
-
-    printf("mandlebrot_mpfr_c (in) \n");
+    TRACE_DEBUG("mandlebrot_mpfr_c (in)\n");
+#ifdef TRACE
     mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
-    putchar('\n');
+#endif
+    TRACE_DEBUG("\n");
 
     /* initialise all mpfr_t vars */
     mpfr_set_d(x, 0.0, MPFR_RNDN);
@@ -354,13 +352,13 @@ void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/
             }
             /* create a color value and add to result list */
             rgb = sqrt_gradient(iteration, maxiter);
-            //printf("bc %d r %d\n", bc, rgb.r);
+
             bytearray[bc] = rgb.r;
             bc++;
-            //printf("bc %d g %d\n", bc, rgb.g);
+
             bytearray[bc] = rgb.g;
             bc++;
-            //printf("bc %d b %d\n", bc, rgb.b);
+
             bytearray[bc] = rgb.b;
             bc++;
         }
@@ -383,12 +381,14 @@ void mpfr_zoom_in(       const unsigned int pX, /* x mouse pos in display */
 
     mpfr_inits2(PRECISION, lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
 
-    printf("mpfr_zoom_in (in) disp %d x %d factor %d at %d x %d\n",w, h, factor, pX, pY);
+    TRACE_DEBUGV("mpfr_zoom_in (in) disp %d x %d factor %d at %d x %d\n",w, h, factor, pX, pY);
+#ifdef TRACE
     mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
-    putchar('\n');
+#endif
+    TRACE_DEBUG("\n");
 
     /* scaled ( ((double)x1 / (double)sz) * (Xe-Xs) ) + Xs; */
     /* double X0 = scaled(pX, xsz, Xs, Xe); */
@@ -401,9 +401,11 @@ void mpfr_zoom_in(       const unsigned int pX, /* x mouse pos in display */
     mpfr_mul_d(ly, ly, ((double)pY/(double)h), MPFR_RNDN);
     mpfr_add(ly, ly, Ys, MPFR_RNDN);
 
-    printf("scaled loc (mpfr)\n");
+    TRACE_DEBUG("scaled loc (mpfr)\n");
+#ifdef TRACE
     mpfr_out_str(stdout, 10, 0, lx, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, ly, MPFR_RNDN); putchar('\n');
+#endif
 
     /* TLx = loc_x - abs((xe-xs)/3) */
     mpfr_sub(TLx, Xe, Xs, MPFR_RNDN);
@@ -434,28 +436,27 @@ void mpfr_zoom_in(       const unsigned int pX, /* x mouse pos in display */
     mpfr_set(Ys, TLy, MPFR_RNDN);
     mpfr_set(Ye, BRy, MPFR_RNDN);
 
-    printf("mpfr_zoom_in (out) \n");
+    TRACE_DEBUG("mpfr_zoom_in (out) \n");
+#ifdef TRACE
     mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
-    putchar('\n');
+#endif
+    TRACE_DEBUG("\n");
 
     zoom_level = zoom_level + 1;
 
     mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
     mpfr_mul_ui(lx, lx, zoom_level*10*w, MPFR_RNDN);
-    //mpfr_mul_ui(lx, lx, w, MPFR_RNDN);
 
     mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
     mpfr_mul_ui(ly, ly, zoom_level*10*h, MPFR_RNDN);
-    //mpfr_mul_ui(ly, ly, h, MPFR_RNDN);
 
     w1 = mpfr_get_ui(lx, MPFR_RNDN);
     h1 = mpfr_get_ui(ly, MPFR_RNDN);
-    printf("display size: %d %d\n", w1, h1);
-    //mpfr_out_str(stdout, 10, 0, lx, MPFR_RNDN); printf(" x ");
-    //mpfr_out_str(stdout, 10, 0, ly, MPFR_RNDN); putchar('\n');
+    TRACE_DEBUGV("display size: %d %d\n", w1, h1);
+
     mpfr_clears(lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
 }
 
@@ -530,42 +531,29 @@ void mpfr_zoom_out(      const unsigned int pX, /* x mouse pos in display */
         #return TLx, BRx, TLy, BRy
         self.Xs, self.Xe, self.Ys, self.Ye = TLx, BRx, TLy, BRy
     */
-    printf("mpfr_zoom_out (out) \n");
+    TRACE_DEBUG("mpfr_zoom_out (out) \n");
+#ifdef TRACE
     mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
-    putchar('\n');
+#endif
+    TRACE_DEBUG("\n");
 
     zoom_level = zoom_level - 1;
 
     mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
     mpfr_mul_ui(lx, lx, zoom_level*10*w, MPFR_RNDN);
-    //mpfr_mul_ui(lx, lx, w, MPFR_RNDN);
 
     mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
     mpfr_mul_ui(ly, ly, zoom_level*10*h, MPFR_RNDN);
-    //mpfr_mul_ui(ly, ly, h, MPFR_RNDN);
 
     w1 = mpfr_get_ui(lx, MPFR_RNDN);
     h1 = mpfr_get_ui(ly, MPFR_RNDN);
-    printf("display size: %d %d\n", w1, h1);
+    TRACE_DEBUGV("display size: %d %d\n", w1, h1);
 
     mpfr_clears(lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
 }
-/* -2.000000000000000000000000000000000000000e0 */
-/*
-    loc_x = scaled(pos[0], window_size, xs, xe)
-    loc_y = scaled(pos[1], window_size, ys, ye)
-
-    TLx = loc_x - abs((xe-xs)/3)
-    TLy = loc_y - abs((ye-ys)/3)
-    BRx = loc_x + abs((xe-xs)/3)
-    BRy = loc_y + abs((ye-ys)/3)
-
-    return TL[0], BR[0], TL[1], BR[1]
-*/
-
 
 
 /* ----------------------------------------------------------------------------

@@ -1,6 +1,8 @@
 
 # very simplictic makefile - could do better
 
+DEBUG=-DTRACE
+
 all: pymodule test
 
 
@@ -14,7 +16,7 @@ pymodule:
 .PHONY: test
 test:
 	rm -f test_mandlebrot_main
-	gcc  test_mandlebrot_main.c mandlebrot.c -lmpfr -lm   -o test_mandlebrot_main
+	gcc $(DEBUG) test_mandlebrot_main.c mandlebrot.c -lmpfr -lm   -o test_mandlebrot_main
 
 
 valgrind: test
