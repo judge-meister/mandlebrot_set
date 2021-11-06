@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# MacOS shared lib
+*.dSYM
+
 # Distribution / packaging
 .Python
 build/
