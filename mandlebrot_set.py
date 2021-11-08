@@ -7,9 +7,12 @@ using a custom C module and pygame to display and zoom in on the mandlebrot set
 import pygame
 import math
 import time
+import os
 import sys
 import getopt
 import functools
+import threading
+import multiprocessing as mp
 
 try:
     import mandlebrot
@@ -17,6 +20,7 @@ except ModuleNotFoundError:
     print("\nHave you built the mandlebrot C module ? try running 'make'\n")
     sys.exit()
 from PIL import Image
+#from multiprocessing import Pool, cpu_count
 
 
 X1=-2.0
@@ -42,6 +46,9 @@ class PyGameWindow:
     def __init__(self, size):
         """"""
         pygame.init()
+        scr_inf = pygame.display.Info()
+        #os.environ['SDL_VIDEO_WINDOW_POS'] = '{}, {}'.format(scr_inf.current_w, # // 2 - WINSIZE[0] // 2,
+        #                                                     scr_inf.current_h)# // 2 - WINSIZE[1] // 2)
         self.pygameSurface = pygame.display.set_mode((size, size))
         self.pygameSurface.fill((255,255,255))
         self.pygameClock = pygame.time.Clock()
@@ -138,7 +145,7 @@ class mandlebrot_python_float:
     def draw_plot(self):
         """"""
         sz = self.pgwin.winsize()
-        frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
+        frame = bytearray(mandlebrot.mandlebrot_bytearray((sz, sz), self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
 
         surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
@@ -235,18 +242,56 @@ class mandlebrot_python_float_centre:
         #    print("zoom out ", self._zoom)
         #    self.create_corners()
 
-
     @timer
     def draw_plot(self):
         """"""
+        #x = threading.Thread(target=self.threaded_draw_plot)
+        #x.start()
+        self.threaded_draw_plot()
+
+    @timer
+    def threaded_draw_plot(self):
+        """"""
         sz = self.pgwin.winsize()
-        frame = bytearray(mandlebrot.mandlebrot_bytearray(sz, sz, self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
+        frame = bytearray(mandlebrot.mandlebrot_bytearray((sz, sz), self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
 
         surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
         self.pgwin.surface().blit(surf, (0,0))
 
         pygame.display.update()
+
+"""
+        class BigFloat:
+            def __init__(self, valstr="0", ndigits=1, exp=0):
+                self.valstr = valstr # string repr of number without exponent or decimal point
+                self.ndigits = ndigits # number of digits in the valstr
+                self.exp = exp # the exponent part of the number
+        
+            
+"""
+
+class mpfr_c:
+    def __init__(self):
+        self.Xs = repr(X1)
+        self.Xe = repr(X2)
+        self.Ys = repr(Y1)
+        self.Ye = repr(Y2)
+        #mandlebrot.setup()
+        mandlebrot.initialize(self.Xs, self.Xe, self.Ys, self.Ye)
+        
+    def zoom_in(self, px, py, sz, sz1, factor):
+        mandlebrot.mandlebrot_zoom_in((px, py), (sz, sz), factor)
+        
+    def zoom_out(self, px, py, sz, sz1, factor):
+        mandlebrot.mandlebrot_zoom_out((px, py), (sz, sz), factor)
+        
+    @timer
+    def slice_set(self, sz, slices, slice, maxiter):
+        #mandlebrot.initialize("-2.0", "1.0", "-1.5", "1.5")
+        print("slice the set ",sz, slices, slice, maxiter)
+        frame = bytearray(mandlebrot.mandlebrot_mpfr_slice((sz, sz), slices, slice, maxiter))
+        return (slice, frame)
 
 
 class mandlebrot_c_mpfr:
@@ -262,23 +307,25 @@ class mandlebrot_c_mpfr:
         self.maxiter = 1000
         self.pgwin = pgwin
         self.centre = {'r': -0.5, 'i': 0.0}
-        
-        mandlebrot.setup()
-        mandlebrot.initialize(self.Xs, self.Xe, self.Ys, self.Ye)
+        self.sz = self.pgwin.winsize()
+
+        self.mpfr = mpfr_c()
+        #mandlebrot.setup()
+        #mandlebrot.initialize(self.Xs, self.Xe, self.Ys, self.Ye)
 
 
     def _scaledX(self, x):
-        """"""
-        return ( (float(x)/float( self.pgwin.winsize() )) * (float(self.Xe) - float(self.Xs)) ) + float(self.Xs)
+        """for display only"""
+        return ( (float(x)/float( self.sz )) * (float(self.Xe) - float(self.Xs)) ) + float(self.Xs)
 
 
     def _scaledY(self, y):
-        """"""
-        return ( (float(y)/float( self.pgwin.winsize() )) * (float(self.Ye) - float(self.Ys)) ) + float(self.Ys)
+        """for display only"""
+        return ( (float(y)/float( self.sz )) * (float(self.Ye) - float(self.Ys)) ) + float(self.Ys)
 
 
     def scaled_pos(self, pos):
-        """"""
+        """for display only"""
         loc = (self._scaledX(pos[0]), self._scaledY(pos[1]))
         return {'r': loc[0], 'i': loc[1]}
 
@@ -294,27 +341,54 @@ class mandlebrot_c_mpfr:
 
     def zoom_in(self, pos):
         """"""
-        sz = self.pgwin.winsize()
-        mandlebrot.mandlebrot_zoom_in(pos[0], pos[1], sz, sz, self.factor)
+        #mandlebrot.mandlebrot_zoom_in(pos[0], pos[1], self.sz, self.sz, self.factor)
+        self.mpfr.zoom_in(pos[0], pos[1], self.sz, self.sz, self.factor)
 
 
     def zoom_out(self, pos):
         """"""
-        sz = self.pgwin.winsize()
-        mandlebrot.mandlebrot_zoom_out(int(pos[0]), int(pos[1]), sz, sz, self.factor)
+        #mandlebrot.mandlebrot_zoom_out(int(pos[0]), int(pos[1]), self.sz, self.sz, self.factor)
+        self.mpfr.zoom_out(int(pos[0]), int(pos[1]), self.sz, self.sz, self.factor)
 
 
-    @timer
     def draw_plot(self):
-        """params are strings representing real/imag value ranges"""
-        sz = self.pgwin.winsize()
-        frame = bytearray(mandlebrot.mandlebrot_mpfr(sz, sz, self.maxiter))
+        """multiprocessing
+        
+        THIS DOES NOT WORK AS THE MANDLEBROT MODULE IS RESET FOR EACH PROCESS WHICH CLEARS THE 
+        CORNER VALUES AND PRODUCES A SOLID BLACK IMAGE.
+        
+        NEED TO LOOK INTO THREADING IN THE C CODE !!
+        
+        """
+        slices = int(mp.cpu_count()) # should be 2* num cpu cores, any more gives negligible benefit
+        params = []
+        for slice in range(slices):
+            params.append((self.sz, slices, slice, self.maxiter))
+            
+        pool = mp.Pool(processes=slices)
+        d = pool.starmap(self.mpfr.slice_set, params)
+        print("pool complete")
+        
+        #for slice in range(slices):
+        #    frame = bytearray(mandlebrot.mandlebrot_mpfr_slice(self.sz, self.sz, slices, slice, self.maxiter))
 
-        surf = pygame.image.frombuffer(frame, (sz, sz), 'RGB')
+        slice = 0
+        for slice, frame in d:
+            print(slice, len(frame), self.sz, int(self.sz / slices), int(slice * self.sz/slices))
+            #frame = bytearray(frame_raw)
+            surf = pygame.image.frombuffer(frame, (self.sz, int(self.sz / slices)), 'RGB')
+            self.pgwin.surface().blit(surf, (0, int(slice * self.sz/slices)))
+            slice += 1
+            pygame.display.update()
+            self.pgwin.clock().tick(20)
+            
 
-        self.pgwin.surface().blit(surf, (0,0))
-
-        pygame.display.update()
+def slice_the_set(sz, slices, slice, maxiter):
+    """"""
+    mandlebrot.initialize("-2.0", "1.0", "-1.5", "1.5")
+    print("slice the set ",sz, slices, slice, maxiter)
+    frame = bytearray(mandlebrot.mandlebrot_mpfr_slice((sz, sz), slices, slice, maxiter))
+    return (slice, frame)
 
 
 def display_help():
@@ -338,6 +412,8 @@ def display_help():
 def event_loop(mand, pgwin):
     """takes a class instance that supports draw_plot, zoom_in, zoom_out methods"""
 
+    fft = True
+    ev_count = 0
     zoom_level = 0
     pygame.mouse.set_cursor(pygame.cursors.broken_x)
     window_size = pgwin.winsize()
@@ -345,6 +421,11 @@ def event_loop(mand, pgwin):
     run = False
     while not run:
         pgwin.clock().tick(20)
+        
+        if fft and ev_count == 25:
+            fft = False
+            mand.draw_plot()
+        ev_count +=1
 
         for event in pygame.event.get():
 
@@ -404,7 +485,7 @@ def event_loop(mand, pgwin):
 def main_mpfr(pgwin, options):
     """"""
     mand = mandlebrot_c_mpfr(pgwin)
-    mand.draw_plot()
+    #mand.draw_plot()
     event_loop(mand, pgwin)
     mandlebrot.free_mpfr_mem()
 
@@ -412,7 +493,7 @@ def main_mpfr(pgwin, options):
 def main_python(pgwin, options):
     """"""
     mand = mandlebrot_python_float(pgwin)
-    mand.draw_plot()
+    #mand.draw_plot()
     event_loop(mand, pgwin)
 
 
@@ -423,7 +504,7 @@ def main_python_centre(pgwin, options):
         mand.centre = {'r': float(options['real']), 'i': float(options['imag'])}
         mand.zoom = options['zoom']
         mand.create_corners()
-    mand.draw_plot()
+    #mand.draw_plot()
     event_loop(mand, pgwin)
 
 
@@ -508,6 +589,8 @@ def getOptions(options):
 
 def main(options):
     """"""
+    mp.set_start_method('spawn')
+    
     display_help()
 
     pygwin = PyGameWindow(options['disp'])
