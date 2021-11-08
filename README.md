@@ -105,7 +105,7 @@ To run the 64bit float version which is significantly faster but has limited zoo
  * add use of the multiprocessing module to speed up calculation.
    * need to trial distributed multiprocessing across multiple machines.
  * display other fractals related to mandlebrot sets
-   * mandlebudha
+   * budhabrot - https://en.wikipedia.org/wiki/Buddhabrot
    * julia sets
  * use a color gradient image file instead of calculating the color values. might be faster once the file is loaded.
  
