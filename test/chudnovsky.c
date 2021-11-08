@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <mpfr.h>
 
 #define PREC (mpfr_prec_t)(1024*5)
@@ -67,6 +68,39 @@ void chudnovsky(unsigned int iterations)
 	
 	mpfr_out_str(stdout, 10, 0, sum, MPFR_RNDN);
 	printf("\n");
+    
+    printf("\n");
+    printf("\n");
+    
+    /* TEST EXPORTING AND IMPORTING STRING REPRESENTATIONS OF MPFR_T */
+    int base = 10; /* 2-62 the higher the base the less chars required*/
+    //mpfr_out_str(stderr, 10, 0, chud_frac, MPFR_RNDN);
+    //fprintf(stderr,"\n");
+    //mpfr_out_str(stderr, base, 0, chud_frac, MPFR_RNDN);
+    //fprintf(stderr,"\n");
+    size_t ndigits = mpfr_get_str_ndigits(base, PREC);
+    char pi_str[ndigits+10]; /* leave room to add the exponent value to the end */
+    char exp_str[10];
+    mpfr_exp_t exp;
+    mpfr_get_str(pi_str, &exp, base, 0, chud_frac, MPFR_RNDN);
+    /* we will need to export both the value and exponent. ndigits could be calculated */
+    printf("export (ndigits %zu)\n", ndigits);
+    printf("%s\n", pi_str);
+    printf("exp  %ld\n", exp);
+    
+    printf("import (ndigits %zu)\n", ndigits);
+    /* combine value string with exponent-ndigits */
+    sprintf(exp_str, "@%ld", exp-ndigits); /* @ is a universal indicator of the exponent value */
+    strcat(pi_str, exp_str);               /* add the exp part to the number */
+    //printf("full_str %s\n", pi_str);
+    /* convert string back to mpfr_t */
+    mpfr_strtofr(sum, pi_str, NULL, base, MPFR_RNDN); /* Finally convert to mpfr_t */
+
+    printf("Test:\n");
+    //mpfr_out_str(stdout, base, 0, sum, MPFR_RNDN);
+    //printf("\n");
+    mpfr_out_str(stdout, 10, 0, sum, MPFR_RNDN);
+    printf("\n");
 }
 
 int main()
