@@ -40,8 +40,11 @@
 #include <gmp.h>
 #include <mpfr.h>
 
+#include "mandlebrot.h"
+
 /* DEFINES */
 
+//#define TRACE 1
 // TRACE DEBUG macro
 #ifdef TRACE
 #define TRACE_DEBUGV(formatstring, ...) \
@@ -225,6 +228,7 @@ void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/displ
 }
 
 /* ----------------------------------------------------------------------------
+ * setup_c - create the corner variables ar mpfr types
  */
 void setup_c()
 {
@@ -234,6 +238,7 @@ void setup_c()
 }
 
 /* ----------------------------------------------------------------------------
+ * initialise_c - set initial values for the image corners
  */
 void initialize_c(
        const char* Xs_str, /* string repr of mpfr_t for X top left */
@@ -251,6 +256,7 @@ void initialize_c(
 
 }
 /* ----------------------------------------------------------------------------
+ * free_mpfr_mem_c - free the memory created in setup_c
  */
 void free_mpfr_mem_c()
 {
@@ -264,40 +270,53 @@ void free_mpfr_mem_c()
  * Params
  * xsize, ysize   -
  * maxiter        -
- * Xs, Xe, Ys, Ye -
  *
  * (out)bytearray -
  *
- * Return int
  */
 void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/window */
                          const unsigned int ysize,   /* height of screen/display/window */
                          const unsigned int maxiter, /* max iterations before escape */
-                         /*const char* Xs_str, / * string repr of mpfr_t for X top left */
-                         /*const char* Xe_str, / * string repr of mpfr_t for X top right */
-                         /*const char* Ys_str, / * string repr of mpfr_t for Y bottom left */
-                         /*const char* Ye_str, / * string repr of mpfr_t for Y bottom right */
                          int bytearray[] /* reference/pointer to result list of color values*/
                          )
 {
-    mpfr_t x, y, xsq, ysq, xtmp, x0, y0; /* algorithm values */
-    mpfr_t a, two, four, sum_xsq_ysq;    /* tmp vals */
+	mandlebrot_mpfr_slice_c(xsize, ysize, 1, 0, maxiter, bytearray);
+}
+
+/* ----------------------------------------------------------------------------
+ * mandlebrot set slices using mpfr library
+ *
+ * this function allows for splitting the image up for multiprocessing support
+ *
+ * Params
+ * xsize, ysize   -
+ * nslice, slice
+ * maxiter        -
+ *
+ * (out)bytearray -
+ */
+void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/display/window */
+                              const unsigned int ysize,   /* height of screen/display/window */
+                              const unsigned int nslice,  /* number of slices */
+                              const unsigned int slice,   /* which slice (range 0 -> nslice-1) */
+                              const unsigned int maxiter, /* max iterations before escape */
+                              int bytearray[] /* reference/pointer to result list of color values*/
+                             )
+{
+    mpfr_t x, y, xsq, ysq, xtmp, x0, y0, ys1, ye1;  /* algorithm values */
+    mpfr_t a, two, four, sum_xsq_ysq, yslice;       /* tmp vals */
     unsigned int iteration = 0;
     unsigned int bc = 0;
     struct Color rgb;
+    unsigned int ystart = (slice)*(ysize/nslice); /* calc ystart incase we're doing slices */
+    unsigned int yend = (slice+1)*(ysize/nslice); /* calc ystart incase we're doing slices */
+
+    printf("slice - width %d height %d nslice %d slice %d ", xsize, ysize, nslice, slice);
+    printf(" (for y = %d; y < %d)\n", ystart, yend);
 
     /* create all mpfr_t vars */
-    mpfr_inits2(PRECISION, x, y, xsq, ysq, xtmp, x0, y0, (mpfr_ptr)NULL);
-    mpfr_inits2(PRECISION, a, two, four, sum_xsq_ysq, (mpfr_ptr)NULL);
-
-    TRACE_DEBUG("mandlebrot_mpfr_c (in)\n");
-#ifdef TRACE
-    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
-#endif
-    TRACE_DEBUG("\n");
+    mpfr_inits2(PRECISION, x, y, xsq, ysq, xtmp, x0, y0, ys1, ye1, (mpfr_ptr)NULL);
+    mpfr_inits2(PRECISION, a, two, four, sum_xsq_ysq, yslice, (mpfr_ptr)NULL);
 
     /* initialise all mpfr_t vars */
     mpfr_set_d(x, 0.0, MPFR_RNDN);
@@ -311,9 +330,39 @@ void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/
     mpfr_set_d(two, 2.0, MPFR_RNDN);
     mpfr_set_d(four, 4.0, MPFR_RNDN);
     mpfr_set_d(sum_xsq_ysq, 0.0, MPFR_RNDN);
+    mpfr_set_d(yslice, 0.0, MPFR_RNDN);
 
-    for (unsigned int Dy = 0; Dy < ysize; Dy++)
+    mpfr_sub(yslice, Ye, Ys, MPFR_RNDN);
+    mpfr_div_ui(yslice, yslice, nslice, MPFR_RNDN); /* 4 should be replaced by number of slices */
+
+    if(nslice == 1)
     {
+        mpfr_set(ys1, Ys, MPFR_RNDN);
+        mpfr_set(ye1, Ye, MPFR_RNDN);
+    }
+    else
+    {
+        /* Ys + n*yslice */
+        mpfr_mul_ui(ys1, yslice, slice, MPFR_RNDN);
+        mpfr_add(ys1, ys1, Ys, MPFR_RNDN);
+        /* Ys + (n+1)*yslice */
+        mpfr_mul_ui(ye1, yslice, slice+1, MPFR_RNDN);
+        mpfr_add(ye1, ye1, Ys, MPFR_RNDN);
+    }
+    
+    TRACE_DEBUG("mandlebrot_mpfr_slice_c (in)\n");
+#ifdef TRACE
+    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, ys1, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, ye1, MPFR_RNDN); putchar('\n');
+#endif
+    TRACE_DEBUG("\n");
+
+
+    for (unsigned int Dy = ystart; Dy < yend; Dy++)
+    {
+        //mpfr_out_str(stdout, 10, 0, y0, MPFR_RNDN); putchar('\n');
         for (unsigned int Dx = 0; Dx < xsize; Dx++)
         {
             iteration = 0;
@@ -323,10 +372,10 @@ void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/
             mpfr_mul_d(a, a, ((double)Dx/(double)xsize), MPFR_RNDN);
             mpfr_add(x0, a, Xs, MPFR_RNDN);
 
-            /* double y0 = scaled(Dy, ysize, Ys, Ye); */
-            mpfr_sub(a, Ye, Ys, MPFR_RNDN);
-            mpfr_mul_d(a, a, ((double)Dy/(double)ysize), MPFR_RNDN);
-            mpfr_add(y0, a, Ys, MPFR_RNDN);
+            /* double y0 = scaled(Dy, ysize, Ys, Ye);*/
+            mpfr_sub(a, ye1, ys1, MPFR_RNDN);
+            mpfr_mul_d(a, a, ((double)(Dy-ystart)/((double)(yend-ystart))), MPFR_RNDN);
+            mpfr_add(y0, a, ys1, MPFR_RNDN);
 
             /* reset some vars for each pixel */
             mpfr_set_d(x, 0.0, MPFR_RNDN);
