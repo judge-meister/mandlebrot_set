@@ -6,11 +6,13 @@
 
 #include <stdio.h>
 
+#define MANDLEBROT_MODULE
 #include "mandlebrot.h"
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
+static PyObject *SpamError;
 
 /* ----------------------------------------------------------------------------
  * Python function interface - mandlebrot_bytearray
@@ -32,9 +34,15 @@ static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
     int maxiter = 0;
     double Xs, Xe, Ys, Ye;
 
-    if (!PyArg_ParseTuple(args, "iiidddd", &wsize, &hsize, &maxiter, &Xs, &Xe, &Ys, &Ye))
+    if (!PyArg_ParseTuple(args, "(ii)idddd", &wsize, &hsize, &maxiter, &Xs, &Xe, &Ys, &Ye))
         return NULL;
 
+    /* check bounds of parameters */
+    if((wsize <= 0) || (hsize <= 0) || (maxiter <= 0))
+    {
+        PyErr_SetString(SpamError, "Invalid Inputs, check display size.");
+        return NULL;
+    }
     PyObject *points = PyList_New(0);
 
     /* create an array of integers to store the result of the mandlebrot calculation */
@@ -71,9 +79,15 @@ static PyObject * mandlebrot_mpfr(PyObject *self, PyObject *args)
     int hsize = 0;
     int maxiter = 0;
 
-    if (!PyArg_ParseTuple(args, "iii", &wsize, &hsize, &maxiter))
+    if (!PyArg_ParseTuple(args, "(ii)i", &wsize, &hsize, &maxiter))
         return NULL;
 
+    /* check bounds of parameters */
+    if((wsize <= 0) || (hsize <= 0) || (maxiter <= 0))
+    {
+        PyErr_SetString(SpamError, "Invalid Inputs, check display size.");
+        return NULL;
+    }
     PyObject *points = PyList_New(0);
 
     /* create an array of integers to store the result of the mandlebrot calculation */
@@ -91,15 +105,57 @@ static PyObject * mandlebrot_mpfr(PyObject *self, PyObject *args)
     return points;
 }
 
+static PyObject * mandlebrot_mpfr_slice(PyObject *self, PyObject *args)
+{
+    int wsize = 0;
+    int hsize = 0;
+    int nslice = 0;
+    int slice = 0;
+    int maxiter = 0;
+
+    if (!PyArg_ParseTuple(args, "(ii)iii", &wsize, &hsize, &nslice, &slice, &maxiter))
+        return NULL;
+
+    /* check bounds of parameters */
+    if((wsize <= 0) || (hsize <= 0) || (nslice < 1) || (slice > nslice) || (maxiter <= 0))
+    {
+        PyErr_SetString(SpamError, "Invalid Inputs, check display size and slice(s).");
+        return NULL;
+    }
+    PyObject *points = PyList_New(0);
+
+    /* create an array of integers to store the result of the mandlebrot calculation */
+    int bytearray[wsize * hsize/nslice * 3];
+    printf("bytearray length = %d\n",wsize * hsize/nslice * 3);
+
+    /* call mandlebrot_bytearray */
+    mandlebrot_mpfr_slice_c(wsize, hsize, nslice, slice, maxiter, bytearray);
+
+    /* transfer returned values into PyList for return */
+    for(int i = 0; i < (wsize * hsize/nslice * 3); i++)
+    {
+        PyList_Append(points, PyLong_FromLong((long) bytearray[i]));
+    }
+
+    return points;
+}
+
+
 /* ----------------------------------------------------------------------------
  */
 static PyObject * mandlebrot_zoom_in(PyObject *self, PyObject *args)
 {
     unsigned int pX, pY, w, h, factor;
 
-    if (!PyArg_ParseTuple(args, "iiiii", &pX, &pY, &w, &h, &factor))
+    if (!PyArg_ParseTuple(args, "(ii)(ii)i", &pX, &pY, &w, &h, &factor))
         return NULL;
 
+    /* check bounds of parameters */
+    if((w <= 0) || (h <= 0) || (pX > w) || (pY > h) || (factor <= 0))
+    {
+        PyErr_SetString(SpamError, "Invalid Inputs, position must be within display.");
+        return NULL;
+    }
     mpfr_zoom_in(pX, pY, w, h, factor);
 
     return PyLong_FromLong(0);
@@ -111,9 +167,15 @@ static PyObject * mandlebrot_zoom_out(PyObject *self, PyObject *args)
 {
     unsigned int pX, pY, w, h, factor;
 
-    if (!PyArg_ParseTuple(args, "iiiii", &pX, &pY, &w, &h, &factor))
+    if (!PyArg_ParseTuple(args, "(ii)(ii)i", &pX, &pY, &w, &h, &factor))
         return NULL;
 
+    /* check bounds of parameters */
+    if((w <= 0) || (h <= 0) || (pX > w) || (pY > h) || (factor <= 0))
+    {
+        PyErr_SetString(SpamError, "Invalid Inputs, position must be within display.");
+        return NULL;
+    }
     mpfr_zoom_out(pX, pY, w, h, factor);
 
     return PyLong_FromLong(0);
@@ -122,8 +184,16 @@ static PyObject * mandlebrot_zoom_out(PyObject *self, PyObject *args)
  */
 static PyObject * setup(PyObject *self, PyObject *args)
 {
+    if (!PyArg_ParseTuple(args, "")) /* no arguments */
+        return NULL;
+
     setup_c();
-    return PyLong_FromLong(0);
+    printf("setup_c() called.\n");
+    //return PyLong_FromLong(0);
+    
+    /* return None */
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 /* ----------------------------------------------------------------------------
  */
@@ -136,11 +206,18 @@ static PyObject * initialize(PyObject *self, PyObject *args)
 
     initialize_c(Xs, Xe, Ys, Ye);
 
-    return PyLong_FromLong(0);
+    //return PyLong_FromLong(0); 
+    
+    /* return None */
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 static PyObject * free_mpfr_mem(PyObject *self, PyObject *args)
 {
+    if (!PyArg_ParseTuple(args, "")) /* no arguments */
+        return NULL;
+    
     free_mpfr_mem_c();
     return PyLong_FromLong(0);
 }
@@ -150,13 +227,14 @@ static PyObject * free_mpfr_mem(PyObject *self, PyObject *args)
  */
 static PyMethodDef MandlebrotMethods[] = {
     //{"mandlebrot",           mandlebrot,             METH_VARARGS, "calculate mandlebrot set" },
-    {"mandlebrot_bytearray",   mandlebrot_bytearray,  METH_VARARGS, "calculate mandlebrot set into a bytearray" },
-    {"mandlebrot_mpfr",        mandlebrot_mpfr,       METH_VARARGS, "calculate mandlebrot set using mpfr lib" },
-    {"mandlebrot_zoom_in",     mandlebrot_zoom_in,    METH_VARARGS, "calculate next mandlebrot set zoom values" },
-    {"mandlebrot_zoom_out",    mandlebrot_zoom_out,   METH_VARARGS, "calculate previous mandlebrot set zoom values" },
-    {"initialize",    initialize,    METH_VARARGS, "" },
-    {"setup",         setup,         METH_VARARGS, "" },
-    {"free_mpfr_mem", free_mpfr_mem, METH_VARARGS, "" },
+    {"mandlebrot_bytearray",   mandlebrot_bytearray,  METH_VARARGS, PyDoc_STR("calculate mandlebrot set into a bytearray") },
+    {"mandlebrot_mpfr",        mandlebrot_mpfr,       METH_VARARGS, PyDoc_STR("calculate mandlebrot set using mpfr lib") },
+    {"mandlebrot_mpfr_slice",  mandlebrot_mpfr_slice, METH_VARARGS, PyDoc_STR("calculate mandlebrot set slice using mpfr lib") },
+    {"mandlebrot_zoom_in",     mandlebrot_zoom_in,    METH_VARARGS, PyDoc_STR("calculate next mandlebrot set zoom values") },
+    {"mandlebrot_zoom_out",    mandlebrot_zoom_out,   METH_VARARGS, PyDoc_STR("calculate previous mandlebrot set zoom values") },
+    {"initialize",       initialize,       METH_VARARGS, PyDoc_STR("initialize() -> None") },
+    {"setup",            setup,            METH_VARARGS, PyDoc_STR("setup() -> None") },
+    {"free_mpfr_mem",    free_mpfr_mem,    METH_VARARGS, PyDoc_STR("free_mptr_mem() -> None") },
     {NULL, NULL, 0 , NULL}
 };
 
@@ -180,20 +258,24 @@ PyMODINIT_FUNC PyInit_mandlebrot(void)
     if (m == NULL)
         return NULL;
 
-    /*SpamError = PyErr_NewException("spam.error", NULL, NULL);
+    SpamError = PyErr_NewException("mandlebrot.error", NULL, NULL);
     Py_XINCREF(SpamError);
     if (PyModule_AddObject(m, "error", SpamError) < 0) {
         Py_XDECREF(SpamError);
         Py_CLEAR(SpamError);
         Py_DECREF(m);
         return NULL;
-    }*/
+    }
+    /* call setup routine */
+    setup_c();
 
     return m;
 }
 
 /* ----------------------------------------------------------------------------
-*/
+ * I think this is only really useful if extending the Python interpreter.
+ * I don't think it is used for a plain python module.
+ */
 int main(int argc, char *argv[])
 {
     wchar_t *program = Py_DecodeLocale(argv[0], NULL);
@@ -225,7 +307,6 @@ int main(int argc, char *argv[])
     }*/
 
     /*...*/
-    setup_c();
 
     PyMem_RawFree(program);
     return 0;
