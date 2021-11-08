@@ -1,3 +1,9 @@
+#ifndef Py_MANDLEBROTMODULE_H
+#define Py_MANDLEBROTMODULE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 /* ----------------------------------------------------------------------------
  * Header
  */
@@ -16,6 +22,14 @@ void mandlebrot_mpfr_c( const unsigned int xsize,   /* width of screen/display/w
                         const unsigned int maxiter, /* max iterations before escape */
                         int bytearray[] /* reference/pointer to result list of color values*/
                        );
+
+void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/display/window */
+                              const unsigned int ysize,   /* height of screen/display/window */
+                              const unsigned int nslice,  /* number of slices */
+                              const unsigned int slice,   /* which slice (range 0 -> nslice-1) */
+                              const unsigned int maxiter, /* max iterations before escape */
+                              int bytearray[] /* reference/pointer to result list of color values*/
+                          );
 
 void mpfr_zoom_in( const unsigned int pX, /* */
                    const unsigned int pY, /* */
@@ -40,3 +54,9 @@ void initialize_c( const char* Xs_str, /* string repr of mpfr_t for X top left *
                   );
 
 void free_mpfr_mem_c();
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* PyMANDLEBROTMODULE_H */
