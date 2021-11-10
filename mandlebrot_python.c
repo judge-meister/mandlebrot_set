@@ -27,7 +27,7 @@ static PyObject *SpamError;
  *
  * Returns a PyList containing color values for all the calculated points
  */
-static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
+static PyObject * float64(PyObject *self, PyObject *args)
 {
     int wsize = 0;
     int hsize = 0;
@@ -73,7 +73,7 @@ static PyObject * mandlebrot_bytearray(PyObject *self, PyObject *args)
  *
  * Returns a PyList containing color values for all the calculated points
  */
-static PyObject * mandlebrot_mpfr(PyObject *self, PyObject *args)
+static PyObject * mpfr(PyObject *self, PyObject *args)
 {
     int wsize = 0;
     int hsize = 0;
@@ -105,7 +105,7 @@ static PyObject * mandlebrot_mpfr(PyObject *self, PyObject *args)
     return points;
 }
 
-static PyObject * mandlebrot_mpfr_slice(PyObject *self, PyObject *args)
+static PyObject * mpfr_slice(PyObject *self, PyObject *args)
 {
     int wsize = 0;
     int hsize = 0;
@@ -143,7 +143,7 @@ static PyObject * mandlebrot_mpfr_slice(PyObject *self, PyObject *args)
 
 /* ----------------------------------------------------------------------------
  */
-static PyObject * mandlebrot_zoom_in(PyObject *self, PyObject *args)
+static PyObject * zoom_in(PyObject *self, PyObject *args)
 {
     unsigned int pX, pY, w, h, factor;
 
@@ -163,7 +163,7 @@ static PyObject * mandlebrot_zoom_in(PyObject *self, PyObject *args)
 
 /* ----------------------------------------------------------------------------
  */
-static PyObject * mandlebrot_zoom_out(PyObject *self, PyObject *args)
+static PyObject * zoom_out(PyObject *self, PyObject *args)
 {
     unsigned int pX, pY, w, h, factor;
 
@@ -182,7 +182,7 @@ static PyObject * mandlebrot_zoom_out(PyObject *self, PyObject *args)
 }
 /* ----------------------------------------------------------------------------
  */
-static PyObject * setup(PyObject *self, PyObject *args)
+static PyObject * init(PyObject *self, PyObject *args)
 {
     if (!PyArg_ParseTuple(args, "")) /* no arguments */
         return NULL;
@@ -197,7 +197,7 @@ static PyObject * setup(PyObject *self, PyObject *args)
 }
 /* ----------------------------------------------------------------------------
  */
-static PyObject * initialize(PyObject *self, PyObject *args)
+static PyObject * setup(PyObject *self, PyObject *args)
 {
     const char *Xs, *Xe, *Ys, *Ye; /* do i need to free these at the end of the func */
 
@@ -213,7 +213,7 @@ static PyObject * initialize(PyObject *self, PyObject *args)
     return Py_None;
 }
 
-static PyObject * free_mpfr_mem(PyObject *self, PyObject *args)
+static PyObject * tidyup(PyObject *self, PyObject *args)
 {
     if (!PyArg_ParseTuple(args, "")) /* no arguments */
         return NULL;
@@ -227,14 +227,14 @@ static PyObject * free_mpfr_mem(PyObject *self, PyObject *args)
  */
 static PyMethodDef MandlebrotMethods[] = {
     //{"mandlebrot",           mandlebrot,             METH_VARARGS, "calculate mandlebrot set" },
-    {"mandlebrot_bytearray",   mandlebrot_bytearray,  METH_VARARGS, PyDoc_STR("calculate mandlebrot set into a bytearray") },
-    {"mandlebrot_mpfr",        mandlebrot_mpfr,       METH_VARARGS, PyDoc_STR("calculate mandlebrot set using mpfr lib") },
-    {"mandlebrot_mpfr_slice",  mandlebrot_mpfr_slice, METH_VARARGS, PyDoc_STR("calculate mandlebrot set slice using mpfr lib") },
-    {"mandlebrot_zoom_in",     mandlebrot_zoom_in,    METH_VARARGS, PyDoc_STR("calculate next mandlebrot set zoom values") },
-    {"mandlebrot_zoom_out",    mandlebrot_zoom_out,   METH_VARARGS, PyDoc_STR("calculate previous mandlebrot set zoom values") },
-    {"initialize",       initialize,       METH_VARARGS, PyDoc_STR("initialize() -> None") },
-    {"setup",            setup,            METH_VARARGS, PyDoc_STR("setup() -> None") },
-    {"free_mpfr_mem",    free_mpfr_mem,    METH_VARARGS, PyDoc_STR("free_mptr_mem() -> None") },
+    {"float64",          float64,          METH_VARARGS, PyDoc_STR("calculate mandlebrot set into a bytearray") },
+    {"mpfr",             mpfr,             METH_VARARGS, PyDoc_STR("calculate mandlebrot set using mpfr lib") },
+    {"mpfr_slice",       mpfr_slice,       METH_VARARGS, PyDoc_STR("calculate mandlebrot set slice using mpfr lib") },
+    {"zoom_in",          zoom_in,          METH_VARARGS, PyDoc_STR("calculate next mandlebrot set zoom values") },
+    {"zoom_out",         zoom_out,         METH_VARARGS, PyDoc_STR("calculate previous mandlebrot set zoom values") },
+    {"init",             init,             METH_VARARGS, PyDoc_STR("init() -> None") },   /*  */
+    {"setup",            setup,            METH_VARARGS, PyDoc_STR("setup() -> None") },  /*  */
+    {"tidyup",           tidyup,           METH_VARARGS, PyDoc_STR("tidyup() -> None") }, /* tidyup the mpfr memory */
     {NULL, NULL, 0 , NULL}
 };
 

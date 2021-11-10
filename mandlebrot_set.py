@@ -145,7 +145,7 @@ class mandlebrot_python_float:
     def draw_plot(self):
         """"""
         sz = self.pgwin.winsize()
-        frame = bytearray(mandlebrot.mandlebrot_bytearray((sz, sz), self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
+        frame = bytearray(mandlebrot.float64((sz, sz), self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
 
         surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
@@ -253,7 +253,7 @@ class mandlebrot_python_float_centre:
     def threaded_draw_plot(self):
         """"""
         sz = self.pgwin.winsize()
-        frame = bytearray(mandlebrot.mandlebrot_bytearray((sz, sz), self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
+        frame = bytearray(mandlebrot.float64((sz, sz), self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
 
         surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
@@ -277,21 +277,28 @@ class mpfr_c:
         self.Xe = repr(X2)
         self.Ys = repr(Y1)
         self.Ye = repr(Y2)
-        #mandlebrot.setup()
-        mandlebrot.initialize(self.Xs, self.Xe, self.Ys, self.Ye)
+        mandlebrot.init()
+        print("call setup(%s, %s, %s, %s)" % (self.Xs, self.Xe, self.Ys, self.Ye))
+        mandlebrot.setup(self.Xs, self.Xe, self.Ys, self.Ye)
         
     def zoom_in(self, px, py, sz, sz1, factor):
-        mandlebrot.mandlebrot_zoom_in((px, py), (sz, sz), factor)
+        mandlebrot.zoom_in((px, py), (sz, sz), factor)
         
     def zoom_out(self, px, py, sz, sz1, factor):
-        mandlebrot.mandlebrot_zoom_out((px, py), (sz, sz), factor)
+        mandlebrot.zoom_out((px, py), (sz, sz), factor)
         
     @timer
     def slice_set(self, sz, slices, slice, maxiter):
         #mandlebrot.initialize("-2.0", "1.0", "-1.5", "1.5")
         print("slice the set ",sz, slices, slice, maxiter)
-        frame = bytearray(mandlebrot.mandlebrot_mpfr_slice((sz, sz), slices, slice, maxiter))
+        frame = bytearray(mandlebrot.mpfr_slice((sz, sz), slices, slice, maxiter))
         return (slice, frame)
+        
+    @timer
+    def mpfr(self, sz, maxiter):
+        """"""
+        frame = bytearray(mandlebrot.mpfr((sz, sz), maxiter))
+        return frame
 
 
 class mandlebrot_c_mpfr:
@@ -336,7 +343,7 @@ class mandlebrot_c_mpfr:
         xe = repr(X2)
         ys = repr(Y1)
         ye = repr(Y2)
-        mandlebrot.initialize(self.Xs, self.Xe, self.Ys, self.Ye)
+        mandlebrot.reset(self.Xs, self.Xe, self.Ys, self.Ye)
 
 
     def zoom_in(self, pos):
@@ -352,6 +359,16 @@ class mandlebrot_c_mpfr:
 
 
     def draw_plot(self):
+        """"""
+        #slices = 1
+        #slice, frame = self.mpfr.slice_set(self.sz, slices, 0, self.maxiter)
+        frame = self.mpfr.mpfr(self.sz, self.maxiter)
+        surf = pygame.image.frombuffer(frame, (self.sz, self.sz), 'RGB')
+        self.pgwin.surface().blit(surf, (0,0))
+        pygame.display.update()
+
+
+    def mp_draw_plot(self):
         """multiprocessing
         
         THIS DOES NOT WORK AS THE MANDLEBROT MODULE IS RESET FOR EACH PROCESS WHICH CLEARS THE 
@@ -385,9 +402,9 @@ class mandlebrot_c_mpfr:
 
 def slice_the_set(sz, slices, slice, maxiter):
     """"""
-    mandlebrot.initialize("-2.0", "1.0", "-1.5", "1.5")
+    mandlebrot.reset("-2.0", "1.0", "-1.5", "1.5")
     print("slice the set ",sz, slices, slice, maxiter)
-    frame = bytearray(mandlebrot.mandlebrot_mpfr_slice((sz, sz), slices, slice, maxiter))
+    frame = bytearray(mandlebrot.mpfr_slice((sz, sz), slices, slice, maxiter))
     return (slice, frame)
 
 
@@ -487,7 +504,7 @@ def main_mpfr(pgwin, options):
     mand = mandlebrot_c_mpfr(pgwin)
     #mand.draw_plot()
     event_loop(mand, pgwin)
-    mandlebrot.free_mpfr_mem()
+    mandlebrot.tidyup()
 
 
 def main_python(pgwin, options):
