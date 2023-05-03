@@ -65,7 +65,7 @@
 
 #define MAXITER 1000
 
-/* TYPE DEFS */
+/* TYPEDEFS */
 struct Color { int r, g, b; };
 typedef struct Color Color;
 struct chunk_params { unsigned int x0, y0, x1, y1, maxiter, tid; 
@@ -77,7 +77,9 @@ static mpfr_t Xe, Xs, Ye, Ys; /* algorithm values */
 static int zoom_level;
 
 /* GLOBAL DATA */
-int* glb_bytearray[4]; /*[xsize/2 * ysize/2 * 3];*/
+int* glb_bytearray[4]; /* 4 pointers to malloc'd bytearrays. 
+                        * this cannot be fixed to 4 if we are to be able to 
+                        * use any multi core CPU. */ 
 
 
 /* ----------------------------------------------------------------------------
@@ -624,6 +626,13 @@ void mpfr_zoom_out(      const unsigned int pX, /* x mouse pos in display */
 
 
 /* ----------------------------------------------------------------------------
+ * thread worker function (needs a better name than do_chunk)
+ *
+ * currently given a quarter of the area of the image to work on.  This causes
+ * problems when stitching the resultant data back together afterwards.  Would
+ * be better to use horizontal sliced.  This would make it easier to split into
+ * threadable chunks of work without fixating on the exact number of threads.
+ * 
  */
 void do_chunk(void* arg)
 {
@@ -718,7 +727,12 @@ void do_chunk(void* arg)
  *
  * Description - the data area is cut into quarters although this is not the
  *               easiest split to manage as putting the results back together
- *               id non trivial.  woulc be better to use horizontal slices.
+ *               is non trivial.  would be better to use horizontal slices.
+ *
+ *               the setting up of the params for the threads is currently a
+ *               bit long-winded and only copes with 4 threads.  Need to use
+ *               a loop along with arrays of structures to provide flexibility
+ *               to cope with any number of CPU cores
  * Params
  * xsize, ysize   - width and height of fractal
  * maxiter        - the maximum iterations before escaping the algorithm
@@ -769,16 +783,16 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
     cp1.x1 = xsize/2;
     cp1.y1 = ysize/2;
     cp1.maxiter = maxiter;
-    //cp1->Xs = Xs;                       -2
-    mpfr_set(cp1.Xs, Xs, MPFR_RNDN);
-    //cp1->Xe = Xs + (Xe-Xs)/2;            -2 + (1 - -2)/2
-    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
+    
+    mpfr_set(cp1.Xs, Xs, MPFR_RNDN);//cp1->Xs = Xs;               -2
+    
+    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);//cp1->Xe = Xs + (Xe-Xs)/2;   -2 + (1 - -2)/2
     mpfr_div_ui(lx, lx, 2, MPFR_RNDN);
     mpfr_add(cp1.Xe, lx, Xs, MPFR_RNDN);
-    //cp1->Ys = Ys;                        -1.5
-    mpfr_set(cp1.Ys, Ys, MPFR_RNDN);
-    //cp1->Ye = Ys + (Ye-Ys)/2;            -1.5 + (1.5 - -1.5)/2
-    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
+    
+    mpfr_set(cp1.Ys, Ys, MPFR_RNDN);//cp1->Ys = Ys;               -1.5
+    
+    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);//cp1->Ye = Ys + (Ye-Ys)/2;   -1.5 + (1.5 - -1.5)/2
     mpfr_div_ui(ly, ly, 2, MPFR_RNDN);
     mpfr_add(cp1.Ye, ly, Ys, MPFR_RNDN);
 
@@ -793,9 +807,9 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
     mpfr_inits2(PRECISION, cp2.Xe, cp2.Xs, cp2.Ye, cp2.Ys, (mpfr_ptr)NULL);
     cp2.tid = 1;
     cp2.x0 = 0;
-    cp2.y0 = 0;//(ysize/2)+1;
+    cp2.y0 = 0;
     cp2.x1 = xsize/2;
-    cp2.y1 = ysize/2;//ysize;
+    cp2.y1 = ysize/2;
     cp2.maxiter = maxiter;
     //cp2.Xs = Xs
     mpfr_set(cp2.Xs, Xs, MPFR_RNDN);
@@ -809,6 +823,7 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
     mpfr_add(cp2.Xe, lx, Xs, MPFR_RNDN);
     //cp2.Ye = Ye
     mpfr_set(cp2.Ye, Ye, MPFR_RNDN);
+    
     printf("start thread[%d](%d,%d %d,%d)\n",cp2.tid, cp2.x0, cp2.y0, cp2.x1, cp2.y1);
     mpfr_out_str(stdout, 10, 0, cp2.Xs, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, cp2.Xe, MPFR_RNDN); putchar('\n');
@@ -819,9 +834,9 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
     chunk_params cp3;
     mpfr_inits2(PRECISION, cp3.Xe, cp3.Xs, cp3.Ye, cp3.Ys, (mpfr_ptr)NULL);
     cp3.tid = 2;
-    cp3.x0 = 0;//(xsize/2)+1;
+    cp3.x0 = 0;
     cp3.y0 = 0;
-    cp3.x1 = xsize/2;//xsize;
+    cp3.x1 = xsize/2;
     cp3.y1 = ysize/2;
     cp3.maxiter = maxiter;
     //cp3.Xs = Xs + (Xe-Xs)/2
@@ -836,6 +851,7 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
     mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
     mpfr_div_ui(ly, ly, 2, MPFR_RNDN);
     mpfr_add(cp3.Ye, ly, Ys, MPFR_RNDN);
+    
     printf("start thread[%d](%d,%d %d,%d)\n",cp3.tid, cp3.x0, cp3.y0, cp3.x1, cp3.y1);
     mpfr_out_str(stdout, 10, 0, cp3.Xs, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, cp3.Xe, MPFR_RNDN); putchar('\n');
@@ -846,10 +862,10 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
     chunk_params cp4;
     mpfr_inits2(PRECISION, cp4.Xe, cp4.Xs, cp4.Ye, cp4.Ys, (mpfr_ptr)NULL);
     cp4.tid = 3;
-    cp4.x0 = 0;//(xsize/2)+1;
-    cp4.y0 = 0;//(ysize/2)+1;
-    cp4.x1 = xsize/2;//xsize;
-    cp4.y1 = ysize/2;//ysize;
+    cp4.x0 = 0;
+    cp4.y0 = 0;
+    cp4.x1 = xsize/2;
+    cp4.y1 = ysize/2;
     cp4.maxiter = maxiter;
     //cp4.Xs = Xs + (Xe-Xs)/2
     mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
@@ -863,6 +879,7 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
     mpfr_set(cp4.Xe, Xe, MPFR_RNDN);
     //cp4.Ye = Ye
     mpfr_set(cp4.Ye, Ye, MPFR_RNDN);
+    
     printf("start thread[%d](%d,%d %d,%d)\n",cp4.tid, cp4.x0, cp4.y0, cp4.x1, cp4.y1);
     mpfr_out_str(stdout, 10, 0, cp4.Xs, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, cp4.Xe, MPFR_RNDN); putchar('\n');
@@ -882,6 +899,7 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
     mpfr_clears(cp2.Xe, cp2.Xs, cp2.Ye, cp2.Ys, (mpfr_ptr)NULL);
     mpfr_clears(cp3.Xe, cp3.Xs, cp3.Ye, cp3.Ys, (mpfr_ptr)NULL);
     mpfr_clears(cp4.Xe, cp4.Xs, cp4.Ye, cp4.Ys, (mpfr_ptr)NULL);
+    
     /* populate the returned bytearray from the global one */
     /* (pseudo)
     using memcpy()
