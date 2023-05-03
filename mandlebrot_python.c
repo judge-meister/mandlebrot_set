@@ -105,6 +105,8 @@ static PyObject * mpfr(PyObject *self, PyObject *args)
     return points;
 }
 
+/* ----------------------------------------------------------------------------
+ */
 static PyObject * mpfr_slice(PyObject *self, PyObject *args)
 {
     int wsize = 0;
@@ -140,6 +142,39 @@ static PyObject * mpfr_slice(PyObject *self, PyObject *args)
     return points;
 }
 
+/* ----------------------------------------------------------------------------
+ */
+static PyObject * mpfr_thread(PyObject *self, PyObject *args)
+{
+    int wsize = 0;
+    int hsize = 0;
+    int maxiter = 0;
+
+    if (!PyArg_ParseTuple(args, "(ii)i", &wsize, &hsize, &maxiter))
+        return NULL;
+
+    /* check bounds of parameters */
+    if((wsize <= 0) || (hsize <= 0) || (maxiter <= 0))
+    {
+        PyErr_SetString(SpamError, "Invalid Inputs, check display size.");
+        return NULL;
+    }
+    PyObject *points = PyList_New(0);
+
+    /* create an array of integers to store the result of the mandlebrot calculation */
+    int bytearray[wsize * hsize * 3];
+
+    /* call mandlebrot_bytearray */
+    mandlebrot_mpfr_thread_c(wsize, hsize, maxiter, bytearray);
+
+    /* transfer returned values into PyList for return */
+    for(int i = 0; i < (wsize * hsize * 3); i++)
+    {
+        PyList_Append(points, PyLong_FromLong((long) bytearray[i]));
+    }
+
+    return points;
+}
 
 /* ----------------------------------------------------------------------------
  */
@@ -230,6 +265,7 @@ static PyMethodDef MandlebrotMethods[] = {
     {"float64",          float64,          METH_VARARGS, PyDoc_STR("calculate mandlebrot set into a bytearray") },
     {"mpfr",             mpfr,             METH_VARARGS, PyDoc_STR("calculate mandlebrot set using mpfr lib") },
     {"mpfr_slice",       mpfr_slice,       METH_VARARGS, PyDoc_STR("calculate mandlebrot set slice using mpfr lib") },
+    {"mpfr_thread",      mpfr_thread,      METH_VARARGS, PyDoc_STR("calculate mandlebrot set using mpfr lib threaded") },
     {"zoom_in",          zoom_in,          METH_VARARGS, PyDoc_STR("calculate next mandlebrot set zoom values") },
     {"zoom_out",         zoom_out,         METH_VARARGS, PyDoc_STR("calculate previous mandlebrot set zoom values") },
     {"init",             init,             METH_VARARGS, PyDoc_STR("init() -> None") },   /*  */

@@ -35,7 +35,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
+#include <pthread.h>
 
 #include <gmp.h>
 #include <mpfr.h>
@@ -65,10 +67,18 @@
 
 /* TYPE DEFS */
 struct Color { int r, g, b; };
+typedef struct Color Color;
+struct chunk_params { unsigned int x0, y0, x1, y1, maxiter, tid; 
+                      mpfr_t Xe, Xs, Ye, Ys; };
+typedef struct chunk_params chunk_params;
 
 /* STATIC VARIABLES */
 static mpfr_t Xe, Xs, Ye, Ys; /* algorithm values */
 static int zoom_level;
+
+/* GLOBAL DATA */
+int* glb_bytearray[4]; /*[xsize/2 * ysize/2 * 3];*/
+
 
 /* ----------------------------------------------------------------------------
  * grayscale - return a gray scale rgb value representing the iteration count
@@ -81,7 +91,7 @@ static int zoom_level;
  */
 static struct Color grayscale(int it, int maxiter)
 {
-    struct Color c; /*  = { 0, 0, 0 } */
+    Color c; /*  = { 0, 0, 0 } */
     c.r = 0;
     c.g = 0;
     c.b = 0;
@@ -107,7 +117,7 @@ static struct Color grayscale(int it, int maxiter)
  */
 static struct Color sqrt_gradient(int it, int maxiter)
 {
-    struct Color c;
+    Color c;
     if (it < maxiter)
     {
         double m = sqrt(sqrt( (double)it / (double)maxiter ));
@@ -206,7 +216,7 @@ void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/displ
         {
             double x0 = Dx*xstep + Xs;
             double y0 = Dy*ystep + Ys;
-            struct Color rgb;
+            Color rgb;
             int iter;
 
             iter = calculate_point(x0, y0, maxiter);
@@ -425,7 +435,9 @@ void mpfr_zoom_in(       const unsigned int pX, /* x mouse pos in display */
                          const unsigned int factor /* scaling factor */
                         )
 {
+#ifdef TRACE
     unsigned int w1, h1;
+#endif
     mpfr_t lx, ly, TLx, TLy, BRx, BRy;
 
     mpfr_inits2(PRECISION, lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
@@ -502,8 +514,10 @@ void mpfr_zoom_in(       const unsigned int pX, /* x mouse pos in display */
     mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
     mpfr_mul_ui(ly, ly, zoom_level*10*h, MPFR_RNDN);
 
+#ifdef TRACE
     w1 = mpfr_get_ui(lx, MPFR_RNDN);
     h1 = mpfr_get_ui(ly, MPFR_RNDN);
+#endif
     TRACE_DEBUGV("display size: %d %d\n", w1, h1);
 
     mpfr_clears(lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
@@ -518,7 +532,9 @@ void mpfr_zoom_out(      const unsigned int pX, /* x mouse pos in display */
                          const unsigned int factor /* scaling factor */
                         )
 {
+#ifdef TRACE
     unsigned int w1, h1;
+#endif
     mpfr_t lx, ly, TLx, TLy, BRx, BRy;
 
     mpfr_inits2(PRECISION, lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
@@ -597,13 +613,337 @@ void mpfr_zoom_out(      const unsigned int pX, /* x mouse pos in display */
     mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
     mpfr_mul_ui(ly, ly, zoom_level*10*h, MPFR_RNDN);
 
+#ifdef TRACE
     w1 = mpfr_get_ui(lx, MPFR_RNDN);
     h1 = mpfr_get_ui(ly, MPFR_RNDN);
+#endif
     TRACE_DEBUGV("display size: %d %d\n", w1, h1);
 
     mpfr_clears(lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
 }
 
+
+/* ----------------------------------------------------------------------------
+ */
+void do_chunk(void* arg)
+{
+    chunk_params *cp;
+    cp = (chunk_params*)arg;
+    unsigned int maxiter = cp->maxiter;
+    unsigned int iteration = 0;
+    unsigned int bc = 0; /* bytearray index counter */
+    Color rgb;
+
+    mpfr_t x, y, xsq, ysq, xtmp, x0, y0/*, Xe, Xs, Ye, Ys*/; /* algorithm values */
+    mpfr_t a, two, four, sum_xsq_ysq;                    /* tmp vals */
+
+    /* create all mpfr_t vars */
+    mpfr_inits2(PRECISION, x, y, xsq, ysq, xtmp, x0, y0/*, Xs, Xe, Ys, Ye*/, (mpfr_ptr)NULL);
+    mpfr_inits2(PRECISION, a, two, four, sum_xsq_ysq, (mpfr_ptr)NULL);
+
+    /* initialise all mpfr_t vars */
+    mpfr_set_d(x, 0.0, MPFR_RNDN);
+    mpfr_set_d(y, 0.0, MPFR_RNDN);
+    mpfr_set_d(xsq, 0.0, MPFR_RNDN);
+    mpfr_set_d(ysq, 0.0, MPFR_RNDN);
+    mpfr_set_d(xtmp, 0.0, MPFR_RNDN);
+    mpfr_set_d(x0, 0.0, MPFR_RNDN);
+    mpfr_set_d(y0, 0.0, MPFR_RNDN);
+    mpfr_set_d(a, 0.0, MPFR_RNDN);
+    mpfr_set_d(two, 2.0, MPFR_RNDN);
+    mpfr_set_d(four, 4.0, MPFR_RNDN);
+    mpfr_set_d(sum_xsq_ysq, 0.0, MPFR_RNDN);
+
+    for (unsigned int Dy = cp->y0; Dy < cp->y1; Dy++)
+    {
+        for (unsigned int Dx = cp->x0; Dx < cp->x1; Dx++)
+        {
+            iteration = 0;
+
+            /* double x0 = scaled(Dx, xsize, Xs, Xe); */
+            mpfr_sub(a, cp->Xe, cp->Xs, MPFR_RNDN);
+            mpfr_mul_d(a, a, ((double)Dx/(double)cp->x1), MPFR_RNDN);
+            mpfr_add(x0, a, cp->Xs, MPFR_RNDN);
+
+            /* double y0 = scaled(Dy, ysize, Ys, Ye); */
+            mpfr_sub(a, cp->Ye, cp->Ys, MPFR_RNDN);
+            mpfr_mul_d(a, a, ((double)Dy/(double)cp->y1), MPFR_RNDN);
+            mpfr_add(y0, a, cp->Ys, MPFR_RNDN);
+
+            /* reset some vars for each pixel */
+            mpfr_set_d(x, 0.0, MPFR_RNDN);
+            mpfr_set_d(y, 0.0, MPFR_RNDN);
+            mpfr_set_d(sum_xsq_ysq, 0.0, MPFR_RNDN);
+
+            /* while (xsq+ysq <= 4 && iteration < maxiter */
+            while ((mpfr_cmp(sum_xsq_ysq, four) <= 0) && (iteration < maxiter))
+            {
+                mpfr_mul(xsq, x, x, MPFR_RNDN);      /* xsq = x*x; */
+                mpfr_mul(ysq, y, y, MPFR_RNDN);      /* ysq = y*y; */
+                mpfr_sub(xtmp, xsq, ysq, MPFR_RNDN); /* xtemp = xsq - ysq + x0; */
+                mpfr_add(xtmp, xtmp, x0, MPFR_RNDN);
+                mpfr_mul(a, two, x, MPFR_RNDN);      /* y = 2.0*x*y + y0; */
+                mpfr_mul(a, a, y, MPFR_RNDN);
+                mpfr_add(y, a, y0, MPFR_RNDN);
+                mpfr_swap(x, xtmp);                  /* x = xtemp; */
+
+                /* calcs for while test */
+                mpfr_add(sum_xsq_ysq, xsq, ysq, MPFR_RNDN);
+                iteration++;
+                //printf("iteration %d\n", iteration);
+            }
+            /* create a color value and add to result list */
+            rgb = sqrt_gradient(iteration, maxiter);
+            //printf("bc %d r %d\n", bc, rgb.r);
+            glb_bytearray[cp->tid][bc] = rgb.r;
+            bc++;
+            //printf("bc %d g %d\n", bc, rgb.g);
+            glb_bytearray[cp->tid][bc] = rgb.g;
+            bc++;
+            //printf("bc %d b %d\n", bc, rgb.b);
+            glb_bytearray[cp->tid][bc] = rgb.b;
+            bc++;
+        }
+    }
+    mpfr_clears(x, y, xsq, ysq, xtmp, x0, y0/*, Xs, Xe, Ys, Ye*/, (mpfr_ptr)NULL);
+    mpfr_clears(a, two, four, sum_xsq_ysq, (mpfr_ptr)NULL);
+
+    printf("Thread %d exiting\n",cp->tid);
+    pthread_exit(&glb_bytearray[cp->tid]);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * mandlebrot set using mpfr library, but 4 threads
+ *
+ * Description - the data area is cut into quarters although this is not the
+ *               easiest split to manage as putting the results back together
+ *               id non trivial.  woulc be better to use horizontal slices.
+ * Params
+ * xsize, ysize   - width and height of fractal
+ * maxiter        - the maximum iterations before escaping the algorithm
+ *
+ * (out)bytearray - a bytearray of ints storing the color values of calculated points
+ *
+ * Return void (not status returned)
+ */
+void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/display/window */
+                               const unsigned int ysize,   /* height of screen/display/window */
+                               const unsigned int maxiter, /* max iterations before escape */
+                               int bytearray[] /* reference/pointer to result list of color values*/
+                             )
+{
+    unsigned int bc = 0;
+
+    printf("mandlebrot_mpfr_c (in) \n");
+    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
+    putchar('\n');
+
+    /* divide data into 4 quarters that can be split between 4 threads 
+     *
+     *  Xs Xe Ys Ye
+     *  
+     *  -2 -> 1
+     *  -1.5 -> 1.5
+     *
+     *  -2->-0.5  -0.5->1
+     *  -1.5->0   0->1.5
+     */
+    pthread_t tid[4];
+
+    /* initialise the global bytearray*/
+    for(int i=0; i<4; i++)
+    {
+      glb_bytearray[i] = (int*)calloc((size_t)(xsize/2 * ysize/2 * 3), sizeof(int));
+    }
+
+    chunk_params cp1;
+    mpfr_t lx, ly;
+    mpfr_inits2(PRECISION, lx, ly, cp1.Xe, cp1.Xs, cp1.Ye, cp1.Ys, (mpfr_ptr)NULL);
+    cp1.tid = 0;
+    cp1.x0 = 0;
+    cp1.y0 = 0;
+    cp1.x1 = xsize/2;
+    cp1.y1 = ysize/2;
+    cp1.maxiter = maxiter;
+    //cp1->Xs = Xs;                       -2
+    mpfr_set(cp1.Xs, Xs, MPFR_RNDN);
+    //cp1->Xe = Xs + (Xe-Xs)/2;            -2 + (1 - -2)/2
+    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
+    mpfr_div_ui(lx, lx, 2, MPFR_RNDN);
+    mpfr_add(cp1.Xe, lx, Xs, MPFR_RNDN);
+    //cp1->Ys = Ys;                        -1.5
+    mpfr_set(cp1.Ys, Ys, MPFR_RNDN);
+    //cp1->Ye = Ys + (Ye-Ys)/2;            -1.5 + (1.5 - -1.5)/2
+    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
+    mpfr_div_ui(ly, ly, 2, MPFR_RNDN);
+    mpfr_add(cp1.Ye, ly, Ys, MPFR_RNDN);
+
+    printf("start thread[%d](%d,%d %d,%d)\n",cp1.tid, cp1.x0, cp1.y0, cp1.x1, cp1.y1);
+    mpfr_out_str(stdout, 10, 0, cp1.Xs, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, cp1.Xe, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, cp1.Ys, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, cp1.Ye, MPFR_RNDN); putchar('\n');
+    pthread_create(&tid[0], NULL, (void *)do_chunk, &cp1);
+
+    chunk_params cp2;
+    mpfr_inits2(PRECISION, cp2.Xe, cp2.Xs, cp2.Ye, cp2.Ys, (mpfr_ptr)NULL);
+    cp2.tid = 1;
+    cp2.x0 = 0;
+    cp2.y0 = 0;//(ysize/2)+1;
+    cp2.x1 = xsize/2;
+    cp2.y1 = ysize/2;//ysize;
+    cp2.maxiter = maxiter;
+    //cp2.Xs = Xs
+    mpfr_set(cp2.Xs, Xs, MPFR_RNDN);
+    //cp2.Ys = Ys + (Ye-Ys)/2
+    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
+    mpfr_div_ui(ly, ly, 2, MPFR_RNDN);
+    mpfr_add(cp2.Ys, ly, Ys, MPFR_RNDN);
+    //cp2.Xe = Xs +(Xe-Xs)/2
+    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
+    mpfr_div_ui(lx, lx, 2, MPFR_RNDN);
+    mpfr_add(cp2.Xe, lx, Xs, MPFR_RNDN);
+    //cp2.Ye = Ye
+    mpfr_set(cp2.Ye, Ye, MPFR_RNDN);
+    printf("start thread[%d](%d,%d %d,%d)\n",cp2.tid, cp2.x0, cp2.y0, cp2.x1, cp2.y1);
+    mpfr_out_str(stdout, 10, 0, cp2.Xs, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, cp2.Xe, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, cp2.Ys, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, cp2.Ye, MPFR_RNDN); putchar('\n');
+    pthread_create(&tid[1], NULL, (void *)do_chunk, &cp2);
+
+    chunk_params cp3;
+    mpfr_inits2(PRECISION, cp3.Xe, cp3.Xs, cp3.Ye, cp3.Ys, (mpfr_ptr)NULL);
+    cp3.tid = 2;
+    cp3.x0 = 0;//(xsize/2)+1;
+    cp3.y0 = 0;
+    cp3.x1 = xsize/2;//xsize;
+    cp3.y1 = ysize/2;
+    cp3.maxiter = maxiter;
+    //cp3.Xs = Xs + (Xe-Xs)/2
+    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
+    mpfr_div_ui(lx, lx, 2, MPFR_RNDN);
+    mpfr_add(cp3.Xs, lx, Xs, MPFR_RNDN);
+    //cp3.Ys = Ys
+    mpfr_set(cp3.Ys, Ys, MPFR_RNDN);
+    //cp3.Xe = Xe
+    mpfr_set(cp3.Xe, Xe, MPFR_RNDN);
+    //cp3.Ye = Ys + (Ye-Ys)/2
+    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
+    mpfr_div_ui(ly, ly, 2, MPFR_RNDN);
+    mpfr_add(cp3.Ye, ly, Ys, MPFR_RNDN);
+    printf("start thread[%d](%d,%d %d,%d)\n",cp3.tid, cp3.x0, cp3.y0, cp3.x1, cp3.y1);
+    mpfr_out_str(stdout, 10, 0, cp3.Xs, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, cp3.Xe, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, cp3.Ys, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, cp3.Ye, MPFR_RNDN); putchar('\n');
+    pthread_create(&tid[2], NULL, (void *)do_chunk, &cp3);
+
+    chunk_params cp4;
+    mpfr_inits2(PRECISION, cp4.Xe, cp4.Xs, cp4.Ye, cp4.Ys, (mpfr_ptr)NULL);
+    cp4.tid = 3;
+    cp4.x0 = 0;//(xsize/2)+1;
+    cp4.y0 = 0;//(ysize/2)+1;
+    cp4.x1 = xsize/2;//xsize;
+    cp4.y1 = ysize/2;//ysize;
+    cp4.maxiter = maxiter;
+    //cp4.Xs = Xs + (Xe-Xs)/2
+    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
+    mpfr_div_ui(lx, lx, 2, MPFR_RNDN);
+    mpfr_add(cp4.Xs, lx, Xs, MPFR_RNDN);
+    //cp4.Ys = Ys + (Ye-Ys)/2
+    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
+    mpfr_div_ui(ly, ly, 2, MPFR_RNDN);
+    mpfr_add(cp4.Ys, ly, Ys, MPFR_RNDN);
+    //cp4.Xe = Xe
+    mpfr_set(cp4.Xe, Xe, MPFR_RNDN);
+    //cp4.Ye = Ye
+    mpfr_set(cp4.Ye, Ye, MPFR_RNDN);
+    printf("start thread[%d](%d,%d %d,%d)\n",cp4.tid, cp4.x0, cp4.y0, cp4.x1, cp4.y1);
+    mpfr_out_str(stdout, 10, 0, cp4.Xs, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, cp4.Xe, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, cp4.Ys, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 0, cp4.Ye, MPFR_RNDN); putchar('\n');
+    pthread_create(&tid[3], NULL, (void *)do_chunk, &cp4);
+
+    /*wait for all the threads to complete */
+    int* ptr1, ptr2, ptr3, ptr4; /* this should be replaced with a bytearray */
+    pthread_join(tid[0], (void**)&ptr1);
+    pthread_join(tid[1], (void**)&ptr2);
+    pthread_join(tid[2], (void**)&ptr3);
+    pthread_join(tid[3], (void**)&ptr4);
+
+    mpfr_clears(lx, ly, (mpfr_ptr)NULL);
+    mpfr_clears(cp1.Xe, cp1.Xs, cp1.Ye, cp1.Ys, (mpfr_ptr)NULL);
+    mpfr_clears(cp2.Xe, cp2.Xs, cp2.Ye, cp2.Ys, (mpfr_ptr)NULL);
+    mpfr_clears(cp3.Xe, cp3.Xs, cp3.Ye, cp3.Ys, (mpfr_ptr)NULL);
+    mpfr_clears(cp4.Xe, cp4.Xs, cp4.Ye, cp4.Ys, (mpfr_ptr)NULL);
+    /* populate the returned bytearray from the global one */
+    /* (pseudo)
+    using memcpy()
+    for y in range(0,ysize):
+      if y < ysize/2:
+        memcpy(ba[bc],ba0[bc0], xsize/2);
+        bc = bc + xsize/2;
+        bc0 = bc0 + xsize/2;
+        memcpy(ba[bc],ba1[bc1], xsize/2);
+        bc = bc + xsize/2;
+        bc1 = bc1 + xsize/2;
+      else
+        memcpy(ba[bc],ba2[bc2], xsize/2);
+        bc = bc + xsize/2;
+        bc2 = bc2 + xsize/2;
+        memcpy(ba[bc],ba3[bc3], xsize/2);
+        bc = bc + xsize/2;
+        bc3 = bc3 + xsize/2;
+
+    */
+    printf("Combining Results\n");
+    unsigned int bc0, bc1, bc2, bc3;
+    bc0 = bc1 = bc2 = bc3 = 0;
+    bc = 0;
+    for(unsigned int y=0; y < ysize; y++)
+    { 
+      if(y < ysize/2)
+      {
+        /*memcpy((void*)(&bytearray[bc]), (void*)(&glb_bytearray[0][bc0]), xsize/2*3);*/
+        for(unsigned int x=bc0; x<bc0+xsize/2*3; x++)
+        { bytearray[bc] = glb_bytearray[0][x]; bc++;}
+        /*bc = bc + xsize/2*3;*/
+        bc0 = bc0 + xsize/2*3;
+        /*memcpy((void*)(&bytearray[bc]), (void*)(&glb_bytearray[2][bc2]), xsize/2*3);*/
+        for(unsigned int x=bc2; x<bc2+xsize/2*3; x++)
+        { bytearray[bc] = glb_bytearray[2][x]; bc++;}
+        /*bc = bc + xsize/2*3;*/
+        bc2 = bc2 + xsize/2*3;
+      }
+      else
+      {
+        /*memcpy((void*)(&bytearray[bc]), (void*)(&glb_bytearray[1][bc1]), xsize/2*3);*/
+        for(unsigned int x=bc1; x<bc1+xsize/2*3; x++)
+        { bytearray[bc] = glb_bytearray[1][x]; bc++;}
+        /*bc = bc + xsize/2*3;*/
+        bc1 = bc1 + xsize/2*3;
+        /*memcpy((void*)(&bytearray[bc]), (void*)(&glb_bytearray[3][bc3]), xsize/2*3);*/
+        for(unsigned int x=bc3; x<bc3+xsize/2*3; x++)
+        { bytearray[bc] = glb_bytearray[3][x]; bc++;}
+        /*bc = bc + xsize/2*3;*/
+        bc3 = bc3 + xsize/2*3;
+      }
+    }
+
+    /* free the global bytearray*/
+    printf("Freeing glb_bytearray\n");
+    for(int i=0; i<4; i++)
+    {
+      free(glb_bytearray[i]); /* = (int*)calloc((size_t)(xsize/2 * ysize/2 * 3), sizeof(int));*/
+    }
+    printf("mandlebrot_mpfr_c (exit) \n");
+}
 
 /* ----------------------------------------------------------------------------
  */

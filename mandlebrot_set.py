@@ -300,6 +300,12 @@ class mpfr_c:
         frame = bytearray(mandlebrot.mpfr((sz, sz), maxiter))
         return frame
 
+    @timer
+    def mpfr_thread(self, sz, maxiter):
+        """"""
+        frame = bytearray(mandlebrot.mpfr_thread((sz, sz), maxiter))
+        return frame
+
 
 class mandlebrot_c_mpfr:
     """"""
@@ -399,6 +405,23 @@ class mandlebrot_c_mpfr:
             pygame.display.update()
             self.pgwin.clock().tick(20)
             
+
+class mandlebrot_c_mpfr_thread(mandlebrot_c_mpfr):
+    """"""
+    def __init__(self, pgwin):
+        """"""
+        super().__init__(pgwin)
+
+    def draw_plot(self):
+        """"""
+        #slices = 1
+        #slice, frame = self.mpfr.slice_set(self.sz, slices, 0, self.maxiter)
+        frame = self.mpfr.mpfr_thread(self.sz, self.maxiter)
+        surf = pygame.image.frombuffer(frame, (self.sz, self.sz), 'RGB')
+        self.pgwin.surface().blit(surf, (0,0))
+        pygame.display.update()
+
+
 
 def slice_the_set(sz, slices, slice, maxiter):
     """"""
@@ -507,6 +530,14 @@ def main_mpfr(pgwin, options):
     mandlebrot.tidyup()
 
 
+def main_mpfr_thread(pgwin, options):
+    """"""
+    mand = mandlebrot_c_mpfr_thread(pgwin)
+    #mand.draw_plot()
+    event_loop(mand, pgwin)
+    mandlebrot.tidyup()
+
+
 def main_python(pgwin, options):
     """"""
     mand = mandlebrot_python_float(pgwin)
@@ -533,7 +564,7 @@ def usage():
     print("   -r  real value of point to zoom in to")
     print("   -i  imaginary value of point to zoom in to")
     print("   -d  display size (assumes a square)")
-    print("   -a  which algorithm (float, mpfr)")
+    print("   -a  which algorithm (float, mpfr, thread)")
     print("   -f  zoom factor")
 
 
@@ -580,7 +611,7 @@ def getOptions(options):
             #print("WARNING: option -imag is still to be implemented")
 
         elif o == "-a" or o == "-algo":
-            if a in ['float', 'mpfr', 'centre']:
+            if a in ['float', 'mpfr', 'centre', 'thread']:
                 options['algo'] = a
             else:
                 print("\nERROR: invalid value for the -algo option\n")
@@ -620,6 +651,9 @@ def main(options):
 
     elif options['algo'] == 'mpfr':
         main_mpfr(pygwin, options)
+
+    elif options['algo'] == 'thread':
+        main_mpfr_thread(pygwin, options)
 
     pygame.quit()
 
