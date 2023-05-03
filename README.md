@@ -59,7 +59,7 @@ pixel location of the mouse, but I can only show the mandlebrot set real/imag co
 for floating point number calculations currently and not the MPFR. made a bodge for the MPFR
 class.
 
-1. Learn about arbitrary precision arithmatic to extend the possible zoom level. Done. Using MPFR.
+1. Learn about arbitrary precision arithmetic to extend the possible zoom level. Done. Using MPFR.
 
 1. Move all test programs to sub folder - Done, although I need a better folder name than 'test'.
 
@@ -68,6 +68,8 @@ class.
 1. Figure out a whether we can have a init function for the mpfr stuff to save from re-initialising everything
 for every zoom level (image) calculated. Obviously we will need to also have a tidy-up/finish method to free all
 the items - yes we can.  Done.
+
+1. Learn about threads in C to take advantage of multi-processor architecture.  Done.  My initial attempt has reduced the time for the initial display from 7.9 seconds to 2.9 seconds using 4 threads.  Need to make the code more general so it can use as many thread as there are cores available on the CPU.
 
 
 ## Lessons Learnt ##
