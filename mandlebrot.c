@@ -205,7 +205,7 @@ void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/displ
                             const double Xe, /* string repr of mpfr_t for X top right */
                             const double Ys, /* string repr of mpfr_t for Y bottom left */
                             const double Ye, /* string repr of mpfr_t for Y bottom right */
-                            int bytearray[]  /* reference/pointer to result list of color values */
+                            int **bytearray  /* reference/pointer to result list of color values */
                             )
 {
     unsigned int bc = 0;
@@ -227,13 +227,13 @@ void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/displ
             rgb = sqrt_gradient(iter, maxiter);
 
             /* just add the rgb values to the list */
-            bytearray[bc] = rgb.r;
+            (*bytearray)[bc] = rgb.r;
             bc++;
 
-            bytearray[bc] = rgb.g;
+            (*bytearray)[bc] = rgb.g;
             bc++;
 
-            bytearray[bc] = rgb.b;
+            (*bytearray)[bc] = rgb.b;
             bc++;
         }
     }
@@ -289,7 +289,7 @@ void free_mpfr_mem_c()
 void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/window */
                          const unsigned int ysize,   /* height of screen/display/window */
                          const unsigned int maxiter, /* max iterations before escape */
-                         int bytearray[] /* reference/pointer to result list of color values*/
+                         int **bytearray /* reference/pointer to result list of color values*/
                          )
 {
 	mandlebrot_mpfr_slice_c(xsize, ysize, 1, 0, maxiter, bytearray);
@@ -312,7 +312,7 @@ void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/dis
                               const unsigned int nslice,  /* number of slices */
                               const unsigned int slice,   /* which slice (range 0 -> nslice-1) */
                               const unsigned int maxiter, /* max iterations before escape */
-                              int bytearray[] /* reference/pointer to result list of color values*/
+                              int **bytearray /* reference/pointer to result list of color values*/
                              )
 {
     mpfr_t x, y, xsq, ysq, xtmp, x0, y0, ys1, ye1;  /* algorithm values */
@@ -412,20 +412,21 @@ void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/dis
                 //printf("iteration %d\n", iteration);
             }
             /* create a color value and add to result list */
-            rgb = sqrt_gradient(iteration, maxiter);
+            /*rgb = sqrt_gradient(iteration, maxiter);*/
+            rgb = grayscale(iteration, maxiter);
 
-            bytearray[bc] = rgb.r;
+            (*bytearray)[bc] = rgb.r;
             bc++;
 
-            bytearray[bc] = rgb.g;
+            (*bytearray)[bc] = rgb.g;
             bc++;
 
-            bytearray[bc] = rgb.b;
+            (*bytearray)[bc] = rgb.b;
             bc++;
         }
     }
-    mpfr_clears(x, y, xsq, ysq, xtmp, x0, y0/*, Xs, Xe, Ys, Ye*/, (mpfr_ptr)NULL);
-    mpfr_clears(a, two, four, sum_xsq_ysq, (mpfr_ptr)NULL);
+    mpfr_clears(x, y, xsq, ysq, xtmp, x0, y0, ys1, ye1, (mpfr_ptr)NULL);
+    mpfr_clears(a, two, four, sum_xsq_ysq, yslice, (mpfr_ptr)NULL);
 }
 
 /* ----------------------------------------------------------------------------
@@ -703,6 +704,8 @@ void do_chunk(void* arg)
             }
             /* create a color value and add to result list */
             rgb = sqrt_gradient(iteration, maxiter);
+            /*rgb = grayscale(iteration, maxiter);*/
+            
             //printf("bc %d r %d\n", bc, rgb.r);
             glb_bytearray[cp->tid][bc] = rgb.r;
             bc++;
@@ -744,7 +747,7 @@ void do_chunk(void* arg)
 void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/display/window */
                                const unsigned int ysize,   /* height of screen/display/window */
                                const unsigned int maxiter, /* max iterations before escape */
-                               int bytearray[] /* reference/pointer to result list of color values*/
+                               int **bytearray /* reference/pointer to result list of color values*/
                              )
 {
     unsigned int bc = 0;
@@ -930,12 +933,12 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
       {
         /*memcpy((void*)(&bytearray[bc]), (void*)(&glb_bytearray[0][bc0]), xsize/2*3);*/
         for(unsigned int x=bc0; x<bc0+xsize/2*3; x++)
-        { bytearray[bc] = glb_bytearray[0][x]; bc++;}
+        { (*bytearray)[bc] = glb_bytearray[0][x]; bc++;}
         /*bc = bc + xsize/2*3;*/
         bc0 = bc0 + xsize/2*3;
         /*memcpy((void*)(&bytearray[bc]), (void*)(&glb_bytearray[2][bc2]), xsize/2*3);*/
         for(unsigned int x=bc2; x<bc2+xsize/2*3; x++)
-        { bytearray[bc] = glb_bytearray[2][x]; bc++;}
+        { (*bytearray)[bc] = glb_bytearray[2][x]; bc++;}
         /*bc = bc + xsize/2*3;*/
         bc2 = bc2 + xsize/2*3;
       }
@@ -943,12 +946,12 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
       {
         /*memcpy((void*)(&bytearray[bc]), (void*)(&glb_bytearray[1][bc1]), xsize/2*3);*/
         for(unsigned int x=bc1; x<bc1+xsize/2*3; x++)
-        { bytearray[bc] = glb_bytearray[1][x]; bc++;}
+        { (*bytearray)[bc] = glb_bytearray[1][x]; bc++;}
         /*bc = bc + xsize/2*3;*/
         bc1 = bc1 + xsize/2*3;
         /*memcpy((void*)(&bytearray[bc]), (void*)(&glb_bytearray[3][bc3]), xsize/2*3);*/
         for(unsigned int x=bc3; x<bc3+xsize/2*3; x++)
-        { bytearray[bc] = glb_bytearray[3][x]; bc++;}
+        { (*bytearray)[bc] = glb_bytearray[3][x]; bc++;}
         /*bc = bc + xsize/2*3;*/
         bc3 = bc3 + xsize/2*3;
       }

@@ -46,10 +46,11 @@ static PyObject * float64(PyObject *self, PyObject *args)
     PyObject *points = PyList_New(0);
 
     /* create an array of integers to store the result of the mandlebrot calculation */
-    int bytearray[wsize * hsize * 3];
+    int *bytearray; //[wsize * hsize * 3];
+    bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
 
     /* call mandlebrot_bytearray */
-    mandlebrot_bytearray_c(wsize, hsize, maxiter, Xs, Xe, Ys, Ye, bytearray);
+    mandlebrot_bytearray_c(wsize, hsize, maxiter, Xs, Xe, Ys, Ye, &bytearray);
 
     /* transfer returned values into PyList for return */
     for(int i = 0; i < (wsize * hsize * 3); i++)
@@ -91,10 +92,11 @@ static PyObject * mpfr(PyObject *self, PyObject *args)
     PyObject *points = PyList_New(0);
 
     /* create an array of integers to store the result of the mandlebrot calculation */
-    int bytearray[wsize * hsize * 3];
+    int *bytearray; //[wsize * hsize * 3];
+    bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
 
     /* call mandlebrot_bytearray */
-    mandlebrot_mpfr_c(wsize, hsize, maxiter, bytearray);
+    mandlebrot_mpfr_c(wsize, hsize, maxiter, &bytearray);
 
     /* transfer returned values into PyList for return */
     for(int i = 0; i < (wsize * hsize * 3); i++)
@@ -127,11 +129,12 @@ static PyObject * mpfr_slice(PyObject *self, PyObject *args)
     PyObject *points = PyList_New(0);
 
     /* create an array of integers to store the result of the mandlebrot calculation */
-    int bytearray[wsize * hsize/nslice * 3];
+    int *bytearray; //[wsize * hsize/nslice * 3];
+    bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
     printf("bytearray length = %d\n",wsize * hsize/nslice * 3);
 
     /* call mandlebrot_bytearray */
-    mandlebrot_mpfr_slice_c(wsize, hsize, nslice, slice, maxiter, bytearray);
+    mandlebrot_mpfr_slice_c(wsize, hsize, nslice, slice, maxiter, &bytearray);
 
     /* transfer returned values into PyList for return */
     for(int i = 0; i < (wsize * hsize/nslice * 3); i++)
@@ -162,10 +165,11 @@ static PyObject * mpfr_thread(PyObject *self, PyObject *args)
     PyObject *points = PyList_New(0);
 
     /* create an array of integers to store the result of the mandlebrot calculation */
-    int bytearray[wsize * hsize * 3];
+    int *bytearray; //[wsize * hsize * 3];
+    bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
 
     /* call mandlebrot_bytearray */
-    mandlebrot_mpfr_thread_c(wsize, hsize, maxiter, bytearray);
+    mandlebrot_mpfr_thread_c(wsize, hsize, maxiter, &bytearray);
 
     /* transfer returned values into PyList for return */
     for(int i = 0; i < (wsize * hsize * 3); i++)
@@ -308,42 +312,3 @@ PyMODINIT_FUNC PyInit_mandlebrot(void)
     return m;
 }
 
-/* ----------------------------------------------------------------------------
- * I think this is only really useful if extending the Python interpreter.
- * I don't think it is used for a plain python module.
- */
-int main(int argc, char *argv[])
-{
-    wchar_t *program = Py_DecodeLocale(argv[0], NULL);
-    if (program == NULL) {
-        fprintf(stderr, "Fatal error: cannot decode argv[0]\n");
-        exit(1);
-    }
-
-    /* Add a built-in module, before Py_Initialize */
-    if (PyImport_AppendInittab("mandlebrot", PyInit_mandlebrot) == -1) {
-        fprintf(stderr, "Error: could not extend in-built modules table\n");
-        exit(1);
-    }
-
-    /* Pass argv[0] to the Python interpreter */
-    Py_SetProgramName(program);
-
-    /* Initialize the Python interpreter.  Required.
-       If this step fails, it will be a fatal error. */
-    Py_Initialize();
-
-    /* Optionally import the module; alternatively,
-       import can be deferred until the embedded script
-       imports it. */
-    /*PyObject *pmodule = PyImport_ImportModule("mandlebrot");
-    if (!pmodule) {
-        PyErr_Print();
-        fprintf(stderr, "Error: could not import module 'mandlebrot'\n");
-    }*/
-
-    /*...*/
-
-    PyMem_RawFree(program);
-    return 0;
-}

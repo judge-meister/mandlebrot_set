@@ -14,13 +14,13 @@ void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/displ
                             const double Xe, /* string repr of mpfr_t for X top right */
                             const double Ys, /* string repr of mpfr_t for Y bottom left */
                             const double Ye, /* string repr of mpfr_t for Y bottom right */
-                            int bytearray[] /* reference/pointer to result list of color values*/
+                            int **bytearray /* reference/pointer to result list of color values*/
                            );
 
 void mandlebrot_mpfr_c( const unsigned int xsize,   /* width of screen/display/window */
                         const unsigned int ysize,   /* height of screen/display/window */
                         const unsigned int maxiter, /* max iterations before escape */
-                        int bytearray[] /* reference/pointer to result list of color values*/
+                        int **bytearray /* reference/pointer to result list of color values*/
                        );
 
 void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/display/window */
@@ -28,13 +28,13 @@ void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/dis
                               const unsigned int nslice,  /* number of slices */
                               const unsigned int slice,   /* which slice (range 0 -> nslice-1) */
                               const unsigned int maxiter, /* max iterations before escape */
-                              int bytearray[] /* reference/pointer to result list of color values*/
+                              int **bytearray /* reference/pointer to result list of color values*/
                           );
 
 void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/display/window */
                                const unsigned int ysize,   /* height of screen/display/window */
                                const unsigned int maxiter, /* max iterations before escape */
-                               int bytearray[] /* reference/pointer to result list of color values*/
+                               int **bytearray /* reference/pointer to result list of color values*/
                              );
 
 void mpfr_zoom_in( const unsigned int pX, /* */
