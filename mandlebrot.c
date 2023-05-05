@@ -38,6 +38,7 @@
 #include <string.h>
 #include <math.h>
 #include <pthread.h>
+#include <sys/sysinfo.h>
 
 #include <gmp.h>
 #include <mpfr.h>
@@ -68,18 +69,18 @@
 /* TYPEDEFS */
 struct Color { int r, g, b; };
 typedef struct Color Color;
-struct chunk_params { unsigned int x0, y0, x1, y1, maxiter, tid; 
-                      mpfr_t Xe, Xs, Ye, Ys; };
-typedef struct chunk_params chunk_params;
+struct worker_args { unsigned int x0, y0, x1, y1, maxiter, tid; 
+                     mpfr_t Xe, Xs, Ye, Ys; };
+typedef struct worker_args worker_args;
 
 /* STATIC VARIABLES */
 static mpfr_t Xe, Xs, Ye, Ys; /* algorithm values */
-static int zoom_level;
+static int zoom_level = 0;
+static int ncpus = 1; /* just to be safe */
 
 /* GLOBAL DATA */
-int* glb_bytearray[4]; /* 4 pointers to malloc'd bytearrays. 
-                        * this cannot be fixed to 4 if we are to be able to 
-                        * use any multi core CPU. */ 
+int** glb_bytearray; /* this will contain an array of bytearrays
+                      * ncpus x (num points in array) */ 
 
 
 /* ----------------------------------------------------------------------------
@@ -247,6 +248,9 @@ void setup_c()
     /* create all mpfr_t vars */
     mpfr_inits2(PRECISION, Xs, Xe, Ys, Ye, (mpfr_ptr)NULL);
     TRACE_DEBUG("called setup_c()\n");
+    
+    /* record the number of cpu cores */
+    ncpus = get_nprocs(); /* cpus available, use get_nprocs_conf() cpus configured */
 }
 
 /* ----------------------------------------------------------------------------
@@ -627,18 +631,15 @@ void mpfr_zoom_out(      const unsigned int pX, /* x mouse pos in display */
 
 
 /* ----------------------------------------------------------------------------
- * thread worker function (needs a better name than do_chunk)
+ * worker_process_slice (used in the threads)
  *
- * currently given a quarter of the area of the image to work on.  This causes
- * problems when stitching the resultant data back together afterwards.  Would
- * be better to use horizontal sliced.  This would make it easier to split into
- * threadable chunks of work without fixating on the exact number of threads.
- * 
+ * given a slice of the mandlebrot set data to process.
+ * returns part of the result to be combined later.
  */
-void do_chunk(void* arg)
+void worker_process_slice(void* arg)
 {
-    chunk_params *cp;
-    cp = (chunk_params*)arg;
+    worker_args *cp;
+    cp = (worker_args*)arg;
     unsigned int maxiter = cp->maxiter;
     unsigned int iteration = 0;
     unsigned int bc = 0; /* bytearray index counter */
@@ -646,6 +647,8 @@ void do_chunk(void* arg)
 
     mpfr_t x, y, xsq, ysq, xtmp, x0, y0/*, Xe, Xs, Ye, Ys*/; /* algorithm values */
     mpfr_t a, two, four, sum_xsq_ysq;                    /* tmp vals */
+    
+    TRACE_DEBUGV("start thread[%d](%d,%d) (%d,%d)\n",cp->tid, cp->x0, cp->y0, cp->x1, cp->y1);
 
     /* create all mpfr_t vars */
     mpfr_inits2(PRECISION, x, y, xsq, ysq, xtmp, x0, y0/*, Xs, Xe, Ys, Ye*/, (mpfr_ptr)NULL);
@@ -720,7 +723,7 @@ void do_chunk(void* arg)
     mpfr_clears(x, y, xsq, ysq, xtmp, x0, y0/*, Xs, Xe, Ys, Ye*/, (mpfr_ptr)NULL);
     mpfr_clears(a, two, four, sum_xsq_ysq, (mpfr_ptr)NULL);
 
-    printf("Thread %d exiting\n",cp->tid);
+    TRACE_DEBUGV("Thread %d exiting\n",cp->tid);
     pthread_exit(&glb_bytearray[cp->tid]);
 }
 
@@ -751,219 +754,96 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
                              )
 {
     unsigned int bc = 0;
+    mpfr_t lx, ly, yslice, ys1, ye1;
+    mpfr_inits2(PRECISION, lx, ly, yslice, ys1, ye1, (mpfr_ptr)NULL);
 
-    printf("mandlebrot_mpfr_c (in) \n");
+    TRACE_DEBUG("mandlebrot_mpfr_c (in) \n");
+#ifdef TRACE
     mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
     putchar('\n');
-
-    /* divide data into 4 quarters that can be split between 4 threads 
-     *
-     *  Xs Xe Ys Ye
-     *  
-     *  -2 -> 1
-     *  -1.5 -> 1.5
-     *
-     *  -2->-0.5  -0.5->1
-     *  -1.5->0   0->1.5
-     */
-    pthread_t tid[4];
+#endif
+    
+    const unsigned int core_count = ncpus;
+    const unsigned int nslice = core_count;
+    pthread_t tid[core_count];
+    worker_args wargs[core_count];
+    
+    mpfr_set_d(yslice, 0.0, MPFR_RNDN);
+    mpfr_sub(yslice, Ye, Ys, MPFR_RNDN);
+    mpfr_div_ui(yslice, yslice, nslice, MPFR_RNDN);
 
     /* initialise the global bytearray*/
-    for(int i=0; i<4; i++)
+    glb_bytearray = (int**)malloc(core_count*sizeof(int*));
+    for(int slice=0; slice<core_count; slice++)
     {
-      glb_bytearray[i] = (int*)calloc((size_t)(xsize/2 * ysize/2 * 3), sizeof(int));
-    }
+      glb_bytearray[slice] = (int*)calloc((size_t)(xsize/2 * ysize/2 * 3), sizeof(int));
 
-    chunk_params cp1;
-    mpfr_t lx, ly;
-    mpfr_inits2(PRECISION, lx, ly, cp1.Xe, cp1.Xs, cp1.Ye, cp1.Ys, (mpfr_ptr)NULL);
-    cp1.tid = 0;
-    cp1.x0 = 0;
-    cp1.y0 = 0;
-    cp1.x1 = xsize/2;
-    cp1.y1 = ysize/2;
-    cp1.maxiter = maxiter;
-    
-    mpfr_set(cp1.Xs, Xs, MPFR_RNDN);//cp1->Xs = Xs;               -2
-    
-    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);//cp1->Xe = Xs + (Xe-Xs)/2;   -2 + (1 - -2)/2
-    mpfr_div_ui(lx, lx, 2, MPFR_RNDN);
-    mpfr_add(cp1.Xe, lx, Xs, MPFR_RNDN);
-    
-    mpfr_set(cp1.Ys, Ys, MPFR_RNDN);//cp1->Ys = Ys;               -1.5
-    
-    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);//cp1->Ye = Ys + (Ye-Ys)/2;   -1.5 + (1.5 - -1.5)/2
-    mpfr_div_ui(ly, ly, 2, MPFR_RNDN);
-    mpfr_add(cp1.Ye, ly, Ys, MPFR_RNDN);
+      wargs[slice].tid = slice;
+      wargs[slice].maxiter = maxiter;
+      wargs[slice].x0 = 0;
+      wargs[slice].x1 = xsize;
+      wargs[slice].y0 = 0;
+      wargs[slice].y1 = (ysize/nslice);
+      
+      mpfr_inits2(PRECISION, wargs[slice].Xe, wargs[slice].Xs, wargs[slice].Ye, wargs[slice].Ys, (mpfr_ptr)NULL);
+      mpfr_set(wargs[slice].Xs, Xs, MPFR_RNDN);
+      mpfr_set(wargs[slice].Xe, Xe, MPFR_RNDN);
 
-    printf("start thread[%d](%d,%d %d,%d)\n",cp1.tid, cp1.x0, cp1.y0, cp1.x1, cp1.y1);
-    mpfr_out_str(stdout, 10, 0, cp1.Xs, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, cp1.Xe, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, cp1.Ys, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, cp1.Ye, MPFR_RNDN); putchar('\n');
-    pthread_create(&tid[0], NULL, (void *)do_chunk, &cp1);
-
-    chunk_params cp2;
-    mpfr_inits2(PRECISION, cp2.Xe, cp2.Xs, cp2.Ye, cp2.Ys, (mpfr_ptr)NULL);
-    cp2.tid = 1;
-    cp2.x0 = 0;
-    cp2.y0 = 0;
-    cp2.x1 = xsize/2;
-    cp2.y1 = ysize/2;
-    cp2.maxiter = maxiter;
-    //cp2.Xs = Xs
-    mpfr_set(cp2.Xs, Xs, MPFR_RNDN);
-    //cp2.Ys = Ys + (Ye-Ys)/2
-    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
-    mpfr_div_ui(ly, ly, 2, MPFR_RNDN);
-    mpfr_add(cp2.Ys, ly, Ys, MPFR_RNDN);
-    //cp2.Xe = Xs +(Xe-Xs)/2
-    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
-    mpfr_div_ui(lx, lx, 2, MPFR_RNDN);
-    mpfr_add(cp2.Xe, lx, Xs, MPFR_RNDN);
-    //cp2.Ye = Ye
-    mpfr_set(cp2.Ye, Ye, MPFR_RNDN);
-    
-    printf("start thread[%d](%d,%d %d,%d)\n",cp2.tid, cp2.x0, cp2.y0, cp2.x1, cp2.y1);
-    mpfr_out_str(stdout, 10, 0, cp2.Xs, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, cp2.Xe, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, cp2.Ys, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, cp2.Ye, MPFR_RNDN); putchar('\n');
-    pthread_create(&tid[1], NULL, (void *)do_chunk, &cp2);
-
-    chunk_params cp3;
-    mpfr_inits2(PRECISION, cp3.Xe, cp3.Xs, cp3.Ye, cp3.Ys, (mpfr_ptr)NULL);
-    cp3.tid = 2;
-    cp3.x0 = 0;
-    cp3.y0 = 0;
-    cp3.x1 = xsize/2;
-    cp3.y1 = ysize/2;
-    cp3.maxiter = maxiter;
-    //cp3.Xs = Xs + (Xe-Xs)/2
-    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
-    mpfr_div_ui(lx, lx, 2, MPFR_RNDN);
-    mpfr_add(cp3.Xs, lx, Xs, MPFR_RNDN);
-    //cp3.Ys = Ys
-    mpfr_set(cp3.Ys, Ys, MPFR_RNDN);
-    //cp3.Xe = Xe
-    mpfr_set(cp3.Xe, Xe, MPFR_RNDN);
-    //cp3.Ye = Ys + (Ye-Ys)/2
-    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
-    mpfr_div_ui(ly, ly, 2, MPFR_RNDN);
-    mpfr_add(cp3.Ye, ly, Ys, MPFR_RNDN);
-    
-    printf("start thread[%d](%d,%d %d,%d)\n",cp3.tid, cp3.x0, cp3.y0, cp3.x1, cp3.y1);
-    mpfr_out_str(stdout, 10, 0, cp3.Xs, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, cp3.Xe, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, cp3.Ys, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, cp3.Ye, MPFR_RNDN); putchar('\n');
-    pthread_create(&tid[2], NULL, (void *)do_chunk, &cp3);
-
-    chunk_params cp4;
-    mpfr_inits2(PRECISION, cp4.Xe, cp4.Xs, cp4.Ye, cp4.Ys, (mpfr_ptr)NULL);
-    cp4.tid = 3;
-    cp4.x0 = 0;
-    cp4.y0 = 0;
-    cp4.x1 = xsize/2;
-    cp4.y1 = ysize/2;
-    cp4.maxiter = maxiter;
-    //cp4.Xs = Xs + (Xe-Xs)/2
-    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
-    mpfr_div_ui(lx, lx, 2, MPFR_RNDN);
-    mpfr_add(cp4.Xs, lx, Xs, MPFR_RNDN);
-    //cp4.Ys = Ys + (Ye-Ys)/2
-    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
-    mpfr_div_ui(ly, ly, 2, MPFR_RNDN);
-    mpfr_add(cp4.Ys, ly, Ys, MPFR_RNDN);
-    //cp4.Xe = Xe
-    mpfr_set(cp4.Xe, Xe, MPFR_RNDN);
-    //cp4.Ye = Ye
-    mpfr_set(cp4.Ye, Ye, MPFR_RNDN);
-    
-    printf("start thread[%d](%d,%d %d,%d)\n",cp4.tid, cp4.x0, cp4.y0, cp4.x1, cp4.y1);
-    mpfr_out_str(stdout, 10, 0, cp4.Xs, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, cp4.Xe, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, cp4.Ys, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, cp4.Ye, MPFR_RNDN); putchar('\n');
-    pthread_create(&tid[3], NULL, (void *)do_chunk, &cp4);
-
-    /*wait for all the threads to complete */
-    int* ptr1, ptr2, ptr3, ptr4; /* this should be replaced with a bytearray */
-    pthread_join(tid[0], (void**)&ptr1);
-    pthread_join(tid[1], (void**)&ptr2);
-    pthread_join(tid[2], (void**)&ptr3);
-    pthread_join(tid[3], (void**)&ptr4);
-
-    mpfr_clears(lx, ly, (mpfr_ptr)NULL);
-    mpfr_clears(cp1.Xe, cp1.Xs, cp1.Ye, cp1.Ys, (mpfr_ptr)NULL);
-    mpfr_clears(cp2.Xe, cp2.Xs, cp2.Ye, cp2.Ys, (mpfr_ptr)NULL);
-    mpfr_clears(cp3.Xe, cp3.Xs, cp3.Ye, cp3.Ys, (mpfr_ptr)NULL);
-    mpfr_clears(cp4.Xe, cp4.Xs, cp4.Ye, cp4.Ys, (mpfr_ptr)NULL);
-    
-    /* populate the returned bytearray from the global one */
-    /* (pseudo)
-    using memcpy()
-    for y in range(0,ysize):
-      if y < ysize/2:
-        memcpy(ba[bc],ba0[bc0], xsize/2);
-        bc = bc + xsize/2;
-        bc0 = bc0 + xsize/2;
-        memcpy(ba[bc],ba1[bc1], xsize/2);
-        bc = bc + xsize/2;
-        bc1 = bc1 + xsize/2;
-      else
-        memcpy(ba[bc],ba2[bc2], xsize/2);
-        bc = bc + xsize/2;
-        bc2 = bc2 + xsize/2;
-        memcpy(ba[bc],ba3[bc3], xsize/2);
-        bc = bc + xsize/2;
-        bc3 = bc3 + xsize/2;
-
-    */
-    printf("Combining Results\n");
-    unsigned int bc0, bc1, bc2, bc3;
-    bc0 = bc1 = bc2 = bc3 = 0;
-    bc = 0;
-    for(unsigned int y=0; y < ysize; y++)
-    { 
-      if(y < ysize/2)
+      if (nslice > 1)
       {
-        /*memcpy((void*)(&bytearray[bc]), (void*)(&glb_bytearray[0][bc0]), xsize/2*3);*/
-        for(unsigned int x=bc0; x<bc0+xsize/2*3; x++)
-        { (*bytearray)[bc] = glb_bytearray[0][x]; bc++;}
-        /*bc = bc + xsize/2*3;*/
-        bc0 = bc0 + xsize/2*3;
-        /*memcpy((void*)(&bytearray[bc]), (void*)(&glb_bytearray[2][bc2]), xsize/2*3);*/
-        for(unsigned int x=bc2; x<bc2+xsize/2*3; x++)
-        { (*bytearray)[bc] = glb_bytearray[2][x]; bc++;}
-        /*bc = bc + xsize/2*3;*/
-        bc2 = bc2 + xsize/2*3;
+        /* Ys + n*yslice */
+        mpfr_mul_ui(ys1, yslice, slice, MPFR_RNDN);
+        mpfr_add(wargs[slice].Ys, ys1, Ys, MPFR_RNDN);
+        /* Ys + (n+1)*yslice */
+        mpfr_mul_ui(ye1, yslice, slice+1, MPFR_RNDN);
+        mpfr_add(wargs[slice].Ye, ye1, Ys, MPFR_RNDN);
       }
       else
       {
-        /*memcpy((void*)(&bytearray[bc]), (void*)(&glb_bytearray[1][bc1]), xsize/2*3);*/
-        for(unsigned int x=bc1; x<bc1+xsize/2*3; x++)
-        { (*bytearray)[bc] = glb_bytearray[1][x]; bc++;}
-        /*bc = bc + xsize/2*3;*/
-        bc1 = bc1 + xsize/2*3;
-        /*memcpy((void*)(&bytearray[bc]), (void*)(&glb_bytearray[3][bc3]), xsize/2*3);*/
-        for(unsigned int x=bc3; x<bc3+xsize/2*3; x++)
-        { (*bytearray)[bc] = glb_bytearray[3][x]; bc++;}
-        /*bc = bc + xsize/2*3;*/
-        bc3 = bc3 + xsize/2*3;
+        mpfr_set(wargs[slice].Ys, Ys, MPFR_RNDN);
+        mpfr_set(wargs[slice].Ye, Ye, MPFR_RNDN);
+      }
+      pthread_create(&tid[slice], NULL, (void *)worker_process_slice, &(wargs[slice]));
+    }
+
+    /* ------------------------------------------------------------------------- */
+
+    /*wait for all the threads to complete */
+    int** ptr;
+    ptr = (int**)malloc(core_count*sizeof(int*));
+    for(int slice=0; slice<core_count; slice++)
+    {
+      pthread_join(tid[slice], (void**)&ptr[slice]);
+    }
+    
+    /* populate the returned bytearray from the global one */
+    TRACE_DEBUG("Combining Results\n");
+    bc = 0;
+    for(int slice=0; slice<core_count; slice++)
+    {
+      for(unsigned int gbc=0; gbc < xsize*3*(ysize/core_count); gbc++)
+      {
+        (*bytearray)[bc] = glb_bytearray[slice][gbc]; bc++;
       }
     }
 
     /* free the global bytearray*/
-    printf("Freeing glb_bytearray\n");
-    for(int i=0; i<4; i++)
+    TRACE_DEBUG("Freeing glb_bytearray\n");
+    for(int slice=0; slice<core_count; slice++)
     {
-      free(glb_bytearray[i]); /* = (int*)calloc((size_t)(xsize/2 * ysize/2 * 3), sizeof(int));*/
+      mpfr_clears(wargs[slice].Xe, wargs[slice].Xs, wargs[slice].Ye, wargs[slice].Ys, (mpfr_ptr)NULL);
+      free(glb_bytearray[slice]); /* = (int*)calloc((size_t)(xsize/2 * ysize/2 * 3), sizeof(int));*/
     }
-    printf("mandlebrot_mpfr_c (exit) \n");
+    free(glb_bytearray);
+    free(ptr);
+    
+    /* clear (free) mpfr data */
+    mpfr_clears(lx, ly, yslice, ys1, ye1, (mpfr_ptr)NULL);
+    
+    TRACE_DEBUG("mandlebrot_mpfr_c (exit) \n");
 }
 
 /* ----------------------------------------------------------------------------

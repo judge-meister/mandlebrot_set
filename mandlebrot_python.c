@@ -57,7 +57,8 @@ static PyObject * float64(PyObject *self, PyObject *args)
     {
         PyList_Append(points, PyLong_FromLong((long) bytearray[i]));
     }
-
+    free(bytearray);
+    
     return points;
 }
 
@@ -103,6 +104,7 @@ static PyObject * mpfr(PyObject *self, PyObject *args)
     {
         PyList_Append(points, PyLong_FromLong((long) bytearray[i]));
     }
+    free(bytearray);
 
     return points;
 }
@@ -141,6 +143,7 @@ static PyObject * mpfr_slice(PyObject *self, PyObject *args)
     {
         PyList_Append(points, PyLong_FromLong((long) bytearray[i]));
     }
+    free(bytearray);
 
     return points;
 }
@@ -176,6 +179,7 @@ static PyObject * mpfr_thread(PyObject *self, PyObject *args)
     {
         PyList_Append(points, PyLong_FromLong((long) bytearray[i]));
     }
+    free(bytearray);
 
     return points;
 }
