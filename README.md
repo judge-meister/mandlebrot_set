@@ -15,7 +15,7 @@ hardware.
 
 The zoom level bottoms out after a while producing increasingly blocky results which I
 put down to the limits of floating point precision in the C code (64 bit floats). To get further
-I will have to learn more about arbitrary precision floating point arithmetic.  
+I will have to learn more about arbitrary precision floating point arithmetic.
 
 ## Gnu MPFR library
 
@@ -71,6 +71,10 @@ the items - yes we can.  Done.
 
 1. Learn about threads in C to take advantage of multi-processor architecture.  Done.  My initial attempt has reduced the time for the initial display from 7.9 seconds to 2.9 seconds using 4 threads.  Need to make the code more general so it can use as many thread as there are cores available on the CPU.
 
+1. Using a better color mapping.  It now looks good at all zoom levels.
+
+1. Can now provice the desired centre point, zoom level and zoom factor as input values (initially as command line options)
+
 
 ## Lessons Learnt ##
 
@@ -96,18 +100,17 @@ To run the 64bit float version which is significantly faster but has limited zoo
 
 ## Desired Feature List ##
 
- * get the window displayed while initial image calculation is happening. this will also stop the window hanging while the calculation happens. 
-   * threading maybe
- * as MPFR calculations take a while use either the 64bit float algorithm or values from the currently displayed image to setup an initial approximation of the next image while waiting for the true image to finish calculating.
- * have an option that either saves the current image as a file or just generates an image file instead of displaying it 
-   * could be the start of creating a video of a zoom in.
- * provide the desired centre point, zoom level and zoom factor as input values (initially as command line options)
-   * partially done, still need to apply it to the MPFR library code.
+ * as MPFR calculations take a while. use either the 64bit float algorithm or values from the currently displayed image to setup an initial approximation of the next image while waiting for the true image to finish calculating.
+
+ * have an option that either saves the current image as a file or just generates an image file instead of displaying it - could be the start of creating a video of a zoom in.
+
  * split the mandlebrot.c file up into a MPFR module and a 64bit float module.
- * add use of the multiprocessing module to speed up calculation.
-   * need to trial distributed multiprocessing across multiple machines.
+
  * display other fractals related to mandlebrot sets
    * budhabrot - https://en.wikipedia.org/wiki/Buddhabrot
    * julia sets
- * use a color gradient image file instead of calculating the color values. might be faster once the file is loaded.
- 
+
+## No longer looking to do ##
+
+ * add use of the multiprocessing module to speed up calculation. Gonna use threads in C module instead.
+ * need to trial distributed multiprocessing across multiple machines. Don't think this is actually useful. It will probably spend more time sending and receiving data across the network.
