@@ -60,9 +60,9 @@
 #endif
 
 
-#define PRECISION 128
+#define PRECISION 256
 /* if PRECISION is increased then NUMLEN needs to increase */
-#define NUMLEN 50
+//#define NUMLEN 50
 
 #define MAXITER 1000
 
@@ -74,7 +74,7 @@ struct worker_args { unsigned int x0, y0, x1, y1, maxiter, tid;
 typedef struct worker_args worker_args;
 
 /* STATIC VARIABLES */
-static mpfr_t Xe, Xs, Ye, Ys; /* algorithm values */
+static mpfr_t Xe, Xs, Ye, Ys, Cx, Cy; /* algorithm values */
 static int zoom_level = 0;
 static int ncpus = 1; /* just to be safe */
 
@@ -82,6 +82,15 @@ static int ncpus = 1; /* just to be safe */
 int** glb_bytearray; /* this will contain an array of bytearrays
                       * ncpus x (num points in array) */ 
 
+
+/* ----------------------------------------------------------------------------
+ * short utility function to assign the rgb values to the Color struct
+ */
+static struct Color setRgb(int r, int g, int b)
+{
+  Color c = {r, g, b};
+  return c;
+}
 
 /* ----------------------------------------------------------------------------
  * grayscale - return a gray scale rgb value representing the iteration count
@@ -94,18 +103,13 @@ int** glb_bytearray; /* this will contain an array of bytearrays
  */
 static struct Color grayscale(int it, int maxiter)
 {
-    Color c; /*  = { 0, 0, 0 } */
-    c.r = 0;
-    c.g = 0;
-    c.b = 0;
+    Color c = { 0, 0, 0 };
 
     if (it < maxiter)
     {
         /*int idx = (int)ceil( sqrt( sqrt( (double)it / (double)MAXITER ) ) * 255.0 );*/
         int idx = (int)ceil( sqrt( (double)it / (double)maxiter ) * 255.0 );
-        c.r = idx;
-        c.g = idx;
-        c.b = idx;
+        c = setRgb(idx, idx, idx);
     }
     return c;
 }
@@ -133,9 +137,44 @@ static struct Color sqrt_gradient(int it, int maxiter)
     }
     else
     {
-        c.r = 0; c.g = 0; c.b = 0;
+      c = setRgb(0, 0, 0);
     }
     return c;
+}
+
+/* ----------------------------------------------------------------------------
+ * Ultra_Fract_colors - these are the colors used by the Ultra Fractal program
+ *
+ * uses a simple modulo method to choose a color from a fixed list
+ */
+static struct Color Ultra_Fractal_colors(int it, int maxiter)
+{
+  if (it < maxiter && it > 0) 
+  {
+    int i = it % 16;
+    Color mapping[16];
+    mapping[0] = setRgb(66, 30, 15);
+    mapping[1] = setRgb(25, 7, 26);
+    mapping[2] = setRgb(9, 1, 47);
+    mapping[3] = setRgb(4, 4, 73);
+    mapping[4] = setRgb(0, 7, 100);
+    mapping[5] = setRgb(12, 44, 138);
+    mapping[6] = setRgb(24, 82, 177);
+    mapping[7] = setRgb(57, 125, 209);
+    mapping[8] = setRgb(134, 181, 229);
+    mapping[9] = setRgb(211, 236, 248);
+    mapping[10] = setRgb(241, 233, 191);
+    mapping[11] = setRgb(248, 201, 95);
+    mapping[12] = setRgb(255, 170, 0);
+    mapping[13] = setRgb(204, 128, 0);
+    mapping[14] = setRgb(153, 87, 0);
+    mapping[15] = setRgb(106, 52, 3);
+    return mapping[i];
+  }
+  else 
+  {
+    return setRgb(0, 0, 0);
+  }
 }
 
 /* ----------------------------------------------------------------------------
@@ -246,7 +285,7 @@ void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/displ
 void setup_c()
 {
     /* create all mpfr_t vars */
-    mpfr_inits2(PRECISION, Xs, Xe, Ys, Ye, (mpfr_ptr)NULL);
+    mpfr_inits2(PRECISION, Xs, Xe, Ys, Ye, Cx, Cy, (mpfr_ptr)NULL);
     TRACE_DEBUG("called setup_c()\n");
     
     /* record the number of cpu cores */
@@ -260,7 +299,9 @@ void initialize_c(
        const char* Xs_str, /* string repr of mpfr_t for X top left */
        const char* Xe_str, /* string repr of mpfr_t for X top right */
        const char* Ys_str, /* string repr of mpfr_t for Y bottom left */
-       const char* Ye_str  /* string repr of mpfr_t for Y bottom right */
+       const char* Ye_str, /* string repr of mpfr_t for Y bottom right */
+       const char* Cx_str, /* string repr of centre X pos for zooming in */
+       const char* Cy_str  /* string repr of centre Y pos for zooming in */
      )
 {
     TRACE_DEBUG("called init_c()\n");
@@ -268,6 +309,9 @@ void initialize_c(
     mpfr_set_str(Xe, Xe_str, 10, MPFR_RNDN);
     mpfr_set_str(Ys, Ys_str, 10, MPFR_RNDN);
     mpfr_set_str(Ye, Ye_str, 10, MPFR_RNDN);
+    
+    mpfr_set_str(Cx, Cx_str, 10, MPFR_RNDN);
+    mpfr_set_str(Cy, Cy_str, 10, MPFR_RNDN);
     zoom_level = 0;
 
 }
@@ -458,23 +502,36 @@ void mpfr_zoom_in(       const unsigned int pX, /* x mouse pos in display */
 #endif
     TRACE_DEBUG("\n");
 
-    /* scaled ( ((double)x1 / (double)sz) * (Xe-Xs) ) + Xs; */
-    /* double X0 = scaled(pX, xsz, Xs, Xe); */
-    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
-    mpfr_mul_d(lx, lx, ((double)pX/(double)w), MPFR_RNDN);
-    mpfr_add(lx, lx, Xs, MPFR_RNDN);
+    if (mpfr_cmp(Cx, Xe) >0 && mpfr_cmp(Cy, Ye) >0)
+    {
+      /* find the centre point of the data defined by the given mouse point location */
+    
+      /* scaled ( ((double)x1 / (double)sz) * (Xe-Xs) ) + Xs; */
+      /* double X0 = scaled(pX, xsz, Xs, Xe); */
+      mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
+      mpfr_mul_d(lx, lx, ((double)pX/(double)w), MPFR_RNDN);
+      mpfr_add(lx, lx, Xs, MPFR_RNDN);
 
-    /* double y0 = scaled(pY, ysz, Ys, Ye); */
-    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
-    mpfr_mul_d(ly, ly, ((double)pY/(double)h), MPFR_RNDN);
-    mpfr_add(ly, ly, Ys, MPFR_RNDN);
-
+      /* double y0 = scaled(pY, ysz, Ys, Ye); */
+      mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
+      mpfr_mul_d(ly, ly, ((double)pY/(double)h), MPFR_RNDN);
+      mpfr_add(ly, ly, Ys, MPFR_RNDN);
+    }
+    else
+    {
+      /* use the pre-initialised centre point of the data */
+      mpfr_set(lx, Cx, MPFR_RNDN);
+      mpfr_set(ly, Cy, MPFR_RNDN);
+    }
+    
     TRACE_DEBUG("scaled loc (mpfr)\n");
 #ifdef TRACE
     mpfr_out_str(stdout, 10, 0, lx, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, ly, MPFR_RNDN); putchar('\n');
 #endif
 
+    /* find the corners surrounding the centre point as (lx,ly) */
+    
     /* TLx = loc_x - abs((xe-xs)/3) */
     mpfr_sub(TLx, Xe, Xs, MPFR_RNDN);
     mpfr_div_ui(TLx, TLx, factor, MPFR_RNDN);
@@ -706,8 +763,9 @@ void worker_process_slice(void* arg)
                 //printf("iteration %d\n", iteration);
             }
             /* create a color value and add to result list */
-            rgb = sqrt_gradient(iteration, maxiter);
-            /*rgb = grayscale(iteration, maxiter);*/
+            //rgb = sqrt_gradient(iteration, maxiter);
+            //rgb = grayscale(iteration, maxiter);
+            rgb = Ultra_Fractal_colors(iteration, maxiter);
             
             //printf("bc %d r %d\n", bc, rgb.r);
             glb_bytearray[cp->tid][bc] = rgb.r;

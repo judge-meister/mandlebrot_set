@@ -56,7 +56,9 @@ void setup_c();
 void initialize_c( const char* Xs_str, /* string repr of mpfr_t for X top left */
                    const char* Xe_str, /* string repr of mpfr_t for X top right */
                    const char* Ys_str, /* string repr of mpfr_t for Y bottom left */
-                   const char* Ye_str  /* string repr of mpfr_t for Y bottom right */
+                   const char* Ye_str, /* string repr of mpfr_t for Y bottom right */
+                   const char* Cx_str, /* string repr of centre X pos for zooming in */
+                   const char* Cy_str  /* string repr of centre Y pos for zooming in */
                   );
 
 void free_mpfr_mem_c();

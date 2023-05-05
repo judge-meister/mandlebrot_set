@@ -243,11 +243,13 @@ static PyObject * init(PyObject *self, PyObject *args)
 static PyObject * setup(PyObject *self, PyObject *args)
 {
     const char *Xs, *Xe, *Ys, *Ye; /* do i need to free these at the end of the func */
+    char *Cx = "99.9";
+    char *Cy = "99.9";
 
-    if (!PyArg_ParseTuple(args, "ssss", &Xs, &Xe, &Ys, &Ye))
+    if (!PyArg_ParseTuple(args, "ssss|ss", &Xs, &Xe, &Ys, &Ye, &Cx, &Cy))
         return NULL;
 
-    initialize_c(Xs, Xe, Ys, Ye);
+    initialize_c(Xs, Xe, Ys, Ye, Cx, Cy);
 
     //return PyLong_FromLong(0); 
     

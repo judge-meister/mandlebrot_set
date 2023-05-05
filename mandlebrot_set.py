@@ -275,7 +275,7 @@ class mandlebrot_python_float_centre(mandlebrot_python_float):
 
 class mpfr_c:
     """Interface class for accessing the C code module methods that calculate the mandlebrot set"""
-    def __init__(self):
+    def __init__(self, Cx=None, Cy=None):
         """initialise class data, and MPFR C module"""
         self.Xs = repr(X1)
         self.Xe = repr(X2)
@@ -283,7 +283,10 @@ class mpfr_c:
         self.Ye = repr(Y2)
         mandlebrot.init()
         print("call setup(%s, %s, %s, %s)" % (self.Xs, self.Xe, self.Ys, self.Ye))
-        mandlebrot.setup(self.Xs, self.Xe, self.Ys, self.Ye)
+        if Cx is not None and Cy is not None:
+            mandlebrot.setup(self.Xs, self.Xe, self.Ys, self.Ye, Cx, Cy)
+        else:
+            mandlebrot.setup(self.Xs, self.Xe, self.Ys, self.Ye)
         
     def zoom_in(self, px, py, sz, sz1, factor):
         """call the zoom in method of the C module"""
@@ -316,7 +319,7 @@ class mpfr_c:
 
 class mandlebrot_c_mpfr:
     """use the C module to implement a mandlebrot class"""
-    def __init__(self, pgwin):
+    def __init__(self, pgwin, Cx=None, Cy=None):
         """initialise some data"""
         self.Xs = repr(X1)
         self.Xe = repr(X2)
@@ -329,7 +332,7 @@ class mandlebrot_c_mpfr:
         self.centre = {'r': -0.5, 'i': 0.0}
         self.sz = self.pgwin.winsize()
 
-        self.mpfr = mpfr_c()
+        self.mpfr = mpfr_c(Cx, Cy) if Cx is not None else mpfr_c()
         #mandlebrot.setup()
         #mandlebrot.initialize(self.Xs, self.Xe, self.Ys, self.Ye)
 
@@ -417,9 +420,9 @@ class mandlebrot_c_mpfr:
 
 class mandlebrot_c_mpfr_thread(mandlebrot_c_mpfr):
     """class based in the mandlebrot_c_mpfr class that uses the threaded module"""
-    def __init__(self, pgwin):
+    def __init__(self, pgwin, Cx=None, Cy=None):
         """"""
-        super().__init__(pgwin)
+        super().__init__(pgwin, Cx, Cy)
 
     def draw_plot(self):
         """call the mpfr_thread method and display the result"""
@@ -543,7 +546,9 @@ def main_mpfr(pgwin, options):
 
 def main_mpfr_thread(pgwin, options):
     """run using the mandlebrot_c_mpfr_thread class"""
-    mand = mandlebrot_c_mpfr_thread(pgwin)
+    Cx = options['real']
+    Cy = options['imag']
+    mand = mandlebrot_c_mpfr_thread(pgwin, Cx, Cy)
     #mand.draw_plot()
     event_loop(mand, pgwin)
     mandlebrot.tidyup()
@@ -590,6 +595,8 @@ def getOptions(options):
 
     options['algo'] = 'mpfr'
     options['disp'] = 640
+    options['real'] = None
+    options['imag'] = None
 
     for o, a in opts:
         if o == "-h" or o == "-help":

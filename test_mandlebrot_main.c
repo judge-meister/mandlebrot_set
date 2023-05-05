@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     maxiter = 1000;
 
     setup_c();
-    initialize_c("-2.0", "1.0", "-1.5", "1.5");
+    initialize_c("-2.0", "1.0", "-1.5", "1.5", "0.0", "0.0");
 
     /* create an array of integers to store the result of the mandlebrot calculation */
     int *bytearray; //[wsize * hsize * 3];
