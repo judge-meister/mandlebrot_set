@@ -19,7 +19,7 @@ I will have to learn more about arbitrary precision floating point arithmetic.
 
 ## Gnu MPFR library
 
-With the help of the MPFR library we can gain arbitrary precision in the calculations. So
+With the help of the MPFR library (https://www.mpfr.org/) we can gain arbitrary precision in the calculations. So
 I added functions to the python module to calculate the mandlebrot set using the MPFR
 library.  After some teathing troubles I finally got the MPFR version to work the only
 trouble being that the algorithm is much slower.  It can take as little as 1.5 seconds to
