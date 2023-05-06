@@ -38,7 +38,15 @@
 #include <string.h>
 #include <math.h>
 #include <pthread.h>
-#include <sys/sysinfo.h>
+
+#ifdef WIN32
+#include <windows.h>
+#elif MACOS
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#else
+#include <unistd.h>
+#endif
 
 #include <gmp.h>
 #include <mpfr.h>
@@ -289,7 +297,28 @@ void setup_c()
     TRACE_DEBUG("called setup_c()\n");
     
     /* record the number of cpu cores */
-    ncpus = get_nprocs(); /* cpus available, use get_nprocs_conf() cpus configured */
+#ifdef WIN32
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+    ncpus = sysinfo.dwNumberOfProcessors;
+#elif MACOS
+    int nm[2];
+    size_t len = 4;
+    uint32_t count
+
+    nm[0] = CTL_HW; nm[1] = HW_AVAILCPU;
+    sysctl(nm, 2, &count, &len, NULL, 0);
+
+    if (count < 1) {
+    nm[1] = HW_NCPU;
+    sysctl(nm, 2, &count, &len, NULL, 0);
+    if (count < 1) { count = 1; }
+    ncpus = count;
+#else
+    //ncpus = get_nprocs(); /* cpus available, use get_nprocs_conf() for cpus configured */
+    ncpus = sysconf(_SC_NPROCESSORS_ONLN);
+#endif
+
 }
 
 /* ----------------------------------------------------------------------------

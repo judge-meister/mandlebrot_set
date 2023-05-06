@@ -3,7 +3,9 @@ from distutils.core import setup, Extension
 
 module1 = Extension("mandlebrot", 
                     sources = ["mandlebrot.c", "mandlebrot_python.c"],
-                    libraries = ['mpfr'])
+                    libraries = ['mpfr'],
+                    library_dirs = ['/usr/local/lib'],
+                    include_dirs = ['/usr/local/include'])
 
 setup(name = "PackageName",
       version = '0.1',
