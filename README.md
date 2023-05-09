@@ -28,6 +28,40 @@ influence the time are which bit of the set you are calculating (zooming in to) 
 many levels of zoom you are at.  I presume that the greater the precision calculated the
 longer it will take.
 
+## Building
+
+#### Requirements
+
+ * python3.9 (at least)
+ * MPFR - Multi Precision Floating Point Library
+ * PyGame - python modules for writing games, provides input event loops and rendering
+
+### Linux
+
+Both PyGame and the MPRF library can be installed through most package managers in Linux.
+
+Clone the repository and use 'make' to build the python module.
+
+### MacOS
+
+I used homebrew to install the MPRF library on MacOS 10.15, but I'm sure its available via MacPorts also.
+Because I'm running an older version of MacOS which only comes with python2 I also installed Python3 along
+with PyGame via homebrew.  You'll also require the gcc compiler from either homebrew or macports as I have 
+no intention of setting up an Xcode project.
+
+The same as for Linux, clone the repository and use 'make' to build the python module.
+
+## Running
+
+To run the latest version. without any options it will run the threaded MPFR library version. Add -h to see options;
+
+    python3 ./mandlebrot_set.py
+
+To run the 64bit float version which is significantly faster but has limited zoom ranges before pixelation;
+
+    python3 ./mandlebrot_set.py -a float
+
+
 ## Ideas for future development
 
 ### Oustanding ###
@@ -69,11 +103,11 @@ class.
 for every zoom level (image) calculated. Obviously we will need to also have a tidy-up/finish method to free all
 the items - yes we can.  Done.
 
-1. Learn about threads in C to take advantage of multi-processor architecture.  Done.  My initial attempt has reduced the time for the initial display from 7.9 seconds to 2.9 seconds using 4 threads.  Need to make the code more general so it can use as many thread as there are cores available on the CPU.
+1. Learn about threads in C to take advantage of multi-processor architecture.  Done.  My initial attempt has reduced the time for the initial display from 12.5 seconds to 2.9 seconds using 16 threads.
 
-1. Using a better color mapping.  It now looks good at all zoom levels.
+1. Using a better color mapping.  Done. It now looks good at all zoom levels.
 
-1. Can now provice the desired centre point, zoom level and zoom factor as input values (initially as command line options)
+1. Can now provide the desired centre point, zoom level and zoom factor as input values (initially as command line options)
 
 
 ## Lessons Learnt ##
@@ -83,20 +117,6 @@ not compatible with each other, or at least I cannot get them to be so.  This me
 string and get the same value.  It seems to loose the decimal point. Therefore I'm going to store image coords
 in static global vars in the mandlebrot.c file which then allows for the zoom calcs to work without the need
 for passing the values back to the python caller.
-
-## Running
-
-Firstly, the mandlebrot python module needs compiling;
-
-    make
-
-Then to run the latest version. without any options it will runthe MPFR library version. Add -h to see options;
-
-    python3 ./mandlebrot_set.py
-
-To run the 64bit float version which is significantly faster but has limited zoom ranges before pixelation;
-
-    python3 ./mandlebrot_set.py -a float
 
 ## Desired Feature List ##
 

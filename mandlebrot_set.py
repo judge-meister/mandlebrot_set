@@ -109,13 +109,13 @@ class mandlebrot_python_float:
 
 
     def zoom_in(self, pos):
-        """zoom in by self.factor at position pos returning new bounds 
+        """zoom in by self.factor at position pos returning new bounds
            of the mandlebrot set to calculate."""
         self.zoom +=1
         sz = self.pgwin.winsize()
         loc = (self._scaled(pos[0], sz, self.Xs, self.Xe), self._scaled(pos[1], sz, self.Ys, self.Ye))
         self.centre = {'r': loc[0], 'i': loc[1]}
-        
+
         print("scaled loc ", loc)
         TLx = loc[0]-abs((self.Xe-self.Xs)/self.factor)
         TLy = loc[1]-abs((self.Ye-self.Ys)/self.factor)
@@ -127,8 +127,8 @@ class mandlebrot_python_float:
 
 
     def zoom_out(self, pos):
-        """zoom out by self.factor at position pos, returning either new 
-           bounds or the initial bounds if it looks like we are going to 
+        """zoom out by self.factor at position pos, returning either new
+           bounds or the initial bounds if it looks like we are going to
            overshoot the initial conditions"""
         self.zoom -=1
         sz = self.pgwin.winsize()
@@ -212,7 +212,7 @@ class mandlebrot_python_float_centre(mandlebrot_python_float):
         self.Ye = self._centre['i'] + offset
         if self.Xs < X1 and self.Xe > X2 and self.Ys < Y1 and self.Ye > Y2:
             #TLx, BRx, TLy, BRy = X1, X2, Y1, Y2
-            self.reset()    
+            self.reset()
         print("centre ",self._centre, "offset ",offset)
         print("corners ",self.Xs, self.Xe, self.Ys, self.Ye)
 
@@ -222,7 +222,7 @@ class mandlebrot_python_float_centre(mandlebrot_python_float):
         self._centre = {'r': -0.5, 'i': 0.0}
         self.zoom = 0
         self.Xs, self.Xe, self.Ys, self.Ye = X1, X2, Y1, Y2
-        
+
 
     def zoom_in(self, pos):
         """zoom in by generating new centre and corner values"""
@@ -269,8 +269,8 @@ class mandlebrot_python_float_centre(mandlebrot_python_float):
                 self.valstr = valstr # string repr of number without exponent or decimal point
                 self.ndigits = ndigits # number of digits in the valstr
                 self.exp = exp # the exponent part of the number
-        
-            
+
+
 """
 
 class mpfr_c:
@@ -287,15 +287,15 @@ class mpfr_c:
             mandlebrot.setup(self.Xs, self.Xe, self.Ys, self.Ye, Cx, Cy)
         else:
             mandlebrot.setup(self.Xs, self.Xe, self.Ys, self.Ye)
-        
+
     def zoom_in(self, px, py, sz, sz1, factor):
         """call the zoom in method of the C module"""
         mandlebrot.zoom_in((px, py), (sz, sz), factor)
-        
+
     def zoom_out(self, px, py, sz, sz1, factor):
         """call the zoom out method of the C module"""
         mandlebrot.zoom_out((px, py), (sz, sz), factor)
-        
+
     @timer
     def slice_set(self, sz, slices, slice, maxiter):
         """call the mpfr slice method of the C module"""
@@ -303,7 +303,7 @@ class mpfr_c:
         print("slice the set ",sz, slices, slice, maxiter)
         frame = bytearray(mandlebrot.mpfr_slice((sz, sz), slices, slice, maxiter))
         return (slice, frame)
-        
+
     @timer
     def mpfr(self, sz, maxiter):
         """call the mpfr method of the C module"""
@@ -325,7 +325,7 @@ class mandlebrot_c_mpfr:
         self.Xe = repr(X2)
         self.Ys = repr(Y1)
         self.Ye = repr(Y2)
-        self.factor = 10
+        self.factor = 5 #10
         self.zoom = 1
         self.maxiter = 1000
         self.pgwin = pgwin
@@ -333,8 +333,6 @@ class mandlebrot_c_mpfr:
         self.sz = self.pgwin.winsize()
 
         self.mpfr = mpfr_c(Cx, Cy) if Cx is not None else mpfr_c()
-        #mandlebrot.setup()
-        #mandlebrot.initialize(self.Xs, self.Xe, self.Ys, self.Ye)
 
 
     def _scaledX(self, x):
@@ -355,11 +353,14 @@ class mandlebrot_c_mpfr:
 
     def reset(self):
         """reset the mandlebrot set data bounds"""
-        xs = repr(X1)
-        xe = repr(X2)
-        ys = repr(Y1)
-        ye = repr(Y2)
-        mandlebrot.reset(self.Xs, self.Xe, self.Ys, self.Ye)
+        self.Xs = repr(X1)
+        self.Xe = repr(X2)
+        self.Ys = repr(Y1)
+        self.Ye = repr(Y2)
+        #xs = repr(X1)
+        #xe = repr(X2)
+        #ys = repr(Y1)
+        #ye = repr(Y2)
 
 
     def zoom_in(self, pos):
@@ -388,22 +389,22 @@ class mandlebrot_c_mpfr:
 
     def mp_draw_plot(self):
         """multiprocessing
-        
-        THIS DOES NOT WORK AS THE MANDLEBROT MODULE IS RESET FOR EACH PROCESS WHICH CLEARS THE 
+
+        THIS DOES NOT WORK AS THE MANDLEBROT MODULE IS RESET FOR EACH PROCESS WHICH CLEARS THE
         CORNER VALUES AND PRODUCES A SOLID BLACK IMAGE.
-        
+
         NEED TO LOOK INTO THREADING IN THE C CODE !!
-        
+
         """
         slices = int(mp.cpu_count()) # should be 2* num cpu cores, any more gives negligible benefit
         params = []
         for slice in range(slices):
             params.append((self.sz, slices, slice, self.maxiter))
-            
+
         pool = mp.Pool(processes=slices)
         d = pool.starmap(self.mpfr.slice_set, params)
         print("pool complete")
-        
+
         #for slice in range(slices):
         #    frame = bytearray(mandlebrot.mandlebrot_mpfr_slice(self.sz, self.sz, slices, slice, self.maxiter))
 
@@ -416,7 +417,7 @@ class mandlebrot_c_mpfr:
             slice += 1
             pygame.display.update()
             self.pgwin.clock().tick(20)
-            
+
 
 class mandlebrot_c_mpfr_thread(mandlebrot_c_mpfr):
     """class based in the mandlebrot_c_mpfr class that uses the threaded module"""
@@ -471,11 +472,11 @@ def event_loop(mand, pgwin):
     zoom_level = 0
     pygame.mouse.set_cursor(pygame.cursors.broken_x)
     window_size = pgwin.winsize()
-    
+
     run = False
     while not run:
         pgwin.clock().tick(20)
-        
+
         if fft and ev_count == 25:
             fft = False
             mand.draw_plot()
@@ -565,9 +566,10 @@ def main_python_centre(pgwin, options):
     """run the centred version"""
     mand = mandlebrot_python_float_centre(pgwin)
     if 'real' in options and 'imag' in options:
-        mand.centre = {'r': float(options['real']), 'i': float(options['imag'])}
-        mand.zoom = options['zoom']
-        mand.create_corners()
+        if options['real'] is not None and options['imag'] is not None:
+            mand.centre = {'r': float(options['real']), 'i': float(options['imag'])}
+            mand.zoom = options['zoom']
+            mand.create_corners()
     #mand.draw_plot()
     event_loop(mand, pgwin)
 
@@ -593,7 +595,7 @@ def getOptions(options):
         usage()
         sys.exit(2)
 
-    options['algo'] = 'mpfr'
+    options['algo'] = 'thread'
     options['disp'] = 640
     options['real'] = None
     options['imag'] = None
@@ -646,9 +648,9 @@ def getOptions(options):
 
         elif o == "-f" or o == "-factor":
             try:
-                options['factor'] = int(a)
+                options['factor'] = float(a)
             except ValueError:
-                print("\nERROR: -factor must be a positive integer\n")
+                print("\nERROR: -factor must be a number\n")
                 usage()
                 sys.exit(2)
 
@@ -656,7 +658,7 @@ def getOptions(options):
 def main(options):
     """main method to initiate the program"""
     mp.set_start_method('spawn')
-    
+
     display_help()
 
     pygwin = PyGameWindow(options['disp'])
@@ -685,7 +687,7 @@ if __name__ == '__main__':
 """
 Values to aim for
 """
-    
+
 real = """-1.7400623825
 7933990522
 0844167065
