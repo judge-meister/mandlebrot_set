@@ -6,6 +6,8 @@ DEBUG=-DTRACE
 all: pymodule test
 
 
+PKGCONFIG=$(shell pkg-config --cflags --libs gmp mpfr)
+
 # rm needs to know which platform it is on
 .PHONY: pymodule
 pymodule:
@@ -19,7 +21,7 @@ pymodule:
 .PHONY: test
 test:
 	-$(RM) -f test_mandlebrot_main
-	gcc -g -O2 $(DEBUG) test_mandlebrot_main.c mandlebrot.c -lmpfr -lm -lpthread \
+	gcc -g -O2 $(DEBUG) test_mandlebrot_main.c mandlebrot.c $(PKGCONFIG) -lm -lpthread \
             -o test_mandlebrot_main
 
 
