@@ -32,8 +32,8 @@ longer it will take.
 
 #### Requirements
 
- * python3.9 (at least)
- * MPFR - Multi Precision Floating Point Library (this requires GMP)
+ * python3.9 (at least), prefereable 3.11
+ * MPFR 4.2.0 - Multi Precision Floating Point Library (this requires GMP). Unfortunately you need 4.2.0 because I am using a feature only introduced in that version
  * Python PyGame - python modules for writing games, provides input event loops and rendering
  * Python PIL - Image library
  * Python setuptools - for building distributable modules
