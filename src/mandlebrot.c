@@ -864,9 +864,9 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
 
     /* initialise the global bytearray*/
     glb_bytearray = (int**)malloc(core_count*sizeof(int*));
-    for(int slice=0; slice<core_count; slice++)
+    for(unsigned int slice=0; slice<core_count; slice++)
     {
-      glb_bytearray[slice] = (int*)calloc((size_t)(xsize/2 * ysize/2 * 3), sizeof(int));
+      glb_bytearray[slice] = (int*)calloc((size_t)(xsize * ysize/core_count * 3), sizeof(int));
 
       wargs[slice].tid = slice;
       wargs[slice].maxiter = maxiter;
@@ -901,7 +901,7 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
     /*wait for all the threads to complete */
     int** ptr;
     ptr = (int**)malloc(core_count*sizeof(int*));
-    for(int slice=0; slice<core_count; slice++)
+    for(unsigned int slice=0; slice<core_count; slice++)
     {
       pthread_join(tid[slice], (void**)&ptr[slice]);
     }
@@ -909,7 +909,7 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
     /* populate the returned bytearray from the global one */
     TRACE_DEBUG("Combining Results\n");
     bc = 0;
-    for(int slice=0; slice<core_count; slice++)
+    for(unsigned int slice=0; slice<core_count; slice++)
     {
       for(unsigned int gbc=0; gbc < xsize*3*(ysize/core_count); gbc++)
       {
@@ -919,7 +919,7 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
 
     /* free the global bytearray*/
     TRACE_DEBUG("Freeing glb_bytearray\n");
-    for(int slice=0; slice<core_count; slice++)
+    for(unsigned int slice=0; slice<core_count; slice++)
     {
       mpfr_clears(wargs[slice].Xe, wargs[slice].Xs, wargs[slice].Ye, wargs[slice].Ys, (mpfr_ptr)NULL);
       free(glb_bytearray[slice]); /* = (int*)calloc((size_t)(xsize/2 * ysize/2 * 3), sizeof(int));*/
