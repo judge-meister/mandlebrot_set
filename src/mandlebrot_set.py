@@ -12,7 +12,7 @@ import sys
 import getopt
 import functools
 import threading
-import multiprocessing as mp
+#import multiprocessing as mp
 
 try:
     import mandlebrot
@@ -396,27 +396,27 @@ class mandlebrot_c_mpfr:
         NEED TO LOOK INTO THREADING IN THE C CODE !!
 
         """
-        slices = int(mp.cpu_count()) # should be 2* num cpu cores, any more gives negligible benefit
-        params = []
-        for slice in range(slices):
-            params.append((self.sz, slices, slice, self.maxiter))
+        #slices = int(mp.cpu_count()) # should be 2* num cpu cores, any more gives negligible benefit
+        #params = []
+        #for slice in range(slices):
+        #    params.append((self.sz, slices, slice, self.maxiter))
 
-        pool = mp.Pool(processes=slices)
-        d = pool.starmap(self.mpfr.slice_set, params)
-        print("pool complete")
+        #pool = mp.Pool(processes=slices)
+        #d = pool.starmap(self.mpfr.slice_set, params)
+        #print("pool complete")
 
         #for slice in range(slices):
         #    frame = bytearray(mandlebrot.mandlebrot_mpfr_slice(self.sz, self.sz, slices, slice, self.maxiter))
 
-        slice = 0
-        for slice, frame in d:
-            print(slice, len(frame), self.sz, int(self.sz / slices), int(slice * self.sz/slices))
-            #frame = bytearray(frame_raw)
-            surf = pygame.image.frombuffer(frame, (self.sz, int(self.sz / slices)), 'RGB')
-            self.pgwin.surface().blit(surf, (0, int(slice * self.sz/slices)))
-            slice += 1
-            pygame.display.update()
-            self.pgwin.clock().tick(20)
+        #slice = 0
+        #for slice, frame in d:
+        #    print(slice, len(frame), self.sz, int(self.sz / slices), int(slice * self.sz/slices))
+        #    #frame = bytearray(frame_raw)
+        #    surf = pygame.image.frombuffer(frame, (self.sz, int(self.sz / slices)), 'RGB')
+        #    self.pgwin.surface().blit(surf, (0, int(slice * self.sz/slices)))
+        #    slice += 1
+        #    pygame.display.update()
+        #    self.pgwin.clock().tick(20)
 
 
 class mandlebrot_c_mpfr_thread(mandlebrot_c_mpfr):
@@ -657,7 +657,7 @@ def getOptions(options):
 
 def main(options):
     """main method to initiate the program"""
-    mp.set_start_method('spawn')
+    #mp.set_start_method('spawn')
 
     display_help()
 

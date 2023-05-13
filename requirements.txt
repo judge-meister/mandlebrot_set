@@ -1,0 +1,16 @@
+# environment
+build essentials
+pkg-config
+python3-devel
+python3-pip
+
+# python3 (pip install)
+pygame
+pil
+setuptools
+
+# libraries
+mpfr-devel
+gmp-devel
+
+
