@@ -33,23 +33,26 @@ longer it will take.
 #### Requirements
 
  * python3.9 (at least)
- * MPFR - Multi Precision Floating Point Library
- * PyGame - python modules for writing games, provides input event loops and rendering
+ * MPFR - Multi Precision Floating Point Library (this requires GMP)
+ * Python PyGame - python modules for writing games, provides input event loops and rendering
+ * Python PIL - Image library
+ * Python setuptools - for building distributable modules
+ * Python dev package - to provide Python.h
 
 ### Linux
 
-Both PyGame and the MPRF library can be installed through most package managers in Linux.
+Both the MPRF library and the python dependencies can be installed through most package managers in Linux.
 
-Clone the repository and use 'make' to build the python module.
+Clone the repository 'cd src' and use 'make' to build the python module.
 
 ### MacOS
 
 I used homebrew to install the MPRF library on MacOS 10.15, but I'm sure its available via MacPorts also.
 Because I'm running an older version of MacOS which only comes with python2 I also installed Python3 along
-with PyGame via homebrew.  You'll also require the gcc compiler from either homebrew or macports as I have 
-no intention of setting up an Xcode project.
+with PyGame and the other python dependencies via homebrew.  You'll also require the gcc compiler from 
+either homebrew or macports as I have no intention of setting up an Xcode project.
 
-The same as for Linux, clone the repository and use 'make' to build the python module.
+The same as for Linux, clone the repository, 'cd src' and use 'make' to build the python module.
 
 ## Running
 
