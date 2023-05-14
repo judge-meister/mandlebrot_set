@@ -140,6 +140,15 @@ for passing the values back to the python caller.
 
 ## Porting to Windows
 
+NOTE : Builds have to be Win32
+
 Required libraries:
-* MPIR - https://github.com/BrianGladman/mpir
-* MPFR - https://github.com/BrianGladman/mpfr
+### MPIR
+ 
+ Source : https://github.com/BrianGladman/mpir
+
+Build Instructions:
+* Run lib or dll_gc project first to generate the mpir files.
+* Run lib or dll_mpir_cxx to generate the library or dll.
+
+### MPFR - https://github.com/BrianGladman/mpfr
