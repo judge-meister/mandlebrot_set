@@ -137,3 +137,9 @@ for passing the values back to the python caller.
 
  * add use of the multiprocessing module to speed up calculation. Gonna use threads in C module instead.
  * need to trial distributed multiprocessing across multiple machines. Don't think this is actually useful. It will probably spend more time sending and receiving data across the network.
+
+## Porting to Windows
+
+Required libraries:
+* MPIR - https://github.com/BrianGladman/mpir
+* MPFR - https://github.com/BrianGladman/mpfr
