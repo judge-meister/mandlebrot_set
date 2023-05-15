@@ -54,6 +54,12 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
+# gcov/lcov c/c++ coverage
+*.gcno
+*.gcda
+*.info
+lcovhtml/
+
 # Translations
 *.mo
 *.pot

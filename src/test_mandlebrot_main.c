@@ -14,13 +14,16 @@ int main(int argc, char *argv[])
     maxiter = 1000;
 
     setup_c();
-    initialize_c("-2.0", "1.0", "-1.5", "1.5", "0.0", "0.0");
+    initialize_c("-2.0", "1.0", "-1.5", "1.5", "9.0", "9.0");
 
     /* create an array of integers to store the result of the mandlebrot calculation */
     int *bytearray; //[wsize * hsize * 3];
     bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
 
     /* call mandlebrot_bytearray */
+    mandlebrot_bytearray_c(wsize, hsize, maxiter, -2.0, 1.0, -1.5, 1.5, &bytearray);
+
+    /* call mandlebrot_mpfr_c */
     mandlebrot_mpfr_c(wsize, hsize, maxiter, &bytearray);
     mpfr_zoom_in(4, 4, wsize, hsize, factor);
     mandlebrot_mpfr_c(wsize, hsize, maxiter, &bytearray);
@@ -60,8 +63,11 @@ int main(int argc, char *argv[])
         if (bytearray[i] > 255) { printf("%d ", bytearray[i]); }
     }
     
+
     printf("Testing Threaded func\n");
+    initialize_c("-2.0", "1.0", "-1.5", "1.5", "0.0", "0.0");
     mandlebrot_mpfr_thread_c(wsize, hsize, maxiter, &bytearray);
+    mpfr_zoom_in(4, 4, wsize, hsize, factor);
     
     free_mpfr_mem_c();
     free(bytearray);
