@@ -26,7 +26,7 @@ test:
 
 coverage:
 	-$(RM) -rf *.gcno *.gcda *.info lcovhtml
-	gcc -g -O2 -fprofile-arcs -ftest-coverage \
+	gcc -g -O2 $(DEBUG) -fprofile-arcs -ftest-coverage \
 	    test_mandlebrot_main.c mandlebrot.c $(PKGCONFIG) -lm -lpthread -o test_mandlebrot_main
 	./test_mandlebrot_main
 	lcov -c --directory . --output-file test_mandlebrot_main.info
