@@ -1,7 +1,7 @@
 """
-The Mandlebrot Set
+The Mandelbrot Set
 
-using a custom C module and pygame to display and zoom in on the mandlebrot set
+using a custom C module and pygame to display and zoom in on the mandelbrot set
 """
 
 import pygame
@@ -15,12 +15,11 @@ import threading
 #import multiprocessing as mp
 
 try:
-    import mandlebrot
+    import mandelbrot
 except ModuleNotFoundError:
-    print("\nHave you built the mandlebrot C module ? try running 'make'\n")
+    print("\nHave you built the mandelbrot cpp module ? try running 'make'\n")
     sys.exit()
 from PIL import Image
-#from multiprocessing import Pool, cpu_count
 
 
 X1=-2.0
@@ -69,8 +68,8 @@ class PyGameWindow:
         return self.windowsize
 
 
-class mandlebrot_python_float:
-    """class to generate the mandlebrot set using standard 64bit float arithmetic"""
+class mandelbrot_python_float:
+    """class to generate the mandelbrot set using standard 64bit float arithmetic"""
     def __init__(self, pgwin):
         """setup some class level data"""
         self.Xs = X1 #-2.0
@@ -86,13 +85,13 @@ class mandlebrot_python_float:
 
     @classmethod
     def _scaled(cls, x, sz, s, e):
-        """return the scaled value of a given axis in the mandlebrot set data
+        """return the scaled value of a given axis in the mandelbrot set data
            corresponding to the a point on the same axis on the display window."""
         return ( (float(x)/float(sz)) * (e-s) ) + s
 
 
     def scaled_pos(self, pos):
-        """return the position in the mandlebrot set data corresponding
+        """return the position in the mandelbrot set data corresponding
            to a given location in the display window."""
         sz = self.pgwin.winsize()
         loc = (self._scaled(pos[0], sz, self.Xs, self.Xe), self._scaled(pos[1], sz, self.Ys, self.Ye))
@@ -100,7 +99,7 @@ class mandlebrot_python_float:
 
 
     def reset(self):
-        """reset the bounds of the mandlebrot set to the starting point"""
+        """reset the bounds of the mandelbrot set to the starting point"""
         self.zoom = 0
         self.Xs = X1 #-2.0
         self.Xe = X2 #1.0
@@ -110,7 +109,7 @@ class mandlebrot_python_float:
 
     def zoom_in(self, pos):
         """zoom in by self.factor at position pos returning new bounds
-           of the mandlebrot set to calculate."""
+           of the mandelbrot set to calculate."""
         self.zoom +=1
         sz = self.pgwin.winsize()
         loc = (self._scaled(pos[0], sz, self.Xs, self.Xe), self._scaled(pos[1], sz, self.Ys, self.Ye))
@@ -150,9 +149,9 @@ class mandlebrot_python_float:
 
     @timer
     def draw_plot(self):
-        """generate a mandlebrot set for given bounds and display it in the pygame window"""
+        """generate a mandelbrot set for given bounds and display it in the pygame window"""
         sz = self.pgwin.winsize()
-        frame = bytearray(mandlebrot.float64((sz, sz), self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
+        frame = bytearray(mandelbrot.float64(sz, sz, self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
 
         surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
@@ -161,7 +160,7 @@ class mandlebrot_python_float:
         pygame.display.update()
 
 
-class mandlebrot_python_float_centre(mandlebrot_python_float):
+class mandelbrot_python_float_centre(mandelbrot_python_float):
     """a variant of the previous class but"""
     def __init__(self, pgwin):
         """initialize class data"""
@@ -246,16 +245,16 @@ class mandlebrot_python_float_centre(mandlebrot_python_float):
 
     @timer
     def draw_plot(self):
-        """draw the mandlebrot set, currently not threaded"""
+        """draw the mandelbrot set, currently not threaded"""
         #x = threading.Thread(target=self.threaded_draw_plot)
         #x.start()
         self.threaded_draw_plot()
 
     @timer
     def threaded_draw_plot(self):
-        """worker function to actually generate the mandlebrot set data and display it"""
+        """worker function to actually generate the mandelbrot set data and display it"""
         sz = self.pgwin.winsize()
-        frame = bytearray(mandlebrot.float64((sz, sz), self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
+        frame = bytearray(mandelbrot.float64(sz, sz, self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
 
         surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
 
@@ -274,51 +273,51 @@ class mandlebrot_python_float_centre(mandlebrot_python_float):
 """
 
 class mpfr_c:
-    """Interface class for accessing the C code module methods that calculate the mandlebrot set"""
+    """Interface class for accessing the C code module methods that calculate the mandelbrot set"""
     def __init__(self, Cx=None, Cy=None):
         """initialise class data, and MPFR C module"""
         self.Xs = repr(X1)
         self.Xe = repr(X2)
         self.Ys = repr(Y1)
         self.Ye = repr(Y2)
-        mandlebrot.init()
+        mandelbrot.setup()
         print("call setup(%s, %s, %s, %s)" % (self.Xs, self.Xe, self.Ys, self.Ye))
         if Cx is not None and Cy is not None:
-            mandlebrot.setup(self.Xs, self.Xe, self.Ys, self.Ye, Cx, Cy)
+            mandelbrot.init(self.Xs, self.Xe, self.Ys, self.Ye, Cx, Cy)
         else:
-            mandlebrot.setup(self.Xs, self.Xe, self.Ys, self.Ye)
+            mandelbrot.init(self.Xs, self.Xe, self.Ys, self.Ye, "99.9", "99.9")
 
     def zoom_in(self, px, py, sz, sz1, factor):
         """call the zoom in method of the C module"""
-        mandlebrot.zoom_in((px, py), (sz, sz), factor)
+        mandelbrot.zoom_in(px, py, sz, sz, factor)
 
     def zoom_out(self, px, py, sz, sz1, factor):
         """call the zoom out method of the C module"""
-        mandlebrot.zoom_out((px, py), (sz, sz), factor)
+        mandelbrot.zoom_out(px, py, sz, sz, factor)
 
     @timer
     def slice_set(self, sz, slices, slice, maxiter):
         """call the mpfr slice method of the C module"""
-        #mandlebrot.initialize("-2.0", "1.0", "-1.5", "1.5")
+        #mandelbrot.initialize("-2.0", "1.0", "-1.5", "1.5")
         print("slice the set ",sz, slices, slice, maxiter)
-        frame = bytearray(mandlebrot.mpfr_slice((sz, sz), slices, slice, maxiter))
+        frame = bytearray(mandelbrot.mpfr_slice(sz, sz, slices, slice, maxiter))
         return (slice, frame)
 
     @timer
     def mpfr(self, sz, maxiter):
         """call the mpfr method of the C module"""
-        frame = bytearray(mandlebrot.mpfr((sz, sz), maxiter))
+        frame = bytearray(mandelbrot.mpfr(sz, sz, maxiter))
         return frame
 
     @timer
     def mpfr_thread(self, sz, maxiter):
         """call the threaded mpfr method of the C module"""
-        frame = bytearray(mandlebrot.mpfr_thread((sz, sz), maxiter))
+        frame = bytearray(mandelbrot.mpfr_thread(sz, sz, maxiter))
         return frame
 
 
-class mandlebrot_c_mpfr:
-    """use the C module to implement a mandlebrot class"""
+class mandelbrot_c_mpfr:
+    """use the C module to implement a mandelbrot class"""
     def __init__(self, pgwin, Cx=None, Cy=None):
         """initialise some data"""
         self.Xs = repr(X1)
@@ -352,7 +351,7 @@ class mandlebrot_c_mpfr:
 
 
     def reset(self):
-        """reset the mandlebrot set data bounds"""
+        """reset the mandelbrot set data bounds"""
         self.Xs = repr(X1)
         self.Xe = repr(X2)
         self.Ys = repr(Y1)
@@ -366,14 +365,14 @@ class mandlebrot_c_mpfr:
     def zoom_in(self, pos):
         """zoom in the data set"""
         self.zoom +=1
-        #mandlebrot.mandlebrot_zoom_in(pos[0], pos[1], self.sz, self.sz, self.factor)
+        #mandelbrot.mandelbrot_zoom_in(pos[0], pos[1], self.sz, self.sz, self.factor)
         self.mpfr.zoom_in(pos[0], pos[1], self.sz, self.sz, self.factor)
 
 
     def zoom_out(self, pos):
         """zoom out the data set"""
         self.zoom -=1
-        #mandlebrot.mandlebrot_zoom_out(int(pos[0]), int(pos[1]), self.sz, self.sz, self.factor)
+        #mandelbrot.mandelbrot_zoom_out(int(pos[0]), int(pos[1]), self.sz, self.sz, self.factor)
         self.mpfr.zoom_out(int(pos[0]), int(pos[1]), self.sz, self.sz, self.factor)
 
 
@@ -390,7 +389,7 @@ class mandlebrot_c_mpfr:
     def mp_draw_plot(self):
         """multiprocessing
 
-        THIS DOES NOT WORK AS THE MANDLEBROT MODULE IS RESET FOR EACH PROCESS WHICH CLEARS THE
+        THIS DOES NOT WORK AS THE MANDELBROT MODULE IS RESET FOR EACH PROCESS WHICH CLEARS THE
         CORNER VALUES AND PRODUCES A SOLID BLACK IMAGE.
 
         NEED TO LOOK INTO THREADING IN THE C CODE !!
@@ -406,7 +405,7 @@ class mandlebrot_c_mpfr:
         #print("pool complete")
 
         #for slice in range(slices):
-        #    frame = bytearray(mandlebrot.mandlebrot_mpfr_slice(self.sz, self.sz, slices, slice, self.maxiter))
+        #    frame = bytearray(mandelbrot.mandelbrot_mpfr_slice(self.sz, self.sz, slices, slice, self.maxiter))
 
         #slice = 0
         #for slice, frame in d:
@@ -419,8 +418,8 @@ class mandlebrot_c_mpfr:
         #    self.pgwin.clock().tick(20)
 
 
-class mandlebrot_c_mpfr_thread(mandlebrot_c_mpfr):
-    """class based in the mandlebrot_c_mpfr class that uses the threaded module"""
+class mandelbrot_c_mpfr_thread(mandelbrot_c_mpfr):
+    """class based in the mandelbrot_c_mpfr class that uses the threaded module"""
     def __init__(self, pgwin, Cx=None, Cy=None):
         """"""
         super().__init__(pgwin, Cx, Cy)
@@ -437,18 +436,18 @@ class mandlebrot_c_mpfr_thread(mandlebrot_c_mpfr):
 
 
 def slice_the_set(sz, slices, slice, maxiter):
-    """use a slicing method to chop up the mandlebrot set data
+    """use a slicing method to chop up the mandelbrot set data
        Note: Not Currently Used"""
-    mandlebrot.reset("-2.0", "1.0", "-1.5", "1.5")
+    mandelbrot.reset("-2.0", "1.0", "-1.5", "1.5")
     print("slice the set ",sz, slices, slice, maxiter)
-    frame = bytearray(mandlebrot.mpfr_slice((sz, sz), slices, slice, maxiter))
+    frame = bytearray(mandelbrot.mpfr_slice(sz, sz, slices, slice, maxiter))
     return (slice, frame)
 
 
 def display_help():
     """display some help at the beginning"""
     help = """
-    How to control the Mandlebrot Set viewer.
+    How to control the Mandelbrot Set viewer.
 
     Initially move the mouse to somewhere on the edge of the black region and left click, you will zoom in.  Now Repeat.
     To zoom out again use the right mouse button.
@@ -486,7 +485,7 @@ def event_loop(mand, pgwin):
 
             mouse_pos = pygame.mouse.get_pos()
             centre_pos = mand.scaled_pos(mouse_pos)
-            pygame.display.set_caption("Mandlebrot %s zoom=%s centre=%s" % (repr(mouse_pos), mand.zoom, repr(centre_pos)))
+            pygame.display.set_caption("Mandelbrot %s zoom=%s centre=%s" % (repr(mouse_pos), mand.zoom, repr(centre_pos)))
 
             if event.type == pygame.QUIT or (event.type == pygame.KEYUP and (event.key == pygame.K_q or event.key == pygame.K_ESCAPE)):
                 run = True
@@ -538,33 +537,33 @@ def event_loop(mand, pgwin):
 
 
 def main_mpfr(pgwin, options):
-    """run using the mandlebrot_c_mpfr class"""
-    mand = mandlebrot_c_mpfr(pgwin)
+    """run using the mandelbrot_c_mpfr class"""
+    mand = mandelbrot_c_mpfr(pgwin)
     #mand.draw_plot()
     event_loop(mand, pgwin)
-    mandlebrot.tidyup()
+    mandelbrot.tidyup()
 
 
 def main_mpfr_thread(pgwin, options):
-    """run using the mandlebrot_c_mpfr_thread class"""
+    """run using the mandelbrot_c_mpfr_thread class"""
     Cx = options['real']
     Cy = options['imag']
-    mand = mandlebrot_c_mpfr_thread(pgwin, Cx, Cy)
+    mand = mandelbrot_c_mpfr_thread(pgwin, Cx, Cy)
     #mand.draw_plot()
     event_loop(mand, pgwin)
-    mandlebrot.tidyup()
+    mandelbrot.tidyup()
 
 
 def main_python(pgwin, options):
     """run using the standard python floats"""
-    mand = mandlebrot_python_float(pgwin)
+    mand = mandelbrot_python_float(pgwin)
     #mand.draw_plot()
     event_loop(mand, pgwin)
 
 
 def main_python_centre(pgwin, options):
     """run the centred version"""
-    mand = mandlebrot_python_float_centre(pgwin)
+    mand = mandelbrot_python_float_centre(pgwin)
     if 'real' in options and 'imag' in options:
         if options['real'] is not None and options['imag'] is not None:
             mand.centre = {'r': float(options['real']), 'i': float(options['imag'])}
@@ -576,7 +575,7 @@ def main_python_centre(pgwin, options):
 
 def usage():
     """display some usage info"""
-    print("mandlebrot_set.py")
+    print("mandelbrot_set.py")
     print("   -h  this help")
     print("   -z  zoom level to start with")
     print("   -r  real value of point to zoom in to")
