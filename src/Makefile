@@ -25,6 +25,14 @@ test:
 	gcc -g -O2 $(DEBUG) $(DTHREADED) test_mandlebrot_main.c mandlebrot.c $(PKGCONFIG) -lm -lpthread \
             -o test_mandlebrot_main
 
+coverage:
+	-$(RM) -rf *.gcno *.gcda *.info lcovhtml
+	gcc -g -O2 $(DEBUG) -DUSES_THREADS -fprofile-arcs -ftest-coverage \
+	    test_mandlebrot_main.c mandlebrot.c $(PKGCONFIG) -lm -lpthread -o test_mandlebrot_main
+	./test_mandlebrot_main
+	lcov -c --directory . --output-file test_mandlebrot_main.info
+	genhtml test_mandlebrot_main.info --output-directory lcovhtml
+
 
 valgrind: test
 	valgrind --leak-check=full ./test_mandlebrot_main
