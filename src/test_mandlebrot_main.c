@@ -81,12 +81,14 @@ int main(int argc, char *argv[])
         if (bytearray[i] > 255) { printf("%d ", bytearray[i]); }
     }
     
+#ifdef USES_THREADS
     printf("Testing mandlebrot_mpfr_thread_c\n");
     initialize_c("-2.0", "1.0", "-1.5", "1.5", "0.0", "0.0");
     mandlebrot_mpfr_thread_c(wsize, hsize, maxiter, &bytearray);
 
     printf("Testing mpfr_zoom_in\n");
     mpfr_zoom_in(4, 4, wsize, hsize, factor);
+#endif
     
     printf("Testing free_mpfr_mem_c\n");
     free_mpfr_mem_c();

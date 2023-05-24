@@ -1,21 +1,22 @@
-#ifndef Py_MANDLEBROTMODULE_H
-#define Py_MANDLEBROTMODULE_H
+#ifndef MANDELBROT_MODULE_H
+#define MANDELBROT_MODULE_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 /* ----------------------------------------------------------------------------
  * Header
  */
-void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/display/window */
-                            const unsigned int hsize,   /* height of screen/display/window */
-                            const unsigned int maxiter, /* max iterations before escape */
-                            const double Xs, /* string repr of mpfr_t for X top left */
-                            const double Xe, /* string repr of mpfr_t for X top right */
-                            const double Ys, /* string repr of mpfr_t for Y bottom left */
-                            const double Ye, /* string repr of mpfr_t for Y bottom right */
-                            int **bytearray /* reference/pointer to result list of color values*/
-                           );
+void mandlebrot_bytearray_c( const unsigned int wsize,   /* width of screen/display/window */
+                             const unsigned int hsize,   /* height of screen/display/window */
+                             const unsigned int maxiter, /* max iterations before escape */
+                             const double Xs, /* string repr of mpfr_t for X top left */
+                             const double Xe, /* string repr of mpfr_t for X top right */
+                             const double Ys, /* string repr of mpfr_t for Y bottom left */
+                             const double Ye, /* string repr of mpfr_t for Y bottom right */
+                             int **bytearray /* reference/pointer to result list of color values*/
+                            );
 
 void mandlebrot_mpfr_c( const unsigned int xsize,   /* width of screen/display/window */
                         const unsigned int ysize,   /* height of screen/display/window */
@@ -31,11 +32,13 @@ void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/dis
                               int **bytearray /* reference/pointer to result list of color values*/
                           );
 
+#ifdef USES_THREADS
 void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/display/window */
                                const unsigned int ysize,   /* height of screen/display/window */
                                const unsigned int maxiter, /* max iterations before escape */
                                int **bytearray /* reference/pointer to result list of color values*/
                              );
+#endif
 
 void mpfr_zoom_in( const unsigned int pX, /* */
                    const unsigned int pY, /* */
@@ -67,4 +70,4 @@ void free_mpfr_mem_c();
 }
 #endif
 
-#endif /* PyMANDLEBROTMODULE_H */
+#endif /* MANDELBROT_MODULE_H */

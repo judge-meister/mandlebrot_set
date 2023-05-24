@@ -140,3 +140,8 @@ dmypy.json
 # project 
 test_mandlebrot_main
 
+# Windows Building
+.vs
+Debug
+*.filters
+*.user
