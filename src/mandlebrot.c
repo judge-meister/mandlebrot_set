@@ -364,25 +364,6 @@ void free_mpfr_mem_c()
 }
 
 /* ----------------------------------------------------------------------------
- * mandlebrot set using mpfr library
- *
- * Params
- * xsize, ysize   -
- * maxiter        -
- *
- * (out)bytearray -
- *
- */
-void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/window */
-                         const unsigned int ysize,   /* height of screen/display/window */
-                         const unsigned int maxiter, /* max iterations before escape */
-                         int **bytearray /* reference/pointer to result list of color values*/
-                         )
-{
-	mandlebrot_mpfr_slice_c(xsize, ysize, 1, 0, maxiter, bytearray);
-}
-
-/* ----------------------------------------------------------------------------
  * mandlebrot set slices using mpfr library
  *
  * this function allows for splitting the image up for multiprocessing support
@@ -514,6 +495,25 @@ void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/dis
     }
     mpfr_clears(x, y, xsq, ysq, xtmp, x0, y0, ys1, ye1, (mpfr_ptr)NULL);
     mpfr_clears(a, two, four, sum_xsq_ysq, yslice, (mpfr_ptr)NULL);
+}
+
+/* ----------------------------------------------------------------------------
+ * mandlebrot set using mpfr library
+ *
+ * Params
+ * xsize, ysize   -
+ * maxiter        -
+ *
+ * (out)bytearray -
+ *
+ */
+void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/window */
+                         const unsigned int ysize,   /* height of screen/display/window */
+                         const unsigned int maxiter, /* max iterations before escape */
+                         int **bytearray /* reference/pointer to result list of color values*/
+                         )
+{
+	mandlebrot_mpfr_slice_c(xsize, ysize, 1, 0, maxiter, bytearray);
 }
 
 /* ----------------------------------------------------------------------------
@@ -732,7 +732,7 @@ void mpfr_zoom_out(      const unsigned int pX, /* x mouse pos in display */
  * given a slice of the mandlebrot set data to process.
  * returns part of the result to be combined later.
  */
-void worker_process_slice(void* arg)
+static void *worker_process_slice(void* arg)
 {
     worker_args *cp;
     cp = (worker_args*)arg;
@@ -903,7 +903,7 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
         mpfr_set(wargs[slice].Ys, Ys, MPFR_RNDN);
         mpfr_set(wargs[slice].Ye, Ye, MPFR_RNDN);
       }
-      pthread_create(&tid[slice], NULL, (void *)worker_process_slice, &(wargs[slice]));
+      pthread_create(&tid[slice], NULL, worker_process_slice, &(wargs[slice]));
     }
 
     /* ------------------------------------------------------------------------- */
