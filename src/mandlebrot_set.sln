@@ -5,6 +5,8 @@ VisualStudioVersion = 17.5.33530.505
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_mandlebrot_main", "test_mandlebrot_main.vcxproj", "{0449C25A-0012-4D2B-9A58-CE6C9E0AA906}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mandlebrot_python", "mandlebrot_python.vcxproj", "{2B246FE6-41E6-413B-941D-8F3774E796D4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{0449C25A-0012-4D2B-9A58-CE6C9E0AA906}.Release|x64.Build.0 = Release|x64
 		{0449C25A-0012-4D2B-9A58-CE6C9E0AA906}.Release|x86.ActiveCfg = Release|Win32
 		{0449C25A-0012-4D2B-9A58-CE6C9E0AA906}.Release|x86.Build.0 = Release|Win32
+		{2B246FE6-41E6-413B-941D-8F3774E796D4}.Debug|x64.ActiveCfg = Debug|x64
+		{2B246FE6-41E6-413B-941D-8F3774E796D4}.Debug|x64.Build.0 = Debug|x64
+		{2B246FE6-41E6-413B-941D-8F3774E796D4}.Debug|x86.ActiveCfg = Debug|Win32
+		{2B246FE6-41E6-413B-941D-8F3774E796D4}.Debug|x86.Build.0 = Debug|Win32
+		{2B246FE6-41E6-413B-941D-8F3774E796D4}.Release|x64.ActiveCfg = Release|x64
+		{2B246FE6-41E6-413B-941D-8F3774E796D4}.Release|x64.Build.0 = Release|x64
+		{2B246FE6-41E6-413B-941D-8F3774E796D4}.Release|x86.ActiveCfg = Release|Win32
+		{2B246FE6-41E6-413B-941D-8F3774E796D4}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

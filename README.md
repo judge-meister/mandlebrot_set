@@ -152,3 +152,7 @@ Build Instructions:
 * Run lib or dll_mpir_cxx to generate the library or dll.
 
 ### MPFR - https://github.com/BrianGladman/mpfr
+
+### Building Python Module
+
+setup.py needs to include --plat-name win32 to change the architecture to Win32
