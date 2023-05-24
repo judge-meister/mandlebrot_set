@@ -60,9 +60,11 @@ int main(int argc, char *argv[])
         if (bytearray[i] > 255) { printf("%d ", bytearray[i]); }
     }
     
+#ifdef USES_THREADS
     printf("Testing Threaded func\n");
     mandlebrot_mpfr_thread_c(wsize, hsize, maxiter, &bytearray);
-    
+#endif
+
     free_mpfr_mem_c();
     free(bytearray);
 

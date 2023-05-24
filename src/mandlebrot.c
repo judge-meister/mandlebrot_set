@@ -37,25 +37,35 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <pthread.h>
 
-#ifdef WIN32
+#ifdef USES_THREADS
+#include <pthread.h>
+#endif
+
+#ifdef _WIN32
 #include <windows.h>
 #elif MACOS
 #include <sys/param.h>
 #include <sys/sysctl.h>
+#elif _WIN64
+#pragma warning CANNOT BUILD FOR WIN64
 #else
 #include <unistd.h>
 #endif
 
+#ifdef _WIN32
+#include <mpir.h> /* Was GMP */
+#else
 #include <gmp.h>
+#endif
+
 #include <mpfr.h>
 
 #include "mandlebrot.h"
 
 /* DEFINES */
 
-//#define TRACE 1
+#define TRACE 1
 // TRACE DEBUG macro
 #ifdef TRACE
 #define TRACE_DEBUGV(formatstring, ...) \
@@ -715,7 +725,7 @@ void mpfr_zoom_out(      const unsigned int pX, /* x mouse pos in display */
     mpfr_clears(lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
 }
 
-
+#ifdef USES_THREADS
 /* ----------------------------------------------------------------------------
  * worker_process_slice (used in the threads)
  *
@@ -935,3 +945,4 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
 
 /* ----------------------------------------------------------------------------
  */
+#endif

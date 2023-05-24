@@ -31,11 +31,13 @@ void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/dis
                               int **bytearray /* reference/pointer to result list of color values*/
                           );
 
+#ifdef USES_THREADS
 void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/display/window */
                                const unsigned int ysize,   /* height of screen/display/window */
                                const unsigned int maxiter, /* max iterations before escape */
                                int **bytearray /* reference/pointer to result list of color values*/
                              );
+#endif
 
 void mpfr_zoom_in( const unsigned int pX, /* */
                    const unsigned int pY, /* */
