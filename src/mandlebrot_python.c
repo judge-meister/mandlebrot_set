@@ -148,6 +148,7 @@ static PyObject * mpfr_slice(PyObject *self, PyObject *args)
     return points;
 }
 
+#ifdef USES_THREADS
 /* ----------------------------------------------------------------------------
  */
 static PyObject * mpfr_thread(PyObject *self, PyObject *args)
@@ -183,6 +184,7 @@ static PyObject * mpfr_thread(PyObject *self, PyObject *args)
 
     return points;
 }
+#endif
 
 /* ----------------------------------------------------------------------------
  */
@@ -275,7 +277,9 @@ static PyMethodDef MandlebrotMethods[] = {
     {"float64",          float64,          METH_VARARGS, PyDoc_STR("calculate mandlebrot set into a bytearray") },
     {"mpfr",             mpfr,             METH_VARARGS, PyDoc_STR("calculate mandlebrot set using mpfr lib") },
     {"mpfr_slice",       mpfr_slice,       METH_VARARGS, PyDoc_STR("calculate mandlebrot set slice using mpfr lib") },
+#ifdef USES_THREADS
     {"mpfr_thread",      mpfr_thread,      METH_VARARGS, PyDoc_STR("calculate mandlebrot set using mpfr lib threaded") },
+#endif
     {"zoom_in",          zoom_in,          METH_VARARGS, PyDoc_STR("calculate next mandlebrot set zoom values") },
     {"zoom_out",         zoom_out,         METH_VARARGS, PyDoc_STR("calculate previous mandlebrot set zoom values") },
     {"init",             init,             METH_VARARGS, PyDoc_STR("init() -> None") },   /*  */
