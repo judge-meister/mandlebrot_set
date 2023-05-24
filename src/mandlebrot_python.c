@@ -279,6 +279,8 @@ static PyMethodDef MandlebrotMethods[] = {
     {"mpfr_slice",       mpfr_slice,       METH_VARARGS, PyDoc_STR("calculate mandlebrot set slice using mpfr lib") },
 #ifdef USES_THREADS
     {"mpfr_thread",      mpfr_thread,      METH_VARARGS, PyDoc_STR("calculate mandlebrot set using mpfr lib threaded") },
+#else
+    {"mpfr_thread",      mpfr,             METH_VARARGS, PyDoc_STR("calculate mandlebrot set using mpfr lib") },
 #endif
     {"zoom_in",          zoom_in,          METH_VARARGS, PyDoc_STR("calculate next mandlebrot set zoom values") },
     {"zoom_out",         zoom_out,         METH_VARARGS, PyDoc_STR("calculate previous mandlebrot set zoom values") },
