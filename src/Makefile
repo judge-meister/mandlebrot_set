@@ -37,10 +37,10 @@ clean:
 .PHONY: pybind11
 pybind11:
 	g++ -O3 -Wall -shared -std=c++11 -fPIC $(DTHREADED) \
-    $(shell python3 -m pybind11 --includes) \
-    $(shell pkg-config --cflags --libs mpfr) \
-    mandlebrot.c mandelbrot_pybind11.cpp \
-    -o mandelbrot$(shell python3-config --extension-suffix)
+	    $(shell python3 -m pybind11 --includes) \
+	    $(shell pkg-config --cflags --libs mpfr) \
+	    mandlebrot.c mandelbrot_pybind11.cpp \
+	    -o mandelbrot$(shell python3-config --extension-suffix)
 
 .PHONY: threaded
 threaded:
