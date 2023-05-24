@@ -946,5 +946,3 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
 /* ----------------------------------------------------------------------------
  */
 #endif
-
-

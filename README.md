@@ -137,3 +137,22 @@ for passing the values back to the python caller.
 
  * add use of the multiprocessing module to speed up calculation. Gonna use threads in C module instead.
  * need to trial distributed multiprocessing across multiple machines. Don't think this is actually useful. It will probably spend more time sending and receiving data across the network.
+
+## Porting to Windows
+
+NOTE : Builds have to be Win32
+
+Required libraries:
+### MPIR
+ 
+ Source : https://github.com/BrianGladman/mpir
+
+Build Instructions:
+* Run lib or dll_gc project first to generate the mpir files.
+* Run lib or dll_mpir_cxx to generate the library or dll.
+
+### MPFR - https://github.com/BrianGladman/mpfr
+
+### Building Python Module
+
+setup.py needs to include --plat-name win32 to change the architecture to Win32
