@@ -1,56 +1,116 @@
 
 # very simplictic makefile - could do better
+OS := $(shell uname)
+ifeq ($(OS),Darwin)
+  # Run MacOS commands
+  SO := .dylib
+endif
+ifeq ($(OS),Linux)
+  # check for Linux and run other commands
+  SO := .so
+endif
 
 DEBUG=-DTRACE
-DTHREADED=$(THREADED)
+USES_THREADS=-DUSES_THREADS
+
+MPFR_LIBS=$(shell pkg-config --libs mpfr)
+MPFR_INCL=$(shell pkg-config --cflags gmp mpfr)
+PYBIND11_INCL=$(shell python3 -m pybind11 --includes)
+PYEMBED_SUFFIX=$(shell python3-config --extension-suffix)
+PYEMBED_LIBS=$(shell pkg-config --libs python3-embed)
+PYEMBED_INCL=$(shell pkg-config --cflags python3-embed)
+
+NAME=mandelbrot
+OLD_NAME=mandlebrot
+
+TEST_EXE=test_$(NAME)_main
+TEST_SRC=test_$(OLD_NAME)_main.c 
+#mandlebrot.c
+PYBIND_SRCS=$(NAME)_pybind11.cpp
+
+PYMODULE=$(NAME)$(PYEMBED_SUFFIX)
+
+SHARED_LIB_SRCS=$(OLD_NAME).c
+SHARED_LIB=lib$(NAME)$(SO)
+MANDELBROT_LIBS=-L./ -l$(NAME)
+
+LD_SHARED=-shared -fPIC 
+#-Wl,--unresolved-symbols=report-all
+#ifeq ($(OS),Darwin)
+#LD_SHARED=-dylib
+#endif
+
+# -----------------------------------------------------------------------------
 
 all: pybind11 test
 
-
-PKGCONFIG=$(shell pkg-config --cflags --libs gmp mpfr)
-
-# rm needs to know which platform it is on
 .PHONY: pymodule
-pymodule:
-	-$(RM) -fr build
-	-$(RM) -f mandlebrot.cpython-3*.so
-	# mandlebrot.cpython-311-x86_64-linux-gnu.so
+pymodule: clean_pymodule
 	# call setup.py to build the c module
 	python3 setup.py build_ext --inplace
 
 
 .PHONY: test
-test:
-	-$(RM) -f test_mandlebrot_main
-	gcc -g -O2 $(DEBUG) $(DTHREADED) test_mandlebrot_main.c mandlebrot.c $(PKGCONFIG) -lm -lpthread \
-            -o test_mandlebrot_main
+test: $(TEST_EXE)
+	./$(TEST_EXE)
 
+$(TEST_EXE): $(SHARED_LIB)
+	gcc -g -O3 $(DEBUG) $(USES_THREADS) $(MANDELBROT_LIBS) $(MPFR_INCL) $(MPFR_LIBS) -lm -lpthread \
+		$(TEST_SRC) -o $(TEST_EXE)
+
+.PHONY: coverage
 coverage:
-	-$(RM) -rf *.gcno *.gcda *.info lcovhtml
-	gcc -g -O2 $(DEBUG) -DUSES_THREADS -fprofile-arcs -ftest-coverage \
-	    test_mandlebrot_main.c mandlebrot.c $(PKGCONFIG) -lm -lpthread -o test_mandlebrot_main
-	./test_mandlebrot_main
-	lcov -c --directory . --output-file test_mandlebrot_main.info
-	genhtml test_mandlebrot_main.info --output-directory lcovhtml
+	gcc -g -O3 $(DEBUG) $(USES_THREADS) $(MANDELBROT_LIBS) $(MPFR_INCL) $(MPFR_LIBS) -lm -lpthread 
+		-fprofile-arcs -ftest-coverage $(TEST_SRC) -o $(TEST_EXE)
+	./$(TEST_EXE)
+	lcov -c --directory . --output-file $(TEST_EXE).info
+	genhtml $(TEST_EXE).info --output-directory lcovhtml
 
 
-valgrind: test
-	valgrind --leak-check=full ./test_mandlebrot_main
+.PHONY: valgrind
+valgrind: $(TEST_EXE)
+	valgrind --leak-check=full ./$(TEST_EXE)
 
-clean:
-	-$(RM) ./test_mandlebrot_main ./mandlebrot.cpython-3*-*.so
-	-$(RM) -fr build
+$(NAME).o:
+	gcc $(USES_THREADS) -o $(NAME).o -c $(OLD_NAME).c
 
+$(SHARED_LIB): $(NAME).o
+	gcc -o $@ $^ -O3 -g -Wall $(LD_SHARED) $(MPFR_INCL) $(MPFR_LIBS)
+	
 
 .PHONY: pybind11
-pybind11:
-	g++ -O3 -Wall -shared -std=c++11 -fPIC $(DTHREADED) \
-	    $(shell python3 -m pybind11 --includes) \
-	    $(shell pkg-config --cflags --libs mpfr) \
-	    mandlebrot.c mandelbrot_pybind11.cpp \
-	    -o mandelbrot$(shell python3-config --extension-suffix)
+pybind11: $(SHARED_LIB)
+	g++ -O3 -Wall -shared -std=c++11 -fPIC $(USES_THREADS) $(PYBIND11_INCL) $(MPFR_INCL) $(MPFR_LIBS) \
+	$(MANDELBROT_LIBS) $(PYEMBED_LIBS) $(PYBIND_SRCS) -o $(PYMODULE)
 
-.PHONY: threaded
-threaded:
-	$(MAKE) test pybind11 DTHREADED=-DUSES_THREADS
 
+clean_lib:
+	-$(RM) $(NAME).o $(SHARED_LIB)
+
+clean_test:
+	-$(RM) $(TEST_EXE)
+ifeq ($(OS),Darwin)
+	-$(RM) -r $(TEST_EXE).dSYM
+endif
+
+clean_pybind11:
+	-$(RM) $(PYMODULE)
+
+clean_pymodule:
+	-$(RM) -r build 
+	-$(RM) $(PYMODULE)
+
+clean_coverage:
+	-$(RM) *.gcno *.gcda *.info
+	-$(RM) -r lcovhtml
+
+clean: clean_test clean_pymodule clean_pybind11 clean_coverage clean_lib
+	
+
+#$(TEST_MAIN).dSYM
+#	-$(RM) ./$(TEST_MAIN) ./mandelbrot$(PYEMBED_SUFFIX) ./mandlebrot$(PYEMBED_SUFFIX) *.gcno *.gcda *.info
+#	-$(RM) -r build lcovhtml
+
+#.PHONY: threaded
+#threaded:
+#	$(MAKE) test pybind11 USES_THREADS=-DUSES_THREADS

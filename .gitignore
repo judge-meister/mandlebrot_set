@@ -8,6 +8,7 @@ __pycache__/
 
 # MacOS shared lib
 *.dSYM
+*.dylib
 
 # Distribution / packaging
 .Python
@@ -139,6 +140,7 @@ dmypy.json
 
 # project 
 test_mandlebrot_main
+test_mandelbrot_main
 
 # Windows Building
 .vs

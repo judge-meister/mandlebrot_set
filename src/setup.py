@@ -9,7 +9,7 @@ INCLUDE_DIRS=getoutput("pkg-config --cflags-only-I gmp mpfr python3").replace('-
 print(LIB_DIRS)
 print(INCLUDE_DIRS)
 
-module1 = Extension("mandlebrot",
+module1 = Extension("mandelbrot",
                     sources = ["mandlebrot.c", "mandlebrot_python.c"],
                     libraries = ['mpfr'],
                     library_dirs = LIB_DIRS,
@@ -17,7 +17,7 @@ module1 = Extension("mandlebrot",
 
 setup(name = "PackageName",
       version = '0.1',
-      description = 'Mandlebrot Set calculator',
+      description = 'Mandelbrot Set calculator',
       author = 'Ian Judge',
       author_email = 'ianjudge1969@gmail.com',
       ext_modules = [module1]
