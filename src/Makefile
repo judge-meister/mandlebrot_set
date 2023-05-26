@@ -1,5 +1,6 @@
 
 # very simplictic makefile - could do better
+
 OS := $(shell uname)
 ifeq ($(OS),Darwin)
   # Run MacOS commands
@@ -59,7 +60,7 @@ $(TEST_EXE): $(SHARED_LIB)
 		$(TEST_SRC) -o $(TEST_EXE)
 
 .PHONY: coverage
-coverage:
+coverage: $(SHARED_LIB)
 	gcc -g -O3 $(DEBUG) $(USES_THREADS) $(MANDELBROT_LIBS) $(MPFR_INCL) $(MPFR_LIBS) -lm -lpthread 
 		-fprofile-arcs -ftest-coverage $(TEST_SRC) -o $(TEST_EXE)
 	./$(TEST_EXE)
@@ -107,10 +108,3 @@ clean_coverage:
 clean: clean_test clean_pymodule clean_pybind11 clean_coverage clean_lib
 	
 
-#$(TEST_MAIN).dSYM
-#	-$(RM) ./$(TEST_MAIN) ./mandelbrot$(PYEMBED_SUFFIX) ./mandlebrot$(PYEMBED_SUFFIX) *.gcno *.gcda *.info
-#	-$(RM) -r build lcovhtml
-
-#.PHONY: threaded
-#threaded:
-#	$(MAKE) test pybind11 USES_THREADS=-DUSES_THREADS
