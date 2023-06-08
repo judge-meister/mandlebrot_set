@@ -22,20 +22,20 @@ PYEMBED_LIBS=$(shell pkg-config --libs python3-embed)
 PYEMBED_INCL=$(shell pkg-config --cflags python3-embed)
 
 NAME=mandelbrot
-OLD_NAME=mandlebrot
 
 TEST_EXE=test_$(NAME)_main
-TEST_SRC=test_$(OLD_NAME)_main.c 
-#mandlebrot.c
+TEST_SRC=test_$(NAME)_main.c 
+
 PYBIND_SRCS=$(NAME)_pybind11.cpp
 
 PYMODULE=$(NAME)$(PYEMBED_SUFFIX)
 
-SHARED_LIB_SRCS=$(OLD_NAME).c
+SHARED_LIB_SRCS=$(NAME).c
 SHARED_LIB=lib$(NAME)$(SO)
 MANDELBROT_LIBS=-L./ -l$(NAME)
 
-LD_SHARED=-shared -fPIC 
+LD_SHARED=-shared -Wl,-rpath=./,-rpath-link=./ -Wl,--no-undefined
+SONAME=-Wl,-soname=$(SHARED_LIB)
 #-Wl,--unresolved-symbols=report-all
 #ifeq ($(OS),Darwin)
 #LD_SHARED=-dylib
@@ -56,12 +56,12 @@ test: $(TEST_EXE)
 	./$(TEST_EXE)
 
 $(TEST_EXE): $(SHARED_LIB)
-	gcc -g -O3 $(DEBUG) $(USES_THREADS) $(MANDELBROT_LIBS) $(MPFR_INCL) $(MPFR_LIBS) -lm -lpthread \
-		$(TEST_SRC) -o $(TEST_EXE)
+	gcc -g -O3 $(DEBUG) $(USES_THREADS) $(MANDELBROT_LIBS) $(MPFR_INCL) $(MPFR_LIBS) \
+		-Wl,-rpath=./ $(TEST_SRC) -o $(TEST_EXE)
 
 .PHONY: coverage
 coverage: $(SHARED_LIB)
-	gcc -g -O3 $(DEBUG) $(USES_THREADS) $(MANDELBROT_LIBS) $(MPFR_INCL) $(MPFR_LIBS) -lm -lpthread 
+	gcc -g -O3 $(DEBUG) $(USES_THREADS) $(MANDELBROT_LIBS) $(MPFR_INCL) $(MPFR_LIBS) \
 		-fprofile-arcs -ftest-coverage $(TEST_SRC) -o $(TEST_EXE)
 	./$(TEST_EXE)
 	lcov -c --directory . --output-file $(TEST_EXE).info
@@ -73,15 +73,15 @@ valgrind: $(TEST_EXE)
 	valgrind --leak-check=full ./$(TEST_EXE)
 
 $(NAME).o:
-	gcc $(USES_THREADS) -o $(NAME).o -c $(OLD_NAME).c
+	gcc -O3 -g $(USES_THREADS) -fPIC -c $(NAME).c -o $@ 
 
 $(SHARED_LIB): $(NAME).o
-	gcc -o $@ $^ -O3 -g -Wall $(LD_SHARED) $(MPFR_INCL) $(MPFR_LIBS)
+	gcc -o $@ $^ -O3 -g -Wall $(LD_SHARED) $(SONAME) $(MPFR_INCL) $(MPFR_LIBS) -lm -lpthread
 	
 
 .PHONY: pybind11
 pybind11: $(SHARED_LIB)
-	g++ -O3 -Wall -shared -std=c++11 -fPIC $(USES_THREADS) $(PYBIND11_INCL) $(MPFR_INCL) $(MPFR_LIBS) \
+	g++ -O3 -Wall $(LD_SHARED) -std=c++11 -fPIC $(USES_THREADS) $(PYBIND11_INCL) $(MPFR_INCL) $(MPFR_LIBS) \
 	$(MANDELBROT_LIBS) $(PYEMBED_LIBS) $(PYBIND_SRCS) -o $(PYMODULE)
 
 

@@ -6,10 +6,10 @@
 //
 // building python module with PyBind11
 //
-// g++ -O3 -Wall -shared -std=c++11 -fPIC $(python3 -m pybind11 --includes) \
-//     $(pkg-config --cflags --libs mpfr) mandelbrot.cpp \
-//     -o mandelbrot$(python3-config --extension-suffix)
-//
+/* g++ -O3 -Wall -shared -std=c++11 -fPIC $(python3 -m pybind11 --includes) \
+ *     $(pkg-config --cflags --libs mpfr) mandelbrot.cpp \
+ *     -o mandelbrot$(python3-config --extension-suffix)
+ */
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -17,12 +17,12 @@
 
 namespace py = pybind11;
 
-#include "mandlebrot.h"
+#include "mandelbrot.h"
 
 
 // ----------------------------------------------------------------------------
-// Python function interface - mandlebrot_bytearray
-// mandlebrot_bytearray - return the results as a list of color values to be
+// Python function interface - mandelbrot_bytearray
+// mandelbrot_bytearray - return the results as a list of color values to be
 //                        converted to a bytesarray by the caller
 //
 // Returns a PyList containing color values for all the calculated points
@@ -38,12 +38,12 @@ py::list float64(const unsigned int wsize,   // width of screen/display/window
 {
     py::list points;
 
-    // create an array of integers to store the result of the mandlebrot calculation 
-    int *bytearray; //[wsize * hsize * 3];
-    bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
+    // create an array of integers to store the result of the mandelbrot calculation 
+    char *bytearray; //[wsize * hsize * 3];
+    bytearray = (char*)calloc((size_t)(wsize * hsize * 3), sizeof(char));
 
-    // call mandlebrot_bytearray 
-    mandlebrot_bytearray_c(wsize, hsize, maxiter, Xs, Xe, Ys, Ye, &bytearray);
+    // call mandelbrot_bytearray 
+    mandelbrot_bytearray_c(wsize, hsize, maxiter, Xs, Xe, Ys, Ye, &bytearray);
 
     // transfer returned values into PyList for return 
     for(unsigned int i = 0; i < (wsize * hsize * 3); i++)
@@ -56,9 +56,9 @@ py::list float64(const unsigned int wsize,   // width of screen/display/window
 }
 
 // ----------------------------------------------------------------------------
-// Python function interface to mandlebrot_bytearray
+// Python function interface to mandelbrot_bytearray
 //
-// mandlebrot_bytearray - return the results as a list of color values to be
+// mandelbrot_bytearray - return the results as a list of color values to be
 //                        converted to a bytearray by the caller
 //
 // Returns a PyList containing color values for all the calculated points
@@ -70,12 +70,12 @@ py::list mpfr( const unsigned int wsize,   // width of screen/display/window
 {
     py::list points;
 
-    // create an array of integers to store the result of the mandlebrot calculation 
-    int *bytearray; //[wsize * hsize * 3];
-    bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
+    // create an array of integers to store the result of the mandelbrot calculation 
+    char *bytearray; //[wsize * hsize * 3];
+    bytearray = (char*)calloc((size_t)(wsize * hsize * 3), sizeof(char));
 
-    // call mandlebrot_bytearray 
-    mandlebrot_mpfr_c(wsize, hsize, maxiter, &bytearray);
+    // call mandelbrot_bytearray 
+    mandelbrot_mpfr_c(wsize, hsize, maxiter, &bytearray);
 
     // transfer returned values into PyList for return 
     for(unsigned int i = 0; i < (wsize * hsize * 3); i++)
@@ -104,13 +104,13 @@ py::list mpfr_slice( const unsigned int wsize,   // width of screen/display/wind
 {
     py::list points;
 
-    // create an array of integers to store the result of the mandlebrot calculation 
-    int *bytearray; //[wsize * hsize/nslice * 3];
-    bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
+    // create an array of integers to store the result of the mandelbrot calculation 
+    char *bytearray; //[wsize * hsize/nslice * 3];
+    bytearray = (char*)calloc((size_t)(wsize * hsize * 3), sizeof(char));
     printf("bytearray length = %d\n",wsize * hsize/nslice * 3);
 
-    // call mandlebrot_bytearray 
-    mandlebrot_mpfr_slice_c(wsize, hsize, nslice, slice, maxiter, &bytearray);
+    // call mandelbrot_bytearray 
+    mandelbrot_mpfr_slice_c(wsize, hsize, nslice, slice, maxiter, &bytearray);
 
     // transfer returned values into PyList for return 
     for(unsigned int i = 0; i < (wsize * hsize/nslice * 3); i++)
@@ -135,12 +135,12 @@ py::list mpfr_thread( const unsigned int wsize,   // width of screen/display/win
 {
     py::list points;
 
-    // create an array of integers to store the result of the mandlebrot calculation 
-    int *bytearray; //[wsize * hsize * 3];
-    bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
+    // create an array of integers to store the result of the mandelbrot calculation 
+    char *bytearray; //[wsize * hsize * 3];
+    bytearray = (char*)calloc((size_t)(wsize * hsize * 3), sizeof(char));
 
     // call mandelbrot_bytearray 
-    mandlebrot_mpfr_thread_c(wsize, hsize, maxiter, &bytearray);
+    mandelbrot_mpfr_thread_c(wsize, hsize, maxiter, &bytearray);
 
     // transfer returned values into PyList for return 
     for(unsigned int i = 0; i < (wsize * hsize * 3); i++)

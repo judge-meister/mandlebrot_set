@@ -19,17 +19,17 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mandlebrot.c" />
-    <ClCompile Include="test_mandlebrot_main.c" />
+    <ClCompile Include="mandelbrot.c" />
+    <ClCompile Include="test_mandelbrot_main.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mandlebrot.h" />
+    <ClInclude Include="mandelbrot.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{0449c25a-0012-4d2b-9a58-ce6c9e0aa906}</ProjectGuid>
-    <RootNamespace>testmandlebrotmain</RootNamespace>
+    <RootNamespace>testmandelbrotmain</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

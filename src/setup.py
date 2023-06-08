@@ -1,4 +1,4 @@
-# setup.py script to build mandlebrot.c as a python module
+# setup.py script to build mandelbrot.c as a python module
 #from distutils.core import setup, Extension
 from setuptools import setup, Extension
 from subprocess import getoutput
@@ -10,7 +10,7 @@ print(LIB_DIRS)
 print(INCLUDE_DIRS)
 
 module1 = Extension("mandelbrot",
-                    sources = ["mandlebrot.c", "mandlebrot_python.c"],
+                    sources = ["mandelbrot.c", "mandelbrot_python.c"],
                     libraries = ['mpfr'],
                     library_dirs = LIB_DIRS,
                     include_dirs = INCLUDE_DIRS)

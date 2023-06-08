@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
- *  C library with python module interface to calculate the Mandlebrot set for
+ *  C library with python module interface to calculate the mandelbrot set for
  *  the area provided by a set of coordinates
  */
 
@@ -14,7 +14,7 @@
 
 /* ----------------------------------------------------------------------------
  * from wikipedia (https://en.wikipedia.org/wiki/Mandelbrot_set)
- * pseudo code to generate the mandlebrot set
+ * pseudo code to generate the mandelbrot set
  *
  * for each pixel (Px, Py) on the screen do
  *     x0 := scaled x coordinate of pixel (scaled to lie in the Mandelbrot X scale (-2.00, 0.47))
@@ -61,11 +61,11 @@
 
 #include <mpfr.h>
 
-#include "mandlebrot.h"
+#include "mandelbrot.h"
 
 /* DEFINES */
 
-#define TRACE 1
+//#define TRACE 1
 // TRACE DEBUG macro
 #ifdef TRACE
 #define TRACE_DEBUGV(formatstring, ...) \
@@ -214,7 +214,7 @@ static struct Color Ultra_Fractal_colors(int it, int maxiter)
 /* ----------------------------------------------------------------------------
  * calculate_point
  * run the z = z^2 + c algorithm for the point provided to assertain if the
- * point is inside or outside of the mandlebrot set
+ * point is inside or outside of the mandelbrot set
  *
  * Params
  * x0, y0 (double) location to calculate for
@@ -245,25 +245,25 @@ static int calculate_point(double x0, double y0, int maxiter)
 }
 
 /* ----------------------------------------------------------------------------
- * mandlebrot_bytearray - return the results as a list of color values to be
+ * mandelbrot_bytearray - return the results as a list of color values to be
  *                        converted to a bytesarray by the caller
  *
  * Params (in)
  * wsize (int) - width of display screen/window
  * hsize (int) - height of display screen/window
- * maxiter (int) - escape value for mandlebrot calc
- * Xs, Xe, Ys, Ye (double) bounds of mandlebrot set to calculate
+ * maxiter (int) - escape value for mandelbrot calc
+ * Xs, Xe, Ys, Ye (double) bounds of mandelbrot set to calculate
  * Params (out)
  * bytearray (array of ints) for storing color values of calculated points
  */
-void mandlebrot_bytearray_c(const unsigned int wsize,   /* width of screen/display/window */
+void mandelbrot_bytearray_c(const unsigned int wsize,   /* width of screen/display/window */
                             const unsigned int hsize,   /* height of screen/display/window */
                             const unsigned int maxiter, /* max iterations before escape */
                             const double Xs, /* string repr of mpfr_t for X top left */
                             const double Xe, /* string repr of mpfr_t for X top right */
                             const double Ys, /* string repr of mpfr_t for Y bottom left */
                             const double Ye, /* string repr of mpfr_t for Y bottom right */
-                            int **bytearray  /* reference/pointer to result list of color values */
+                            char **bytearray  /* reference/pointer to result list of color values */
                             )
 {
     unsigned int bc = 0;
@@ -364,7 +364,7 @@ void free_mpfr_mem_c()
 }
 
 /* ----------------------------------------------------------------------------
- * mandlebrot set slices using mpfr library
+ * mandelbrot set slices using mpfr library
  *
  * this function allows for splitting the image up for multiprocessing support
  *
@@ -375,12 +375,12 @@ void free_mpfr_mem_c()
  *
  * (out)bytearray -
  */
-void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/display/window */
+void mandelbrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/display/window */
                               const unsigned int ysize,   /* height of screen/display/window */
                               const unsigned int nslice,  /* number of slices */
                               const unsigned int slice,   /* which slice (range 0 -> nslice-1) */
                               const unsigned int maxiter, /* max iterations before escape */
-                              int **bytearray /* reference/pointer to result list of color values*/
+                              char **bytearray /* reference/pointer to result list of color values*/
                              )
 {
     mpfr_t x, y, xsq, ysq, xtmp, x0, y0, ys1, ye1;  /* algorithm values */
@@ -430,7 +430,7 @@ void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/dis
         mpfr_add(ye1, ye1, Ys, MPFR_RNDN);
     }
     
-    TRACE_DEBUG("mandlebrot_mpfr_slice_c (in)\n");
+    TRACE_DEBUG("mandelbrot_mpfr_slice_c (in)\n");
 #ifdef TRACE
     mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
@@ -498,7 +498,7 @@ void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/dis
 }
 
 /* ----------------------------------------------------------------------------
- * mandlebrot set using mpfr library
+ * mandelbrot set using mpfr library
  *
  * Params
  * xsize, ysize   -
@@ -507,13 +507,13 @@ void mandlebrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/dis
  * (out)bytearray -
  *
  */
-void mandlebrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/window */
+void mandelbrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/window */
                          const unsigned int ysize,   /* height of screen/display/window */
                          const unsigned int maxiter, /* max iterations before escape */
-                         int **bytearray /* reference/pointer to result list of color values*/
+                         char **bytearray /* reference/pointer to result list of color values*/
                          )
 {
-	mandlebrot_mpfr_slice_c(xsize, ysize, 1, 0, maxiter, bytearray);
+	mandelbrot_mpfr_slice_c(xsize, ysize, 1, 0, maxiter, bytearray);
 }
 
 /* ----------------------------------------------------------------------------
@@ -729,7 +729,7 @@ void mpfr_zoom_out(      const unsigned int pX, /* x mouse pos in display */
 /* ----------------------------------------------------------------------------
  * worker_process_slice (used in the threads)
  *
- * given a slice of the mandlebrot set data to process.
+ * given a slice of the mandelbrot set data to process.
  * returns part of the result to be combined later.
  */
 static void *worker_process_slice(void* arg)
@@ -826,7 +826,7 @@ static void *worker_process_slice(void* arg)
 
 
 /* ----------------------------------------------------------------------------
- * mandlebrot set using mpfr library, but 4 threads
+ * mandelbrot set using mpfr library, but 4 threads
  *
  * Description - the data area is cut into quarters although this is not the
  *               easiest split to manage as putting the results back together
@@ -844,17 +844,17 @@ static void *worker_process_slice(void* arg)
  *
  * Return void (not status returned)
  */
-void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/display/window */
+void mandelbrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/display/window */
                                const unsigned int ysize,   /* height of screen/display/window */
                                const unsigned int maxiter, /* max iterations before escape */
-                               int **bytearray /* reference/pointer to result list of color values*/
+                               char **bytearray /* reference/pointer to result list of color values*/
                              )
 {
     unsigned int bc = 0;
     mpfr_t lx, ly, yslice, ys1, ye1;
     mpfr_inits2(PRECISION, lx, ly, yslice, ys1, ye1, (mpfr_ptr)NULL);
 
-    TRACE_DEBUG("mandlebrot_mpfr_c (in) \n");
+    TRACE_DEBUG("mandelbrot_mpfr_c (in) \n");
 #ifdef TRACE
     mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
     mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
@@ -940,7 +940,7 @@ void mandlebrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
     /* clear (free) mpfr data */
     mpfr_clears(lx, ly, yslice, ys1, ye1, (mpfr_ptr)NULL);
     
-    TRACE_DEBUG("mandlebrot_mpfr_c (exit) \n");
+    TRACE_DEBUG("mandelbrot_mpfr_c (exit) \n");
 }
 
 /* ----------------------------------------------------------------------------
