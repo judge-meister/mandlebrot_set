@@ -25,12 +25,14 @@ int main(int argc, char *argv[])
     initialize_c("-2.0", "1.0", "-1.5", "1.5", "9.0", "9.0");
 
     /* create an array of integers to store the result of the mandelbrot calculation */
-    char *bytearray; /* [wsize * hsize * 3]; */
-    bytearray = (char*)calloc((size_t)(wsize * hsize * 3), sizeof(char));
+    unsigned int *bytearray; /* [wsize * hsize * 3]; */
+    bytearray = (unsigned int*)calloc((size_t)(wsize * hsize * 3), sizeof(unsigned int));
 
     /* call mandelbrot_bytearray */
     printf("Testing mandelbrot_bytearray_c\n");
     mandelbrot_bytearray_c(wsize, hsize, maxiter, -2.0, 1.0, -1.5, 1.5, &bytearray);
+
+    for (int i=0; i<12; i++) { printf("%d\n", bytearray[i]); }
 
     /* call mandelbrot_mpfr_c */
     printf("Testing mandelbrot_mpfr_c\n");

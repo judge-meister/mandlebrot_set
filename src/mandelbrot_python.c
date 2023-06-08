@@ -46,8 +46,8 @@ static PyObject * float64(PyObject *self, PyObject *args)
     PyObject *points = PyList_New(0);
 
     /* create an array of integers to store the result of the mandelbrot calculation */
-    int *bytearray; //[wsize * hsize * 3];
-    bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
+    unsigned int *bytearray; //[wsize * hsize * 3];
+    bytearray = (unsigned int*)calloc((size_t)(wsize * hsize * 3), sizeof(unsigned int));
 
     /* call mandelbrot_bytearray */
     mandelbrot_bytearray_c(wsize, hsize, maxiter, Xs, Xe, Ys, Ye, &bytearray);
@@ -93,8 +93,8 @@ static PyObject * mpfr(PyObject *self, PyObject *args)
     PyObject *points = PyList_New(0);
 
     /* create an array of integers to store the result of the mandelbrot calculation */
-    int *bytearray; //[wsize * hsize * 3];
-    bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
+    unsigned int *bytearray; //[wsize * hsize * 3];
+    bytearray = (unsigned int*)calloc((size_t)(wsize * hsize * 3), sizeof(unsigned int));
 
     /* call mandelbrot_bytearray */
     mandelbrot_mpfr_c(wsize, hsize, maxiter, &bytearray);
@@ -131,8 +131,8 @@ static PyObject * mpfr_slice(PyObject *self, PyObject *args)
     PyObject *points = PyList_New(0);
 
     /* create an array of integers to store the result of the mandelbrot calculation */
-    int *bytearray; //[wsize * hsize/nslice * 3];
-    bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
+    unsigned int *bytearray; //[wsize * hsize/nslice * 3];
+    bytearray = (unsigned int*)calloc((size_t)(wsize * hsize * 3), sizeof(unsigned int));
     printf("bytearray length = %d\n",wsize * hsize/nslice * 3);
 
     /* call mandelbrot_bytearray */
@@ -169,8 +169,8 @@ static PyObject * mpfr_thread(PyObject *self, PyObject *args)
     PyObject *points = PyList_New(0);
 
     /* create an array of integers to store the result of the mandelbrot calculation */
-    int *bytearray; //[wsize * hsize * 3];
-    bytearray = (int*)calloc((size_t)(wsize * hsize * 3), sizeof(int));
+    unsigned int *bytearray; //[wsize * hsize * 3];
+    bytearray = (unsigned int*)calloc((size_t)(wsize * hsize * 3), sizeof(unsigned int));
 
     /* call mandelbrot_bytearray */
     mandelbrot_mpfr_thread_c(wsize, hsize, maxiter, &bytearray);

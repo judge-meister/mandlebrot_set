@@ -97,7 +97,7 @@ static int zoom_level = 0;
 static int ncpus = 1; /* just to be safe */
 
 /* GLOBAL DATA */
-int** glb_bytearray; /* this will contain an array of bytearrays
+unsigned int** glb_bytearray; /* this will contain an array of bytearrays
                       * ncpus x (num points in array) */ 
 
 
@@ -263,7 +263,7 @@ void mandelbrot_bytearray_c(const unsigned int wsize,   /* width of screen/displ
                             const double Xe, /* string repr of mpfr_t for X top right */
                             const double Ys, /* string repr of mpfr_t for Y bottom left */
                             const double Ye, /* string repr of mpfr_t for Y bottom right */
-                            char **bytearray  /* reference/pointer to result list of color values */
+                            unsigned int **bytearray  /* reference/pointer to result list of color values */
                             )
 {
     unsigned int bc = 0;
@@ -380,7 +380,7 @@ void mandelbrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/dis
                               const unsigned int nslice,  /* number of slices */
                               const unsigned int slice,   /* which slice (range 0 -> nslice-1) */
                               const unsigned int maxiter, /* max iterations before escape */
-                              char **bytearray /* reference/pointer to result list of color values*/
+                              unsigned int **bytearray /* reference/pointer to result list of color values*/
                              )
 {
     mpfr_t x, y, xsq, ysq, xtmp, x0, y0, ys1, ye1;  /* algorithm values */
@@ -510,7 +510,7 @@ void mandelbrot_mpfr_slice_c( const unsigned int xsize,   /* width of screen/dis
 void mandelbrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/window */
                          const unsigned int ysize,   /* height of screen/display/window */
                          const unsigned int maxiter, /* max iterations before escape */
-                         char **bytearray /* reference/pointer to result list of color values*/
+                         unsigned int **bytearray /* reference/pointer to result list of color values*/
                          )
 {
 	mandelbrot_mpfr_slice_c(xsize, ysize, 1, 0, maxiter, bytearray);
@@ -847,7 +847,7 @@ static void *worker_process_slice(void* arg)
 void mandelbrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/display/window */
                                const unsigned int ysize,   /* height of screen/display/window */
                                const unsigned int maxiter, /* max iterations before escape */
-                               char **bytearray /* reference/pointer to result list of color values*/
+                               unsigned int **bytearray /* reference/pointer to result list of color values*/
                              )
 {
     unsigned int bc = 0;
@@ -873,10 +873,10 @@ void mandelbrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
     mpfr_div_ui(yslice, yslice, nslice, MPFR_RNDN);
 
     /* initialise the global bytearray*/
-    glb_bytearray = (int**)malloc(core_count*sizeof(int*));
+    glb_bytearray = (unsigned int**)malloc(core_count*sizeof(unsigned int*));
     for(unsigned int slice=0; slice<core_count; slice++)
     {
-      glb_bytearray[slice] = (int*)calloc((size_t)(xsize * ysize/core_count * 3), sizeof(int));
+      glb_bytearray[slice] = (unsigned int*)calloc((size_t)(xsize * ysize/core_count * 3), sizeof(unsigned int));
 
       wargs[slice].tid = slice;
       wargs[slice].maxiter = maxiter;
