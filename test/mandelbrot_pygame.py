@@ -6,10 +6,10 @@ import math
 import asyncio
 import pygame
 from pygame.locals import *
-import mandlebrot as mandlebrot_c
+import mandelbrot as mandelbrot_c
 
 """
-pseudo code from wikipedia to generate the mandlebrot set
+pseudo code from wikipedia to generate the mandelbrot set
 
 for each pixel (Px, Py) on the screen do
     x0 := scaled x coordinate of pixel (scaled to lie in the Mandelbrot X scale (-2.00, 0.47))
@@ -23,7 +23,7 @@ for each pixel (Px, Py) on the screen do
         y := 2*x*y + y0
         x := xtemp
         iteration := iteration + 1
-    
+
     color := palette[iteration]
     plot(Px, Py, color)
 """
@@ -47,11 +47,11 @@ def scaled_y(y1, sz, Ys, Ye):
 def warp_red(it, itmax):
     if it >= itmax:
         color = BLACK
-        
+
     if it >= 0 and it < itmax/2:
         idx = it / (itmax/2) * 255
         color = (idx, 0, 0)
-        
+
     if it > itmax/2 and it < itmax:
         idx = (it - itmax/2) / (itmax/2) * 255
         color = (255, idx, idx)
@@ -73,7 +73,7 @@ async def iterate_location_coro(Px, Py, screen, clock, ssize, Xs,Xe, Ys,Ye):
     y = 0.0
     iteration = 0
     maxiter = 1000
-        
+
     while (x*x + y+y <= 2*2) and iteration < maxiter:
         xtemp = x*x - y*y + x0
         y = 2*x*y + y0
@@ -87,7 +87,7 @@ async def iterate_location_coro(Px, Py, screen, clock, ssize, Xs,Xe, Ys,Ye):
     #    clock.tick()
     return Px, Py, color
 
-async def mandlebrot_coro(ssize, screen, clock, Xs,Xe,Ys,Ye):
+async def mandelbrot_coro(ssize, screen, clock, Xs,Xe,Ys,Ye):
     screen_x, screen_y = ssize
     coro = [asyncio.create_task(iterate_location_coro(Px, Py, screen, clock, ssize, Xs,Xe, Ys,Ye)) for Px in range(screen_x) for Py in range(screen_y)]
     st=time.time()
@@ -112,7 +112,7 @@ def iterate_location(x0, y0):
     y = 0.0
     iteration = 0
     maxiter = 1000
-        
+
     while (x*x + y+y <= 2*2) and iteration < maxiter:
         xtemp = x*x - y*y + x0
         y = 2*x*y + y0
@@ -123,24 +123,24 @@ def iterate_location(x0, y0):
 
     return color
 
-def mandlebrot(ssize, screen, clock, Xs,Xe,Ys,Ye):
+def mandelbrot(ssize, screen, clock, Xs,Xe,Ys,Ye):
     """
     would using numpy improve performance and/or precision ?
     """
     screen_x, screen_y = ssize
 
-    print("start mandlebrot")
-    
+    print("start mandelbrot")
+
     for Py in range(screen_y):
         for Px in range(screen_x):
             x0 = scaled_x(Px, screen_x, Xs, Xe)
             y0 = scaled_y(Py, screen_y, Ys, Ye)
 
             color = iterate_location(x0, y0)
-            
+
             #color = warp_red(iteration, maxiter)
             #color = grayscale(iteration, maxiter)
-                
+
             pygame.draw.line(screen, color, [Px,Py], [Px,Py], 1)
             #print(color, Px, Py)
         if Py % 25 == 0:
@@ -160,12 +160,12 @@ def draw(screen, clock, data):
         iter, r, g, b, x, y = point
         pygame.draw.line(screen, (r, g, b), [x,y], [x,y], 1)
 
-        
+
     pygame.display.update()
     clock.tick()
     print("finished")
-    
-    
+
+
 def topleft(xs, xe, ys, ye):
     xe = xe - abs((xe-xs)/2)
     ye = ye - abs((ye-ys)/2)
@@ -190,24 +190,24 @@ def bottomright(xs, xe, ys, ye):
     print("BR",xs,xe,ys,ye)
     return xs,xe,ys,ye
 
-def profile_mandlebrot_c(ssize, Xs, Xe, Ys, Ye):
+def profile_mandelbrot_c(ssize, Xs, Xe, Ys, Ye):
     import cProfile
     import pstats
-    
+
     with cProfile.Profile() as pr:
-        plot = mandlebrot_c.mandlebrot(ssize, Xs, Xe, Ys, Ye)
+        plot = mandelbrot_c.mandelbrot(ssize, Xs, Xe, Ys, Ye)
 
     stats = pstats.Stats(pr)
     stats.sort_stats(pstats.SortKey.TIME)
     stats.print_stats()
     return plot
 
-def profile_mandlebrot(ssize, screen, clock, Xs, Xe, Ys, Ye):
+def profile_mandelbrot(ssize, screen, clock, Xs, Xe, Ys, Ye):
     import cProfile
     import pstats
-    
+
     with cProfile.Profile() as pr:
-        mandlebrot(ssize, screen, clock, Xs, Xe, Ys, Ye)
+        mandelbrot(ssize, screen, clock, Xs, Xe, Ys, Ye)
 
     stats = pstats.Stats(pr)
     stats.sort_stats(pstats.SortKey.TIME)
@@ -226,64 +226,64 @@ def main(ssize, screen, clock):
         for e in pygame.event.get():
             if e.type == KEYUP and e.key == K_ESCAPE:
                 done = 1
-                
+
             if e.type == KEYDOWN and e.key == K_g:
-                mandlebrot(ssize, screen, clock, X1, X2, Y1, Y2)
-                #asyncio.run(mandlebrot_coro(ssize, screen, clock, X1, X2, Y1, Y2))
-                #draw(screen, clock, mandlebrot_c.mandlebrot(sx, X1, X2, Y1, Y2))
+                mandelbrot(ssize, screen, clock, X1, X2, Y1, Y2)
+                #asyncio.run(mandelbrot_coro(ssize, screen, clock, X1, X2, Y1, Y2))
+                #draw(screen, clock, mandelbrot_c.mandelbrot(sx, X1, X2, Y1, Y2))
                 Xs = X1
                 Xe = X2
                 Ys = Y1
                 Ye = Y2
 
             if e.type == KEYDOWN and e.key == K_c:
-                #mandlebrot(ssize, screen, clock, X1, X2, Y1, Y2)
-                #asyncio.run(mandlebrot_coro(ssize, screen, clock, X1, X2, Y1, Y2))
-                #draw(screen, clock, mandlebrot_c.mandlebrot(sx, X1, X2, Y1, Y2))
-                draw(screen, clock, profile_mandlebrot_c(sx, X1, X2, Y1, Y2))
+                #mandelbrot(ssize, screen, clock, X1, X2, Y1, Y2)
+                #asyncio.run(mandelbrot_coro(ssize, screen, clock, X1, X2, Y1, Y2))
+                #draw(screen, clock, mandelbrot_c.mandelbrot(sx, X1, X2, Y1, Y2))
+                draw(screen, clock, profile_mandelbrot_c(sx, X1, X2, Y1, Y2))
                 Xs = X1
                 Xe = X2
                 Ys = Y1
                 Ye = Y2
-                
+
             if e.type == KEYDOWN and e.key == K_q:
                 Xsp, Xep, Ysp, Yep = Xs, Xe, Ys, Ye
                 Xs, Xe, Ys, Ye = topleft(Xs, Xe, Ys, Ye)
-                #mandlebrot(ssize, screen, clock, Xs, Xe, Ys, Ye)
-                #asyncio.run(mandlebrot_coro(ssize, screen, clock, Xs,Xe,Ys,Ye))
-                draw(screen, clock, mandlebrot_c.mandlebrot(sx, Xs, Xe, Ys, Ye))
-                
+                #mandelbrot(ssize, screen, clock, Xs, Xe, Ys, Ye)
+                #asyncio.run(mandelbrot_coro(ssize, screen, clock, Xs,Xe,Ys,Ye))
+                draw(screen, clock, mandelbrot_c.mandelbrot(sx, Xs, Xe, Ys, Ye))
+
             if e.type == KEYDOWN and e.key == K_w:
                 Xsp, Xep, Ysp, Yep = Xs, Xe, Ys, Ye
                 Xs, Xe, Ys, Ye = topright(Xs, Xe, Ys, Ye)
-                #mandlebrot(ssize, screen, clock, Xs, Xe, Ys, Ye)
-                #asyncio.run(mandlebrot_coro(ssize, screen, clock, Xs,Xe,Ys,Ye))
-                draw(screen, clock, mandlebrot_c.mandlebrot(sx, Xs, Xe, Ys, Ye))
-                
+                #mandelbrot(ssize, screen, clock, Xs, Xe, Ys, Ye)
+                #asyncio.run(mandelbrot_coro(ssize, screen, clock, Xs,Xe,Ys,Ye))
+                draw(screen, clock, mandelbrot_c.mandelbrot(sx, Xs, Xe, Ys, Ye))
+
             if e.type == KEYDOWN and e.key == K_a:
                 Xsp, Xep, Ysp, Yep = Xs, Xe, Ys, Ye
                 Xs, Xe, Ys, Ye = bottomleft(Xs, Xe, Ys, Ye)
-                #mandlebrot(ssize, screen, clock, Xs, Xe, Ys, Ye)
-                #asyncio.run(mandlebrot_coro(ssize, screen, clock, Xs,Xe,Ys,Ye))
-                draw(screen, clock, mandlebrot_c.mandlebrot(sx, Xs, Xe, Ys, Ye))
-                
+                #mandelbrot(ssize, screen, clock, Xs, Xe, Ys, Ye)
+                #asyncio.run(mandelbrot_coro(ssize, screen, clock, Xs,Xe,Ys,Ye))
+                draw(screen, clock, mandelbrot_c.mandelbrot(sx, Xs, Xe, Ys, Ye))
+
             if e.type == KEYDOWN and e.key == K_s:
                 Xsp, Xep, Ysp, Yep = Xs, Xe, Ys, Ye
                 Xs, Xe, Ys, Ye = bottomright(Xs, Xe, Ys, Ye)
-                #mandlebrot(ssize, screen, clock, Xs, Xe, Ys, Ye)
-                #asyncio.run(mandlebrot_coro(ssize, screen, clock, Xs,Xe,Ys,Ye))
-                draw(screen, clock, mandlebrot_c.mandlebrot(sx, Xs, Xe, Ys, Ye))
-                
+                #mandelbrot(ssize, screen, clock, Xs, Xe, Ys, Ye)
+                #asyncio.run(mandelbrot_coro(ssize, screen, clock, Xs,Xe,Ys,Ye))
+                draw(screen, clock, mandelbrot_c.mandelbrot(sx, Xs, Xe, Ys, Ye))
+
             if e.type == KEYDOWN and e.key == K_z:
                 Xs, Xe, Ys, Ye = Xsp, Xep, Ysp, Yep
-                #mandlebrot(ssize, screen, clock, Xs, Xe, Ys, Ye)
-                #asyncio.run(mandlebrot_coro(ssize, screen, clock, Xs,Xe,Ys,Ye))
-                draw(screen, clock, mandlebrot_c.mandlebrot(sx, Xs, Xe, Ys, Ye))
-                
+                #mandelbrot(ssize, screen, clock, Xs, Xe, Ys, Ye)
+                #asyncio.run(mandelbrot_coro(ssize, screen, clock, Xs,Xe,Ys,Ye))
+                draw(screen, clock, mandelbrot_c.mandelbrot(sx, Xs, Xe, Ys, Ye))
+
         pygame.display.update()
         clock.tick(10)
     print("Quiting")
-        
+
 def setup(ssize):
     pygame.init()
     scr_inf = pygame.display.Info()
@@ -292,9 +292,9 @@ def setup(ssize):
     screen = pygame.display.set_mode(ssize)
     screen.fill(WHITE)
     clock = pygame.time.Clock()
-    
+
     #pygame.draw.rect(screen, BLACK, [1,1,200,200], 1)
-    pygame.display.set_caption("Mandlebrot")
+    pygame.display.set_caption("Mandelbrot")
     pygame.display.flip()
     pygame.display.update()
     clock.tick()
@@ -304,7 +304,7 @@ def setup(ssize):
 def profile_func():
     import cProfile
     import pstats
-    
+
     with cProfile.Profile() as pr:
         x, y = -2.0, -1.5
         while x <= 1.0:
@@ -317,16 +317,16 @@ def profile_func():
     stats.sort_stats(pstats.SortKey.TIME)
     stats.print_stats()
 
-   
+
 
 if __name__ == '__main__':
-   
+
     #profile_func()
     #sys.exit()
 
     ssize = (640, 640)
-    
+
     screen, clock = setup(ssize)
-    
+
     main(ssize, screen, clock)
-    
+

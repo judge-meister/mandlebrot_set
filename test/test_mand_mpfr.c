@@ -1,7 +1,7 @@
 /*
- * module for calculating the madlebrot set using the mpfr library
+ * module for calculating the madelbrot set using the mpfr library
  *
-   gcc -g -o mandlebrot_mpfr -lmpfr -lm test_mand_mpfr.c
+   gcc -g -o mandelbrot_mpfr -lmpfr -lm test_mand_mpfr.c
  */
 
 #include <stdio.h>
@@ -45,7 +45,7 @@ static struct Color sqrt_gradient(unsigned int it, unsigned int maxiter)
 }
 
 /* ----------------------------------------------------------------------------
- * mandlebrot set using mpfr library
+ * mandelbrot set using mpfr library
  *
  * Params
  * xsize, ysize   - 
@@ -56,7 +56,7 @@ static struct Color sqrt_gradient(unsigned int it, unsigned int maxiter)
  *
  * Return int
  */
-void mandlebrot_set_mpfr(const unsigned int xsize,   /* width of screen/display/window */
+void mandelbrot_set_mpfr(const unsigned int xsize,   /* width of screen/display/window */
                         const unsigned int ysize,   /* height of screen/display/window */
                         const unsigned int maxiter, /* max iterations before escape */
                         const char* Xs_str, /* string repr of mpfr_t for X top left */
@@ -150,7 +150,7 @@ void mandlebrot_set_mpfr(const unsigned int xsize,   /* width of screen/display/
 }
 
 /*
- * test prog to run the mandlebrot_set_mpfr
+ * test prog to run the mandelbrot_set_mpfr
  */
 int main()
 {
@@ -165,9 +165,9 @@ int main()
 
     int bytearray[3 * xsize * ysize];
 
-    mandlebrot_set_mpfr(xsize, ysize, maxiter, "-20", "10", "-15", "15", bytearray);
-    mandlebrot_set_mpfr(xsize, ysize, maxiter, "-020", "010", "-015", "015", bytearray);
-    mandlebrot_set_mpfr(xsize, ysize, maxiter, "-2.0", "1.0", "-1.5", "1.5", bytearray);
+    mandelbrot_set_mpfr(xsize, ysize, maxiter, "-20", "10", "-15", "15", bytearray);
+    mandelbrot_set_mpfr(xsize, ysize, maxiter, "-020", "010", "-015", "015", bytearray);
+    mandelbrot_set_mpfr(xsize, ysize, maxiter, "-2.0", "1.0", "-1.5", "1.5", bytearray);
 
     return 0;
 }

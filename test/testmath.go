@@ -35,7 +35,7 @@ func iterate_location(x0, y0 float64) int {
     return  grayscale(iteration, maxiter)
 }
 
-func mandlebrot_set(w, h int) {
+func mandelbrot_set(w, h int) {
     var Xs float64 = -2.0
     var Xe float64 = 1.0
     var Ys float64 = -1.5
@@ -59,7 +59,7 @@ func main() {
     fmt.Println("Testing float64 in go")
     now := time.Now()
 
-    mandlebrot_set(640, 640)
+    mandelbrot_set(640, 640)
 
     t := time.Now()
     fmt.Printf("Took %s secs\n", t.Sub(now).String())

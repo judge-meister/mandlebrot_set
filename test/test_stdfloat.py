@@ -14,7 +14,7 @@ def grayscale(it, itmax):
         color = (idx, idx, idx)
     return color
 
-class Mandlebrot_stdfloat:
+class Mandelbrot_stdfloat:
 
     def __init__(self, breakout=1000):
         """"""
@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
     now = time.time()
 
-    mand = Mandlebrot_stdfloat(1000)
+    mand = Mandelbrot_stdfloat(1000)
     mand.generate(640, 640)
 
     print("Took ", time.time() - now, " secs")
