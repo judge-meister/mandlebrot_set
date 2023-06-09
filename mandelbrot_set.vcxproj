@@ -23,7 +23,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{898d85ec-467a-4df2-9810-65e3e70bc68e}</ProjectGuid>
-    <RootNamespace>mandlebrotset</RootNamespace>
+    <RootNamespace>mandelbrotset</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
