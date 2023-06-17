@@ -12,6 +12,7 @@ ifeq ($(OS),Linux)
 endif
 
 DEBUG=-DTRACE
+DEBUG=
 USES_THREADS=-DUSES_THREADS
 
 MPFR_LIBS=$(shell pkg-config --libs mpfr)
@@ -40,10 +41,18 @@ SONAME=-Wl,-soname=$(SHARED_LIB)
 #ifeq ($(OS),Darwin)
 #LD_SHARED=-dylib
 #endif
+INCLUDES = ../include $(MPFR_INCL)
+LOCAL_LIBS = 
+
+%.o: %.c
+	gcc -g -O3 $(DEBUG) $(USES_THREADS) -c -Wall -I../include $< -o $@
+
+%.o: %.cpp
+	g++ -g -O3 $(DEBUG) $(USES_THREADS) -c -Wall -I../include $< -o $@
 
 # -----------------------------------------------------------------------------
 
-all: pybind11 test
+all: clean pybind11 test mandelbrot_main
 
 .PHONY: pymodule
 pymodule: clean_pymodule
@@ -62,7 +71,7 @@ $(TEST_EXE): $(SHARED_LIB)
 .PHONY: coverage
 coverage: $(SHARED_LIB)
 	gcc -g -O3 $(DEBUG) $(USES_THREADS) $(MANDELBROT_LIBS) $(MPFR_INCL) $(MPFR_LIBS) \
-		-fprofile-arcs -ftest-coverage $(TEST_SRC) -o $(TEST_EXE)
+		 -Wl,-rpath=./ -fprofile-arcs -ftest-coverage $(TEST_SRC) -o $(TEST_EXE)
 	./$(TEST_EXE)
 	lcov -c --directory . --output-file $(TEST_EXE).info
 	genhtml $(TEST_EXE).info --output-directory lcovhtml
@@ -76,7 +85,7 @@ $(NAME).o:
 	gcc -O3 -g $(USES_THREADS) -fPIC -c $(NAME).c -o $@ 
 
 $(SHARED_LIB): $(NAME).o
-	gcc -o $@ $^ -O3 -g -Wall $(LD_SHARED) $(SONAME) $(MPFR_INCL) $(MPFR_LIBS) -lm -lpthread
+	gcc -o $@ $^ -O3 -g $(DEBUG) -Wall $(LD_SHARED) $(SONAME) $(MPFR_INCL) $(MPFR_LIBS) -lm -lpthread
 	
 
 .PHONY: pybind11
@@ -85,6 +94,16 @@ pybind11: $(SHARED_LIB)
 	$(MANDELBROT_LIBS) $(PYEMBED_LIBS) $(PYBIND_SRCS) -o $(PYMODULE)
 
 
+# -----------------------------------------------------------------------------
+mandelbrot_main: mandelbrot_main.o glad.o $(SHARED_LIB)
+	g++ -g -O3 $(DEBUG) $(USES_THREADS) -o $@ $^ $(MANDELBROT_LIBS) $(MPFR_LIBS) \
+	    -lglfw -lGL -lSOIL -lX11 -lpthread -lXrandr -lXi -ldl -Wl,-rpath=./
+
+clean_mandelbrot_main:
+	-$(RM) glad.o mandelbrot_main.o mandelbrot_main
+
+
+# -----------------------------------------------------------------------------
 clean_lib:
 	-$(RM) $(NAME).o $(SHARED_LIB)
 
@@ -105,6 +124,6 @@ clean_coverage:
 	-$(RM) *.gcno *.gcda *.info
 	-$(RM) -r lcovhtml
 
-clean: clean_test clean_pymodule clean_pybind11 clean_coverage clean_lib
+clean: clean_test clean_pymodule clean_pybind11 clean_coverage clean_lib clean_mandelbrot_main
 	
 

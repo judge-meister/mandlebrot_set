@@ -40,18 +40,24 @@ void mandelbrot_mpfr_thread_c( const unsigned int xsize,   /* width of screen/di
                              );
 #endif
 
-void mpfr_zoom_in( const unsigned int pX, /* */
-                   const unsigned int pY, /* */
-                   const unsigned int w, /* */
-                   const unsigned int h, /* */
-                   const unsigned int factor /* */
+void mpfr_zoom_in_via_mouse( 
+                   const double pX, /* x mouse pos in display */
+                   const double pY, /* Y mouse pos in display */
+                   const unsigned int w, /* display width */
+                   const unsigned int h, /* display height */
+                   const unsigned int factor /* scaling factor */
                   );
 
-void mpfr_zoom_out( const unsigned int pX, /* */
-                    const unsigned int pY, /* */
-                    const unsigned int w, /* */
-                    const unsigned int h, /* */
-                    const unsigned int factor /* */
+void mpfr_zoom_in( const unsigned int w, /* display width */
+                   const unsigned int h, /* display height */
+                   const unsigned int factor /* scaling factor */
+                  );
+
+void mpfr_zoom_out( const unsigned int pX, /* x mouse pos in display */
+                    const unsigned int pY, /* y mouse pos in display */
+                    const unsigned int w,  /* display width */
+                    const unsigned int h,  /* display height */
+                    const unsigned int factor /* scaling factor */
                    );
 
 void setup_c();
