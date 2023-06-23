@@ -39,11 +39,11 @@ int main(int argc, char *argv[])
     mandelbrot_mpfr_c(wsize, hsize, maxiter, &bytearray);
 
     printf("Testing mpfr_zoom_in\n");
-    mpfr_zoom_in(4, 4, wsize, hsize, factor);
+    mpfr_zoom_in_via_mouse(4, 4, wsize, hsize, factor);
     mandelbrot_mpfr_c(wsize, hsize, maxiter, &bytearray);
 
     printf("Testing mpfr_zoom_out\n");
-    mpfr_zoom_out(4, 4, wsize, hsize, factor);
+    mpfr_zoom_out(/*4, 4, wsize, hsize,*/ factor);
     mandelbrot_mpfr_c(wsize, hsize, maxiter, &bytearray);
 
     printf("Testing mandelbrot_mpfr_slice_c - slice 0\n");
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     mandelbrot_mpfr_thread_c(wsize, hsize, maxiter, &bytearray);
 
     printf("Testing mpfr_zoom_in\n");
-    mpfr_zoom_in(4, 4, wsize, hsize, factor);
+    mpfr_zoom_in_via_mouse(4, 4, wsize, hsize, factor);
 #endif
     
     printf("Testing free_mpfr_mem_c\n");

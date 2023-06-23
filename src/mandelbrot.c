@@ -197,22 +197,6 @@ static struct Color Ultra_Fractal_colors(int it, int maxiter)
 }
 
 /* ----------------------------------------------------------------------------
- * scaled - return a value in the range Xe to Xs given a location in a larger
- *          integer range
- * Params
- * x1 (int) - position in large integer range
- * sz (int) - size of integer range
- * Xs (double) - start of smaller range
- * Xe (double) - end of smaller range
- * Returns
- * (double) - the calculated scaled value
- */
-/*static double scaled(int x1, int sz, double Xs, double Xe)
-{
-    return ( ((double)x1 / (double)sz) * (Xe-Xs) ) + Xs;
-}*/
-
-/* ----------------------------------------------------------------------------
  * calculate_point
  * run the z = z^2 + c algorithm for the point provided to assertain if the
  * point is inside or outside of the mandelbrot set
@@ -521,6 +505,17 @@ void mandelbrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/
 /* ----------------------------------------------------------------------------
  * How to zoom in - (needs similar zoom_out)
  *
+ * The basic idea is to find where the mouse of pointing and convert that to a
+ * point in the current dataset before find new corner extents in the current
+ * dataset based on that new centre.
+ *
+ * Then scale the new corners based on a percentage factor to bring the corners
+ * in by some amount. For example a 10% factor will reduce pull in the corners 
+ * by 10% producing a new square that is 90% of the original.
+ *
+ * Finally check whether the new corners are still within the bounds of the 
+ * initial square when the program started and adjust accordingly.
+ *
  * 1	scale mouse pos PX,PY to the data
  * 	MX =	((PX / SW) * (XE - XS)) + XS
  * 	MY =	((PY / SH) * (YE - YS)) + YS
@@ -536,10 +531,10 @@ void mandelbrot_mpfr_c(  const unsigned int xsize,   /* width of screen/display/
  * 	YE =	YE + MY - CY
  *
  * 4	scale new square - get new corners factor is a percentage reduction (eg reduce by 10%)	
- * 	XS =	XS + ((XE - XS) / (FAC / 2)
- * 	YS =	XE - ((XE - XS) / (FAC / 2)
- * 	XE =	YS + ((YE - YS) / (FAC / 2)
- * 	YE =	YE - ((YE - YS) / (FAC / 2)
+ * 	XS =	XS + ((XE - XS) / (1-(FAC/100) / 2)
+ * 	YS =	XE - ((XE - XS) / (1-(FAC/100) / 2)
+ * 	XE =	YS + ((YE - YS) / (1-(FAC/100) / 2)
+ * 	YE =	YE - ((YE - YS) / (1-(FAC/100) / 2)
  *
  * 5	push square back into bound of x(-2, 1) y(-1.5, 1.5)
  */
@@ -570,17 +565,18 @@ void mpfr_zoom_in_via_mouse
   mpfr_zoom_in( screen_width, screen_height, zoom_factor);
 }
 
-void mpfr_zoom_in(   /*const double mouse_x, const double mouse_y,*/
-                     const unsigned int screen_width, const unsigned int screen_height,
+/* ----------------------------------------------------------------------------
+ */
+void mpfr_zoom_in(   const unsigned int screen_width, const unsigned int screen_height,
                      const unsigned int zoom_factor /* +ve int repr of percent */
                    )
 {
   printf("mpfr_zoom_in()\n");
   
-  printf("MX, MY ");
+  /*printf("MX, MY ");
   mpfr_out_str(stdout, 10, 10, MX, MPFR_RNDN); printf(", ");
   mpfr_out_str(stdout, 10, 10, MY, MPFR_RNDN); putchar('\n');
-  
+  */
   /* 2	find centre of existing square	
    * 	CX =	((XE - XS) / 2) + XS
    * 	CY =	((YE - YS) / 2) + YS
@@ -628,7 +624,7 @@ void mpfr_zoom_in(   /*const double mouse_x, const double mouse_y,*/
   */
 
   /* 4	scale new square - get new corners factor is a percentage reduction (eg reduce by 10%)	
-   * 	XS =	XS + ((XE - XS) / FAC )/ 2   FAC = zoom_fac/100
+   * 	XS =	XS + ((XE - XS) / FAC )/ 2   FAC = 1-(zoom_factor/100)
    * 	XE =	XE - ((XE - XS) / FAC )/ 2
    * 	YS =	YS + ((YE - YS) / FAC )/ 2
    * 	YE =	YE - ((YE - YS) / FAC )/ 2
@@ -638,9 +634,15 @@ void mpfr_zoom_in(   /*const double mouse_x, const double mouse_y,*/
 
   mpfr_mul_d(CX, Xe_Xs, (1.0-((double)zoom_factor/100.0))/2.0, MPFR_RNDN);
   mpfr_mul_d(CY, Ye_Ys, (1.0-((double)zoom_factor/100.0))/2.0, MPFR_RNDN);
-  //mpfr_div_d(CX, CX, 2.0, MPFR_RNDN);
-  //mpfr_div_d(CY, CY, 2.0, MPFR_RNDN);
+  //printf("zoom in factor = %f\n", (1.0-((double)zoom_factor/100.0))/2.0 );
   
+  /*printf("Xe_Xs = ");
+  mpfr_out_str(stdout, 10, 10, Xe_Xs, MPFR_RNDN); printf(", Ye_Ys = ");
+  mpfr_out_str(stdout, 10, 10, Ye_Ys, MPFR_RNDN); putchar('\n');
+  printf("CX = ");
+  mpfr_out_str(stdout, 10, 10, CX, MPFR_RNDN); printf(", CY = ");
+  mpfr_out_str(stdout, 10, 10, CY, MPFR_RNDN); putchar('\n');
+  */
   mpfr_add(Xs, Xs, CX, MPFR_RNDN);
   mpfr_sub(Xe, Xe, CX, MPFR_RNDN);
   mpfr_add(Ys, Ys, CY, MPFR_RNDN);
@@ -681,263 +683,114 @@ void mpfr_zoom_in(   /*const double mouse_x, const double mouse_y,*/
   }
   /**/
 }
-/* ----------------------------------------------------------------------------
- * original function - has problems 
- */
-void mpfr_zoom_in_old(   const double pX, /* x mouse pos in display */
-                         const double pY, /* y mouse pos in display */
-                         const unsigned int w,  /* width of display */
-                         const unsigned int h,  /* height of display */
-                         const unsigned int factor /* scaling factor */
-                        )
-{
-#ifdef TRACE
-    unsigned int w1, h1;
-#endif
-    mpfr_t lx, ly, TLx, TLy, BRx, BRy;
-
-    mpfr_inits2(PRECISION, lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
-
-    TRACE_DEBUGV("mpfr_zoom_in (in) disp %d x %d factor %d at %f x %f\n",w, h, factor, pX, pY);
-#ifdef TRACE
-    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
-#endif
-    TRACE_DEBUG("\n");
-
-    if (mpfr_cmp(Cx, Xe) >0 && mpfr_cmp(Cy, Ye) >0)
-    {
-      /* find the centre point of the data defined by the given mouse point location */
-    
-      /* scaled ( ((double)x1 / (double)sz) * (Xe-Xs) ) + Xs; */
-      /* double X0 = scaled(pX, xsz, Xs, Xe); */
-      mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
-      mpfr_mul_d(lx, lx, ((double)pX/(double)w), MPFR_RNDN);
-      mpfr_add(lx, lx, Xs, MPFR_RNDN);
-
-      /* double y0 = scaled(pY, ysz, Ys, Ye); */
-      mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
-      mpfr_mul_d(ly, ly, ((double)pY/(double)h), MPFR_RNDN);
-      mpfr_add(ly, ly, Ys, MPFR_RNDN);
-    }
-    else
-    {
-      /* use the pre-initialised centre point of the data */
-      mpfr_set(lx, Cx, MPFR_RNDN);
-      mpfr_set(ly, Cy, MPFR_RNDN);
-    }
-    
-    TRACE_DEBUG("scaled loc (mpfr)\n");
-#ifdef TRACE
-    mpfr_out_str(stdout, 10, 0, lx, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, ly, MPFR_RNDN); putchar('\n');
-#endif
-
-    /* find the corners surrounding the centre point as (lx,ly) */
-    
-    /* TLx = loc_x - abs((xe-xs)/factor) */
-    mpfr_sub(TLx, Xe, Xs, MPFR_RNDN);
-    mpfr_div_ui(TLx, TLx, factor, MPFR_RNDN);
-    mpfr_abs(TLx, TLx, MPFR_RNDN);
-    mpfr_sub(TLx, lx, TLx, MPFR_RNDN);
-
-    /* TLy = loc_y - abs((ye-ys)/factor) */
-    mpfr_sub(TLy, Ye, Ys, MPFR_RNDN);
-    mpfr_div_ui(TLy, TLy, factor, MPFR_RNDN);
-    mpfr_abs(TLy, TLy, MPFR_RNDN);
-    mpfr_sub(TLy, ly, TLy, MPFR_RNDN);
-
-    /* BRx = loc_x + abs((xe-xs)/factor) */
-    mpfr_sub(BRx, Xe, Xs, MPFR_RNDN);
-    mpfr_div_ui(BRx, BRx, factor, MPFR_RNDN);
-    mpfr_abs(BRx, BRx, MPFR_RNDN);
-    mpfr_add(BRx, lx, BRx, MPFR_RNDN);
-
-    /* BRy = loc_y + abs((ye-ys)/factor) */
-    mpfr_sub(BRy, Ye, Ys, MPFR_RNDN);
-    mpfr_div_ui(BRy, BRy, factor, MPFR_RNDN);
-    mpfr_abs(BRy, BRy, MPFR_RNDN);
-    mpfr_add(BRy, ly, BRy, MPFR_RNDN);
-
-    mpfr_set(Xs, TLx, MPFR_RNDN);
-    mpfr_set(Xe, BRx, MPFR_RNDN);
-    mpfr_set(Ys, TLy, MPFR_RNDN);
-    mpfr_set(Ye, BRy, MPFR_RNDN);
-
-    /* if Xs < -2.0 then offset = Xs- -2.0; Xs=-2.0; Xe=Xe-offset */
-    /*if (mpfr_cmp_d(Xs, -2.0) < 0) {
-      mpfr_sub_d(TLx, Xs, -2.0, MPFR_RNDN); // offset
-      mpfr_set_d(Xs, -2.0, MPFR_RNDN); // adjust Xs
-      mpfr_sub(Xe, Xe, TLx, MPFR_RNDN); // adjust Xe
-    }
-    /* if Xe > 1.0  then offset = Xe-  1.0; Xe= 1.0; Xs=Xs-offset */
-    /*if (mpfr_cmp_d(Xe, 1.0) > 0) {
-      mpfr_sub_d(TLx, Xe, 1.0, MPFR_RNDN); // offset
-      mpfr_set_d(Xe, 1.0, MPFR_RNDN); // adjust Xe
-      mpfr_sub(Xs, Xs, TLx, MPFR_RNDN); // adjust Xs
-    }
-    /* if Ys < -1.5 then offset = Ys- -1.5; Ys=-1.5; Ye=Ye-offset */
-    /*if (mpfr_cmp_d(Ys, -1.5) < 0) {
-      mpfr_sub_d(TLy, Ys, -1.5, MPFR_RNDN); // offset
-      mpfr_set_d(Ys, -1.5, MPFR_RNDN); // adjust Ys
-      mpfr_sub(Ye, Ye, TLy, MPFR_RNDN); // adjust Ye
-    }
-    /* if Ye > 1.5  then offset = Ye-  1.5; Ye= 1.5; Ys=Ys-offset */
-    /*if (mpfr_cmp_d(Ye, 1.5) > 0) {
-      mpfr_sub_d(TLy, Ye, 1.5, MPFR_RNDN); // offset
-      mpfr_set_d(Ye, 1.5, MPFR_RNDN); // adjust Ye
-      mpfr_sub(Ys, Ys, TLy, MPFR_RNDN); // adjust Ys
-    }
-    /* */
-    TRACE_DEBUG("mpfr_zoom_in (out) \n");
-#ifdef TRACE
-    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
-#endif
-    TRACE_DEBUG("\n");
-
-    zoom_level = zoom_level + 1;
-
-    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
-    mpfr_mul_ui(lx, lx, zoom_level*10*w, MPFR_RNDN);
-
-    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
-    mpfr_mul_ui(ly, ly, zoom_level*10*h, MPFR_RNDN);
-
-#ifdef TRACE
-    w1 = mpfr_get_ui(lx, MPFR_RNDN);
-    h1 = mpfr_get_ui(ly, MPFR_RNDN);
-#endif
-    TRACE_DEBUGV("display size: %d %d\n", w1, h1);
-
-    mpfr_clears(lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
-}
 
 /* ----------------------------------------------------------------------------
+ * How to zoom out
+ *
+ * Zooming out should be simpler that in if we disregard the mouse location.
+ *
+ * Using the current centre of the dataset push the corners out by the zoom
+ * factor (percentage) and then check for corners being out of bound of the 
+ * initial square.
+ *
+ * 1	scale new square - get new corners factor is a percentage increase (eg reduce by 10%)	
+ *
+ * XS = XS - ( ((XE-XS) / (FAC/100)) - (XE-XS) )/2 
+ * XE = XE + ( ((XE-XS) / (FAC/100)) - (XE-XS) )/2 
+ * YS = YS - ( ((YE-YS) / (FAC/100)) - (YE-XS) )/2 
+ * YE = YE + ( ((YE-YS) / (FAC/100)) - (YE-XS) )/2 
+ *
+ * 2	push square back into bound of x(-2, 1) y(-1.5, 1.5)
+ * 3	ensure we are still within initial dataset of x(-2, 1) y(-1.5, 1.5)
  */
-void mpfr_zoom_out(      const unsigned int pX, /* x mouse pos in display */
-                         const unsigned int pY, /* y mouse pos in display */
-                         const unsigned int w,  /* width of display */
-                         const unsigned int h,  /* height of display */
-                         const unsigned int factor /* scaling factor */
-                        )
+void mpfr_zoom_out( const unsigned int zoom_factor )
 {
-#ifdef TRACE
-    unsigned int w1, h1;
-#endif
-    mpfr_t lx, ly, TLx, TLy, BRx, BRy;
+  printf("mpfr_zoom_out()\n");
+  
+  mpfr_t CX, CY;
+  mpfr_inits2(PRECISION, CX, CY, (mpfr_ptr)NULL);
+  
+  /* 1	scale new square - get new corners factor is a percentage increase (eg reduce by 10%)	
+   *
+   * XS = XS - ( ((XE-XS) / (FAC/100)) - (XE-XS) )/2 
+   * XE = XE + ( ((XE-XS) / (FAC/100)) - (XE-XS) )/2 
+   * YS = YS - ( ((YE-YS) / (FAC/100)) - (YE-XS) )/2 
+   * YE = YE + ( ((YE-YS) / (FAC/100)) - (YE-XS) )/2 
+   */
+  mpfr_sub(Xe_Xs, Xe, Xs, MPFR_RNDN);
+  mpfr_sub(Ye_Ys, Ye, Ys, MPFR_RNDN);
+  
+  mpfr_div_d(CX, Xe_Xs, ((double)zoom_factor/100.0), MPFR_RNDN);
+  mpfr_div_d(CY, Ye_Ys, ((double)zoom_factor/100.0), MPFR_RNDN);
+  //printf("zoom out factor = %f\n", ((double)zoom_factor/100.0) );
+  
+  mpfr_sub(CX, CX, Xe_Xs, MPFR_RNDN);
+  mpfr_sub(CY, CY, Ye_Ys, MPFR_RNDN);
+  
+  mpfr_div_d(CX, CX, 2.0, MPFR_RNDN);
+  mpfr_div_d(CY, CY, 2.0, MPFR_RNDN);
+  
+  /*printf("Xe_Xs = ");
+  mpfr_out_str(stdout, 10, 10, Xe_Xs, MPFR_RNDN); printf(", Ye_Ys = ");
+  mpfr_out_str(stdout, 10, 10, Ye_Ys, MPFR_RNDN); putchar('\n');
+  printf("CX = ");
+  mpfr_out_str(stdout, 10, 10, CX, MPFR_RNDN); printf(", CY = ");
+  mpfr_out_str(stdout, 10, 10, CY, MPFR_RNDN); putchar('\n');
+  */
+  mpfr_sub(Xs, Xs, CX, MPFR_RNDN);
+  mpfr_add(Xe, Xe, CX, MPFR_RNDN);
+  mpfr_sub(Ys, Ys, CY, MPFR_RNDN);
+  mpfr_add(Ye, Ye, CY, MPFR_RNDN);
 
-    mpfr_inits2(PRECISION, lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
+  /*printf("4. scale new square Xs, Xe, Ys, Ye ");
+  mpfr_out_str(stdout, 10, 10, Xs, MPFR_RNDN); printf(", ");
+  mpfr_out_str(stdout, 10, 10, Xe, MPFR_RNDN); printf(", ");
+  mpfr_out_str(stdout, 10, 10, Ys, MPFR_RNDN); printf(", ");
+  mpfr_out_str(stdout, 10, 10, Ye, MPFR_RNDN); putchar('\n');
+  */
 
-    /* #def zoom_out(xs, xe, ys, ye, pos): # pos(x,y) window_size(x,y)
-    def zoom_out(self, pos): # pos(x,y) window_size(x,y)
-        #print("pos ", pos)*/
-
-    /*lx = self.scaled(pos[0], window_size, self.Xs, self.Xe)*/
-    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
-    mpfr_mul_d(lx, lx, ((double)pX/(double)w), MPFR_RNDN);
-    mpfr_add(lx, lx, Xs, MPFR_RNDN);
-
-    /*ly = self.scaled(pos[1], window_size, self.Ys, self.Ye)*/
-    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
-    mpfr_mul_d(ly, ly, ((double)pY/(double)h), MPFR_RNDN);
-    mpfr_add(ly, ly, Ys, MPFR_RNDN);
-
-    /*TLx = loc[0]-abs((self.Xe-self.Xs)*self.factor )*/
-    mpfr_sub(TLx, Xe, Xs, MPFR_RNDN);
-    mpfr_mul_ui(TLx, TLx, factor, MPFR_RNDN);
-    mpfr_abs(TLx, TLx, MPFR_RNDN);
-    mpfr_sub(TLx, lx, TLx, MPFR_RNDN);
-
-    /*TLy = loc[1]-abs((self.Ye-self.Ys)*self.factor )*/
-    mpfr_sub(TLy, Ye, Ys, MPFR_RNDN);
-    mpfr_mul_ui(TLy, TLy, factor, MPFR_RNDN);
-    mpfr_abs(TLy, TLy, MPFR_RNDN);
-    mpfr_sub(TLy, ly, TLy, MPFR_RNDN);
-
-    /*BRx = loc[0]+abs((self.Xe-self.Xs)*self.factor )*/
-    mpfr_sub(BRx, Xe, Xs, MPFR_RNDN);
-    mpfr_mul_ui(BRx, BRx, factor, MPFR_RNDN);
-    mpfr_abs(BRx, BRx, MPFR_RNDN);
-    mpfr_add(BRx, lx, BRx, MPFR_RNDN);
-
-    /*BRy = loc[1]+abs((self.Ye-self.Ys)*self.factor )*/
-    mpfr_sub(BRy, Ye, Ys, MPFR_RNDN);
-    mpfr_mul_ui(BRy, BRy, factor, MPFR_RNDN);
-    mpfr_abs(BRy, BRy, MPFR_RNDN);
-    mpfr_add(BRy, ly, BRy, MPFR_RNDN);
-
-    mpfr_set(Xs, TLx, MPFR_RNDN);
-    mpfr_set(Xe, BRx, MPFR_RNDN);
-    mpfr_set(Ys, TLy, MPFR_RNDN);
-    mpfr_set(Ye, BRy, MPFR_RNDN);
-
-    /* if Xs < -2.0 then offset = Xs- -2.0; Xs=-2.0; Xe=Xe-offset */
-    if (mpfr_cmp_d(Xs, -2.0) < 0) {
-      mpfr_sub_d(TLx, Xs, -2.0, MPFR_RNDN); // offset
+  /* 2	push square back into bound of x(-2, 1) y(-1.5, 1.5) 
+   *    assumes dataset is not bigger that initial set 
+   */
+  /* if Xs < -2.0 then offset = Xs- -2.0; Xs=-2.0; Xe=Xe-offset */
+  if (mpfr_cmp_d(Xs, -2.0) < 0) {
+      mpfr_sub_d(CX, Xs, -2.0, MPFR_RNDN); // offset
       mpfr_set_d(Xs, -2.0, MPFR_RNDN); // adjust Xs
-      mpfr_sub(Xe, Xe, TLx, MPFR_RNDN); // adjust Xe
-    }
-    /* if Xe > 1.0  then offset = Xe-  1.0; Xe= 1.0; Xs=Xs-offset */
-    if (mpfr_cmp_d(Xe, 1.0) > 0) {
-      mpfr_sub_d(TLx, Xe, 1.0, MPFR_RNDN); // offset
+      mpfr_sub(Xe, Xe, CX, MPFR_RNDN); // adjust Xe
+  }
+  /* if Xe > 1.0  then offset = Xe-  1.0; Xe= 1.0; Xs=Xs-offset */
+  if (mpfr_cmp_d(Xe, 1.0) > 0) {
+      mpfr_sub_d(CX, Xe, 1.0, MPFR_RNDN); // offset
       mpfr_set_d(Xe, 1.0, MPFR_RNDN); // adjust Xe
-      mpfr_sub(Xs, Xs, TLx, MPFR_RNDN); // adjust Xs
-    }
-    /* if Ys < -1.5 then offset = Ys- -1.5; Ys=-1.5; Ye=Ye-offset */
-    if (mpfr_cmp_d(Ys, -1.5) < 0) {
-      mpfr_sub_d(TLy, Ys, -1.5, MPFR_RNDN); // offset
+      mpfr_sub(Xs, Xs, CX, MPFR_RNDN); // adjust Xs
+  }
+  /* if Ys < -1.5 then offset = Ys- -1.5; Ys=-1.5; Ye=Ye-offset */
+  if (mpfr_cmp_d(Ys, -1.5) < 0) {
+      mpfr_sub_d(CY, Ys, -1.5, MPFR_RNDN); // offset
       mpfr_set_d(Ys, -1.5, MPFR_RNDN); // adjust Ys
-      mpfr_sub(Ye, Ye, TLy, MPFR_RNDN); // adjust Ye
-    }
-    /* if Ye > 1.5  then offset = Ye-  1.5; Ye= 1.5; Ys=Ys-offset */
-    if (mpfr_cmp_d(Ye, 1.5) > 0) {
-      mpfr_sub_d(TLy, Ye, 1.5, MPFR_RNDN); // offset
+      mpfr_sub(Ye, Ye, CY, MPFR_RNDN); // adjust Ye
+  }
+  /* if Ye > 1.5  then offset = Ye-  1.5; Ye= 1.5; Ys=Ys-offset */
+  if (mpfr_cmp_d(Ye, 1.5) > 0) {
+      mpfr_sub_d(CY, Ye, 1.5, MPFR_RNDN); // offset
       mpfr_set_d(Ye, 1.5, MPFR_RNDN); // adjust Ye
-      mpfr_sub(Ys, Ys, TLy, MPFR_RNDN); // adjust Ys
-    }
-    /*# if we start to hit the upper bounds then adjust the centre
-    if TLx < X1 or BRx > X2 or TLy < Y1 or BRy > Y2:*/
-    if ((mpfr_cmp_d(Xs, -2.0) < 0) && (mpfr_cmp_d(Xe, 1.0) > 0) &&
-        (mpfr_cmp_d(Ys, -1.5) < 0) && (mpfr_cmp_d(Ye, 1.5) > 0))
-    {
-        mpfr_set_d(Xs, -2.0, MPFR_RNDN);
-        mpfr_set_d(Xe,  1.0, MPFR_RNDN);
-        mpfr_set_d(Ys, -1.5, MPFR_RNDN);
-        mpfr_set_d(Ye,  1.5, MPFR_RNDN);
-    }
-    /*  #print("new coords ", TLx, BRx, TLy, BRy)
-        #return TLx, BRx, TLy, BRy
-        self.Xs, self.Xe, self.Ys, self.Ye = TLx, BRx, TLy, BRy
-    */
-    TRACE_DEBUG("mpfr_zoom_out (out) \n");
-#ifdef TRACE
-    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
-#endif
-    TRACE_DEBUG("\n");
-
-    zoom_level = zoom_level - 1;
-
-    mpfr_sub(lx, Xe, Xs, MPFR_RNDN);
-    mpfr_mul_ui(lx, lx, zoom_level*10*w, MPFR_RNDN);
-
-    mpfr_sub(ly, Ye, Ys, MPFR_RNDN);
-    mpfr_mul_ui(ly, ly, zoom_level*10*h, MPFR_RNDN);
-
-#ifdef TRACE
-    w1 = mpfr_get_ui(lx, MPFR_RNDN);
-    h1 = mpfr_get_ui(ly, MPFR_RNDN);
-#endif
-    TRACE_DEBUGV("display size: %d %d\n", w1, h1);
-
-    mpfr_clears(lx, ly, TLx, TLy, BRx, BRy, (mpfr_ptr)NULL);
+      mpfr_sub(Ys, Ys, CY, MPFR_RNDN); // adjust Ys
+  }
+  
+  /* 3	now check all extents again and reduce to initial values 
+   */
+  if (mpfr_cmp_d(Xs, -2.0) < 0) {
+      mpfr_set_d(Xs, -2.0, MPFR_RNDN); // adjust Xs
+  }
+  if (mpfr_cmp_d(Xe, 1.0) > 0) {
+      mpfr_set_d(Xe, 1.0, MPFR_RNDN); // adjust Xe
+  }
+  if (mpfr_cmp_d(Ys, -1.5) < 0) {
+      mpfr_set_d(Ys, -1.5, MPFR_RNDN); // adjust Ys
+  }
+  if (mpfr_cmp_d(Ye, 1.5) > 0) {
+      mpfr_set_d(Ye, 1.5, MPFR_RNDN); // adjust Ye
+  }
 }
 
 #ifdef USES_THREADS

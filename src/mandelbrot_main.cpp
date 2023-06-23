@@ -141,7 +141,7 @@ static void write_image(unsigned int **rgb)
   sprintf(idx, "%04d", framecount);
   strcat(filename, idx);
   strcat(filename, ".bmp");
-  int res = SOIL_save_image(filename, SOIL_SAVE_TYPE_BMP, ScreenWidth, ScreenHeight, 3, image);
+  (void)SOIL_save_image(filename, SOIL_SAVE_TYPE_BMP, ScreenWidth, ScreenHeight, 3, image);
   printf("Soil save image = %s\n", filename);
   
   free(filename);
@@ -177,21 +177,17 @@ static void createTextureFromData()
 
 // ----------------------------------------------------------------------------
 //
-static void createTextureFromFile()
+/*static void createTextureFromFile()
 {
   int width, height;
   unsigned char* image = SOIL_load_image("texture.png", &width, &height, 0, SOIL_LOAD_RGB);
 
   glGenTextures(1, &texture);
   glBindTexture(GL_TEXTURE_2D, texture);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
   glGenerateMipmap(GL_TEXTURE_2D);
   SOIL_free_image_data(image);
-}
+}*/
 
 // ----------------------------------------------------------------------------
 //
@@ -226,8 +222,9 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
     double pX, pY;
     glfwGetCursorPos(window, &pX, &pY);
     printf("Cursor Pos %f, %f factor %d  screen %d\n", pX, pY, factor, ScreenWidth);
-    mpfr_zoom_out(pX, pY, ScreenWidth, ScreenHeight, factor);
+    mpfr_zoom_out(/*pX, pY, ScreenWidth, ScreenHeight,*/ factor);
     framecount--;
+    if (framecount < 0) { framecount = 0; }
     createTextureFromData();
     shaderProgram = mainshaderProgram;
   }
@@ -251,8 +248,9 @@ void processInput(GLFWwindow *window)
      double pX, pY;
      glfwGetCursorPos(window, &pX, &pY);
      printf("Cursor Pos %f, %f factor %d  screen %d\n", pX, pY, factor, ScreenWidth);
-     mpfr_zoom_out(pX, pY, ScreenWidth, ScreenHeight, factor);
+     mpfr_zoom_out(/*pX, pY, ScreenWidth, ScreenHeight,*/ factor);
      framecount--;
+     if (framecount < 0) { framecount = 0; }
      createTextureFromData();
      shaderProgram = mainshaderProgram;
    }
@@ -331,7 +329,7 @@ static void usage()
 //
 static int run_shader(const char* vert_shader, const char* frag_shader, int width, int height)
 {
-    int ftt = 0;
+    //int ftt = 0;
     //auto start_time = std::chrono::high_resolution_clock::now();
 
     GLFWwindow *window;
@@ -449,9 +447,8 @@ enum { ALGO_FLOAT, ALGO_MPFR, ALGO_CENTRE, ALGO_THREAD };
 //
 int main(int argc, char **argv)
 {
-  int zoom = 0;
-  //int factor = 0;
-  int algo = ALGO_THREAD;
+  //int zoom = 0;
+  //int algo = ALGO_THREAD;
   int width = ScreenWidth;
   int height = ScreenHeight;
   int index = 0;
@@ -464,8 +461,8 @@ int main(int argc, char **argv)
         usage();
         break;
       case 'z': // zoom 
-        zoom = atoi(optarg);
         printf("WARNING: zoom is yet to be implemented.");
+        //zoom = atoi(optarg);
         break;
       case 'r': // real centre - string rep of a float
         real = optarg;
@@ -474,7 +471,8 @@ int main(int argc, char **argv)
         imag = optarg;
         break;
       case 'a': // algo
-        if (strcmp(optarg, "float") == 0) {
+        printf("WARNING: algo is yet to be implemented.");
+        /*if (strcmp(optarg, "float") == 0) {
           algo = ALGO_FLOAT; 
         }
         else if (strcmp(optarg, "mpfr") == 0) {
@@ -485,7 +483,7 @@ int main(int argc, char **argv)
         }
         else if (strcmp(optarg, "thread") == 0) {
           algo = ALGO_THREAD; 
-        }
+        }*/
         break;
       case 'd': // display size
         width = atoi(optarg);
