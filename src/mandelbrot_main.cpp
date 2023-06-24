@@ -37,6 +37,7 @@ static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
     ScreenWidth = width;
     ScreenHeight = height;
+    printf("ScreenWidth %d ScreenHeight %d\n", width, height);
     int uniform_Mouse = glGetUniformLocation(shaderProgram, "mouse");
     int uniform_Scale = glGetUniformLocation(shaderProgram, "scale");
     glUniform2f(uniform_Mouse, xpos, ypos);
@@ -156,8 +157,12 @@ static void createTextureFromData()
   unsigned int *pixels = NULL;
   pixels = (unsigned int*)calloc((size_t)(ScreenWidth * ScreenHeight * 3), sizeof(unsigned int));
 
+#ifdef USES_THREADS
   mandelbrot_mpfr_thread_c(ScreenWidth, ScreenHeight, 1000, &pixels);
-
+#else
+  mandelbrot_mpfr_c(ScreenWidth, ScreenHeight, 1000, &pixels);
+#endif
+  
   write_image(&pixels);
   unsigned char* image = NULL;
   image = (unsigned char*)calloc((size_t)(ScreenWidth * ScreenHeight * 3), sizeof(unsigned char));
@@ -327,14 +332,14 @@ static void usage()
 
 // ----------------------------------------------------------------------------
 //
-static int run_shader(const char* vert_shader, const char* frag_shader, int width, int height)
+static int run_shader(const char* vert_shader, const char* frag_shader)//, int width, int height)
 {
     //int ftt = 0;
     //auto start_time = std::chrono::high_resolution_clock::now();
 
     GLFWwindow *window;
-    createWindow(&window, width, height);
-
+    createWindow(&window, ScreenWidth, ScreenHeight);
+    int width, height;
     //ScreenWidth = width;
     //ScreenHeight = height;
     
@@ -449,8 +454,8 @@ int main(int argc, char **argv)
 {
   //int zoom = 0;
   //int algo = ALGO_THREAD;
-  int width = ScreenWidth;
-  int height = ScreenHeight;
+  //int width = ScreenWidth;
+  //int height = ScreenHeight;
   int index = 0;
   int c = 0;
   while((c = getopt(argc, argv, "hz:r:i:a:d:f:")) != -1)
@@ -486,8 +491,10 @@ int main(int argc, char **argv)
         }*/
         break;
       case 'd': // display size
-        width = atoi(optarg);
-        height = width;
+        ScreenWidth = atoi(optarg);
+        ScreenHeight = ScreenWidth;
+        if (ScreenWidth < 128) { printf("Minimum display size is 128.\n"); return 0; }
+        if (ScreenWidth % 16 != 0) { printf("Display size should be factor of 16.\n"); return 0; }
         break;
       case 'f': // zoom step factor
         factor = atoi(optarg);
@@ -543,7 +550,7 @@ int main(int argc, char **argv)
   printf("real = %s\n",real);
   printf("imag = %s\n",imag);
   
-  run_shader(vert, frag, width, height);
+  run_shader(vert, frag);//, ScreenWidth, ScreenHeight);
   
   free(vert);
   free(frag);

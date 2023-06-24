@@ -29,10 +29,10 @@ int main(int argc, char *argv[])
     bytearray = (unsigned int*)calloc((size_t)(wsize * hsize * 3), sizeof(unsigned int));
 
     /* call mandelbrot_bytearray */
-    printf("Testing mandelbrot_bytearray_c\n");
-    mandelbrot_bytearray_c(wsize, hsize, maxiter, -2.0, 1.0, -1.5, 1.5, &bytearray);
+    //printf("Testing mandelbrot_bytearray_c\n");
+    //mandelbrot_bytearray_c(wsize, hsize, maxiter, -2.0, 1.0, -1.5, 1.5, &bytearray);
 
-    for (int i=0; i<12; i++) { printf("%d\n", bytearray[i]); }
+    //for (int i=0; i<12; i++) { printf("%d\n", bytearray[i]); }
 
     /* call mandelbrot_mpfr_c */
     printf("Testing mandelbrot_mpfr_c\n");
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
     mpfr_zoom_out(/*4, 4, wsize, hsize,*/ factor);
     mandelbrot_mpfr_c(wsize, hsize, maxiter, &bytearray);
 
-    printf("Testing mandelbrot_mpfr_slice_c - slice 0\n");
+    /*printf("Testing mandelbrot_mpfr_slice_c - slice 0\n");
     mandelbrot_mpfr_slice_c(wsize, hsize, 4, 0, maxiter, &bytearray);
 
     unsigned int i = 0;
@@ -55,8 +55,8 @@ int main(int argc, char *argv[])
     {
         if (bytearray[i] > 255) { printf("%d ", bytearray[i]); }
     }
-
-    printf("Testing mandelbrot_mpfr_slice_c - slice 1\n");
+    */
+    /*printf("Testing mandelbrot_mpfr_slice_c - slice 1\n");
     mandelbrot_mpfr_slice_c(wsize, hsize, 4, 1, maxiter, &bytearray);
 
     printf("Testing bytearray 1\n");
@@ -82,15 +82,15 @@ int main(int argc, char *argv[])
     {
         if (bytearray[i] > 255) { printf("%d ", bytearray[i]); }
     }
-    
-#ifdef USES_THREADS
+    */
+//#ifdef USES_THREADS
     printf("Testing mandelbrot_mpfr_thread_c\n");
     initialize_c("-2.0", "1.0", "-1.5", "1.5", "0.0", "0.0");
     mandelbrot_mpfr_thread_c(wsize, hsize, maxiter, &bytearray);
 
     printf("Testing mpfr_zoom_in\n");
     mpfr_zoom_in_via_mouse(4, 4, wsize, hsize, factor);
-#endif
+//#endif
     
     printf("Testing free_mpfr_mem_c\n");
     free_mpfr_mem_c();

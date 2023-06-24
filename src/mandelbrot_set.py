@@ -12,7 +12,6 @@ import sys
 import getopt
 import functools
 import threading
-#import multiprocessing as mp
 
 try:
     import mandelbrot
@@ -68,210 +67,6 @@ class PyGameWindow:
         return self.windowsize
 
 
-class mandelbrot_python_float:
-    """class to generate the mandelbrot set using standard 64bit float arithmetic"""
-    def __init__(self, pgwin):
-        """setup some class level data"""
-        self.Xs = X1 #-2.0
-        self.Xe = X2 #1.0
-        self.Ys = Y1 #-1.5
-        self.Ye = Y2 #1.5
-        self.factor = 10
-        self.zoom = 0
-        self.maxiter = 1000
-        self.pgwin = pgwin
-        self.centre = {'r': -0.5, 'i': 0.0} # not used in this version
-
-
-    @classmethod
-    def _scaled(cls, x, sz, s, e):
-        """return the scaled value of a given axis in the mandelbrot set data
-           corresponding to the a point on the same axis on the display window."""
-        return ( (float(x)/float(sz)) * (e-s) ) + s
-
-
-    def scaled_pos(self, pos):
-        """return the position in the mandelbrot set data corresponding
-           to a given location in the display window."""
-        sz = self.pgwin.winsize()
-        loc = (self._scaled(pos[0], sz, self.Xs, self.Xe), self._scaled(pos[1], sz, self.Ys, self.Ye))
-        return {'r': loc[0], 'i': loc[1]}
-
-
-    def reset(self):
-        """reset the bounds of the mandelbrot set to the starting point"""
-        self.zoom = 0
-        self.Xs = X1 #-2.0
-        self.Xe = X2 #1.0
-        self.Ys = Y1 #-1.5
-        self.Ye = Y2 #1.5
-
-
-    def zoom_in(self, pos):
-        """zoom in by self.factor at position pos returning new bounds
-           of the mandelbrot set to calculate."""
-        self.zoom +=1
-        sz = self.pgwin.winsize()
-        loc = (self._scaled(pos[0], sz, self.Xs, self.Xe), self._scaled(pos[1], sz, self.Ys, self.Ye))
-        self.centre = {'r': loc[0], 'i': loc[1]}
-
-        print("scaled loc ", loc)
-        TLx = loc[0]-abs((self.Xe-self.Xs)/self.factor)
-        TLy = loc[1]-abs((self.Ye-self.Ys)/self.factor)
-        BRx = loc[0]+abs((self.Xe-self.Xs)/self.factor)
-        BRy = loc[1]+abs((self.Ye-self.Ys)/self.factor)
-        print("new coords %2.9f %2.9f %2.9f %2.9f" % ( TLx, BRx, TLy, BRy))
-
-        self.Xs, self.Xe, self.Ys, self.Ye = TLx, BRx, TLy, BRy
-
-
-    def zoom_out(self, pos):
-        """zoom out by self.factor at position pos, returning either new
-           bounds or the initial bounds if it looks like we are going to
-           overshoot the initial conditions"""
-        self.zoom -=1
-        sz = self.pgwin.winsize()
-        loc = (self._scaled(pos[0], sz, self.Xs, self.Xe), self._scaled(pos[1], sz, self.Ys, self.Ye))
-        self.centre = {'r': loc[0], 'i': loc[1]}
-
-        TLx = loc[0]-abs((self.Xe-self.Xs)*self.factor )
-        TLy = loc[1]-abs((self.Ye-self.Ys)*self.factor )
-        BRx = loc[0]+abs((self.Xe-self.Xs)*self.factor )
-        BRy = loc[1]+abs((self.Ye-self.Ys)*self.factor )
-
-        # if we start to hit the upper bounds then adjust the centre
-        if TLx < X1 and BRx > X2 and TLy < Y1 and BRy > Y2:
-            #TLx, BRx, TLy, BRy = X1, X2, Y1, Y2
-            self.reset()
-        else:
-            self.Xs, self.Xe, self.Ys, self.Ye = TLx, BRx, TLy, BRy
-
-
-    @timer
-    def draw_plot(self):
-        """generate a mandelbrot set for given bounds and display it in the pygame window"""
-        sz = self.pgwin.winsize()
-        frame = bytearray(mandelbrot.float64(sz, sz, self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
-
-        surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
-
-        self.pgwin.surface().blit(surf, (0,0))
-
-        pygame.display.update()
-
-
-class mandelbrot_python_float_centre(mandelbrot_python_float):
-    """a variant of the previous class but"""
-    def __init__(self, pgwin):
-        """initialize class data"""
-        super().__init__(pgwin)
-        #self.Xs = X1 #-2.0
-        #self.Xe = X2 #1.0
-        #self.Ys = Y1 #-1.5
-        #self.Ye = Y2 #1.5
-        self.factor = 6
-        #self.zoom = 1
-        #self.maxiter = 1000
-        #self.pgwin = pgwin
-        self._centre = {'r': -0.5, 'i': 0.0}
-
-    @property
-    def centre(self):
-        """return the centre value"""
-        return self._centre
-
-    @centre.setter
-    def centre(self, value):
-        """set the centre value"""
-        self._centre = value
-
-
-    def _scaledX(self, x):
-        """return the scaled X value"""
-        return ( (float(x)/float( self.pgwin.winsize() )) * (self.Xe - self.Xs) ) + self.Xs
-
-
-    def _scaledY(self, y):
-        """return the scaled Y value"""
-        return ( (float(y)/float( self.pgwin.winsize() )) * (self.Ye - self.Ys) ) + self.Ys
-
-
-    def scaled_pos(self, pos):
-        """return a scaled position"""
-        loc = (self._scaledX(pos[0]), self._scaledY(pos[1]))
-        return {'r': loc[0], 'i': loc[1]}
-
-
-    def create_corners(self):
-        """create some corner values based on the current centre value"""
-        offset = 1.0 / (math.pow(self.factor, self.zoom))
-        self.Xs = self._centre['r'] - offset
-        self.Xe = self._centre['r'] + offset
-        self.Ys = self._centre['i'] - offset
-        self.Ye = self._centre['i'] + offset
-        if self.Xs < X1 and self.Xe > X2 and self.Ys < Y1 and self.Ye > Y2:
-            #TLx, BRx, TLy, BRy = X1, X2, Y1, Y2
-            self.reset()
-        print("centre ",self._centre, "offset ",offset)
-        print("corners ",self.Xs, self.Xe, self.Ys, self.Ye)
-
-
-    def reset(self):
-        """reset data back to the initial conditions"""
-        self._centre = {'r': -0.5, 'i': 0.0}
-        self.zoom = 0
-        self.Xs, self.Xe, self.Ys, self.Ye = X1, X2, Y1, Y2
-
-
-    def zoom_in(self, pos):
-        """zoom in by generating new centre and corner values"""
-        self._centre = {'r': self._scaledX(pos[0]), 'i': self._scaledY(pos[1])}
-        self.zoom +=1
-        print("zoom in ", self.zoom)
-        self.create_corners()
-
-
-    def zoom_out(self, pos):
-        """zoom out by generating new centre and corner values"""
-        self.zoom -=1
-        print("zoom out ", self.zoom)
-        self.create_corners()
-        #if self._zoom <= 0:
-        #    self.reset()
-        #    print("zoom out ", self._zoom)
-        #else:
-        #    print("zoom out ", self._zoom)
-        #    self.create_corners()
-
-    @timer
-    def draw_plot(self):
-        """draw the mandelbrot set, currently not threaded"""
-        #x = threading.Thread(target=self.threaded_draw_plot)
-        #x.start()
-        self.threaded_draw_plot()
-
-    @timer
-    def threaded_draw_plot(self):
-        """worker function to actually generate the mandelbrot set data and display it"""
-        sz = self.pgwin.winsize()
-        frame = bytearray(mandelbrot.float64(sz, sz, self.maxiter, self.Xs, self.Xe, self.Ys, self.Ye))
-
-        surf = pygame.image.frombuffer(frame, (sz,sz), 'RGB')
-
-        self.pgwin.surface().blit(surf, (0,0))
-
-        pygame.display.update()
-
-"""
-        class BigFloat:
-            def __init__(self, valstr="0", ndigits=1, exp=0):
-                self.valstr = valstr # string repr of number without exponent or decimal point
-                self.ndigits = ndigits # number of digits in the valstr
-                self.exp = exp # the exponent part of the number
-
-
-"""
-
 class mpfr_c:
     """Interface class for accessing the C code module methods that calculate the mandelbrot set"""
     def __init__(self, Cx=None, Cy=None):
@@ -287,13 +82,17 @@ class mpfr_c:
         else:
             mandelbrot.init(self.Xs, self.Xe, self.Ys, self.Ye, "99.9", "99.9")
 
+    def zoom_in_via_mouse(self, px, py, sz, sz1, factor):
+        """call the zoom in method of the C module"""
+        mandelbrot.zoom_in_via_mouse(px, py, sz, sz1, factor)
+
     def zoom_in(self, px, py, sz, sz1, factor):
         """call the zoom in method of the C module"""
-        mandelbrot.zoom_in(px, py, sz, sz, factor)
+        mandelbrot.zoom_in(sz, sz1, factor)
 
-    def zoom_out(self, px, py, sz, sz1, factor):
+    def zoom_out(self, factor):
         """call the zoom out method of the C module"""
-        mandelbrot.zoom_out(px, py, sz, sz, factor)
+        mandelbrot.zoom_out(factor)
 
     @timer
     def slice_set(self, sz, slices, slice, maxiter):
@@ -324,7 +123,7 @@ class mandelbrot_c_mpfr:
         self.Xe = repr(X2)
         self.Ys = repr(Y1)
         self.Ye = repr(Y2)
-        self.factor = 5 #10
+        self.factor = 80 #5 #10
         self.zoom = 1
         self.maxiter = 1000
         self.pgwin = pgwin
@@ -356,24 +155,20 @@ class mandelbrot_c_mpfr:
         self.Xe = repr(X2)
         self.Ys = repr(Y1)
         self.Ye = repr(Y2)
-        #xs = repr(X1)
-        #xe = repr(X2)
-        #ys = repr(Y1)
-        #ye = repr(Y2)
 
 
     def zoom_in(self, pos):
         """zoom in the data set"""
         self.zoom +=1
         #mandelbrot.mandelbrot_zoom_in(pos[0], pos[1], self.sz, self.sz, self.factor)
-        self.mpfr.zoom_in(pos[0], pos[1], self.sz, self.sz, self.factor)
+        self.mpfr.zoom_in_via_mouse(pos[0], pos[1], self.sz, self.sz, self.factor)
 
 
     def zoom_out(self, pos):
         """zoom out the data set"""
         self.zoom -=1
         #mandelbrot.mandelbrot_zoom_out(int(pos[0]), int(pos[1]), self.sz, self.sz, self.factor)
-        self.mpfr.zoom_out(int(pos[0]), int(pos[1]), self.sz, self.sz, self.factor)
+        self.mpfr.zoom_out(self.factor)
 
 
     def draw_plot(self):
@@ -395,27 +190,6 @@ class mandelbrot_c_mpfr:
         NEED TO LOOK INTO THREADING IN THE C CODE !!
 
         """
-        #slices = int(mp.cpu_count()) # should be 2* num cpu cores, any more gives negligible benefit
-        #params = []
-        #for slice in range(slices):
-        #    params.append((self.sz, slices, slice, self.maxiter))
-
-        #pool = mp.Pool(processes=slices)
-        #d = pool.starmap(self.mpfr.slice_set, params)
-        #print("pool complete")
-
-        #for slice in range(slices):
-        #    frame = bytearray(mandelbrot.mandelbrot_mpfr_slice(self.sz, self.sz, slices, slice, self.maxiter))
-
-        #slice = 0
-        #for slice, frame in d:
-        #    print(slice, len(frame), self.sz, int(self.sz / slices), int(slice * self.sz/slices))
-        #    #frame = bytearray(frame_raw)
-        #    surf = pygame.image.frombuffer(frame, (self.sz, int(self.sz / slices)), 'RGB')
-        #    self.pgwin.surface().blit(surf, (0, int(slice * self.sz/slices)))
-        #    slice += 1
-        #    pygame.display.update()
-        #    self.pgwin.clock().tick(20)
 
 
 class mandelbrot_c_mpfr_thread(mandelbrot_c_mpfr):
@@ -433,15 +207,6 @@ class mandelbrot_c_mpfr_thread(mandelbrot_c_mpfr):
         self.pgwin.surface().blit(surf, (0,0))
         pygame.display.update()
 
-
-
-def slice_the_set(sz, slices, slice, maxiter):
-    """use a slicing method to chop up the mandelbrot set data
-       Note: Not Currently Used"""
-    mandelbrot.reset("-2.0", "1.0", "-1.5", "1.5")
-    print("slice the set ",sz, slices, slice, maxiter)
-    frame = bytearray(mandelbrot.mpfr_slice(sz, sz, slices, slice, maxiter))
-    return (slice, frame)
 
 
 def display_help():
@@ -549,28 +314,8 @@ def main_mpfr_thread(pgwin, options):
     Cx = options['real']
     Cy = options['imag']
     mand = mandelbrot_c_mpfr_thread(pgwin, Cx, Cy)
-    #mand.draw_plot()
     event_loop(mand, pgwin)
     mandelbrot.tidyup()
-
-
-def main_python(pgwin, options):
-    """run using the standard python floats"""
-    mand = mandelbrot_python_float(pgwin)
-    #mand.draw_plot()
-    event_loop(mand, pgwin)
-
-
-def main_python_centre(pgwin, options):
-    """run the centred version"""
-    mand = mandelbrot_python_float_centre(pgwin)
-    if 'real' in options and 'imag' in options:
-        if options['real'] is not None and options['imag'] is not None:
-            mand.centre = {'r': float(options['real']), 'i': float(options['imag'])}
-            mand.zoom = options['zoom']
-            mand.create_corners()
-    #mand.draw_plot()
-    event_loop(mand, pgwin)
 
 
 def usage():
@@ -581,7 +326,7 @@ def usage():
     print("   -r  real value of point to zoom in to")
     print("   -i  imaginary value of point to zoom in to")
     print("   -d  display size (assumes a square)")
-    print("   -a  which algorithm (float, centre, mpfr, thread)")
+    print("   -a  which algorithm (mpfr, thread)")
     print("   -f  zoom factor")
 
 
@@ -630,7 +375,7 @@ def getOptions(options):
             #print("WARNING: option -imag is still to be implemented")
 
         elif o == "-a" or o == "-algo":
-            if a in ['float', 'mpfr', 'centre', 'thread']:
+            if a in [ 'mpfr', 'thread' ]:
                 options['algo'] = a
             else:
                 print("\nERROR: invalid value for the -algo option\n")
@@ -656,19 +401,12 @@ def getOptions(options):
 
 def main(options):
     """main method to initiate the program"""
-    #mp.set_start_method('spawn')
 
     display_help()
 
     pygwin = PyGameWindow(options['disp'])
 
-    if options['algo'] == "float":
-        main_python(pygwin, options)
-
-    if options['algo'] == "centre":
-        main_python_centre(pygwin, options)
-
-    elif options['algo'] == 'mpfr':
+    if options['algo'] == 'mpfr':
         main_mpfr(pygwin, options)
 
     elif options['algo'] == 'thread':

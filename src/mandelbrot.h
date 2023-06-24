@@ -8,16 +8,6 @@ extern "C" {
 /* ----------------------------------------------------------------------------
  * Header
  */
-void mandelbrot_bytearray_c( 
-                const unsigned int wsize,   /* width of screen/display/window */
-                const unsigned int hsize,   /* height of screen/display/window */
-                const unsigned int maxiter, /* max iterations before escape */
-                const double Xs, /* string repr of mpfr_t for X top left */
-                const double Xe, /* string repr of mpfr_t for X top right */
-                const double Ys, /* string repr of mpfr_t for Y bottom left */
-                const double Ye, /* string repr of mpfr_t for Y bottom right */
-                unsigned int **bytearray /* reference/pointer to result list of color values*/
-               );
 
 void mandelbrot_mpfr_c( 
                 const unsigned int xsize,   /* width of screen/display/window */
@@ -26,23 +16,12 @@ void mandelbrot_mpfr_c(
                 unsigned int **bytearray /* reference/pointer to result list of color values*/
                );
 
-void mandelbrot_mpfr_slice_c( 
-                const unsigned int xsize,   /* width of screen/display/window */
-                const unsigned int ysize,   /* height of screen/display/window */
-                const unsigned int nslice,  /* number of slices */
-                const unsigned int slice,   /* which slice (range 0 -> nslice-1) */
-                const unsigned int maxiter, /* max iterations before escape */
-                unsigned int **bytearray /* reference/pointer to result list of color values*/
-               );
-
-#ifdef USES_THREADS
 void mandelbrot_mpfr_thread_c( 
                 const unsigned int xsize,   /* width of screen/display/window */
                 const unsigned int ysize,   /* height of screen/display/window */
                 const unsigned int maxiter, /* max iterations before escape */
                 unsigned int **bytearray /* reference/pointer to result list of color values*/
                );
-#endif
 
 void mpfr_zoom_in_via_mouse( 
                 const double mouse_x, /* x mouse pos in display */
