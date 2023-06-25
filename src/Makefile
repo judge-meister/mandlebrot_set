@@ -101,7 +101,8 @@ pybind11: $(SHARED_LIB)
 
 
 # -----------------------------------------------------------------------------
-main.a: mandelbrot_main.o glad.o
+OBJS = Shader.o Window.o MandelbrotAdapter.o mandelbrot_main.o glad.o
+main.a: $(OBJS)
 	ar -r main.a $^
 
 mandelbrot_main: main.a $(SHARED_LIB)
@@ -109,7 +110,7 @@ mandelbrot_main: main.a $(SHARED_LIB)
 	    -lglfw -lGL -lSOIL -lX11 -lpthread -lXrandr -lXi -ldl -Wl,-rpath=./
 
 clean_mandelbrot_main:
-	-$(RM) glad.o mandelbrot_main.o mandelbrot_main main.a
+	-$(RM) $(OBJS) mandelbrot_main main.a
 
 
 # -----------------------------------------------------------------------------

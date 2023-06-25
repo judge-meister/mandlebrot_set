@@ -677,9 +677,8 @@ static void *worker_process_slice(void* arg)
     {
         pthread_exit(&glb_bytearray[cp->tid]);
     }
-#else
-    return NULL;
 #endif
+    return NULL;
 }
 
 
