@@ -13,14 +13,14 @@ void mandelbrot_mpfr_c(
                 const unsigned int xsize,   /* width of screen/display/window */
                 const unsigned int ysize,   /* height of screen/display/window */
                 const unsigned int maxiter, /* max iterations before escape */
-                unsigned int **bytearray /* reference/pointer to result list of color values*/
+                unsigned char **bytearray /* reference/pointer to result list of color values*/
                );
 
 void mandelbrot_mpfr_thread_c( 
                 const unsigned int xsize,   /* width of screen/display/window */
                 const unsigned int ysize,   /* height of screen/display/window */
                 const unsigned int maxiter, /* max iterations before escape */
-                unsigned int **bytearray /* reference/pointer to result list of color values*/
+                unsigned char **bytearray /* reference/pointer to result list of color values*/
                );
 
 void mpfr_zoom_in_via_mouse( 

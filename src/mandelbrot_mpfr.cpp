@@ -33,13 +33,16 @@
  *     plot(Px, Py, color)
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
+#include <iostream>
+#include <vector>
+#include <cmath>
 
 #ifdef USES_THREADS
+#ifdef STD_THREADS
+#include <thread>
+#else
 #include <pthread.h>
+#endif
 #endif
 
 #ifdef _WIN32
@@ -88,7 +91,7 @@
 #define MAXITER 1000
 
 /* TYPEDEFS */
-struct Color { int r, g, b; };
+struct Color { unsigned char r, g, b; };
 typedef struct Color Color;
 struct worker_args { unsigned int x0, y0, x1, y1, maxiter, tid, cpus; 
                      mpfr_t Xe, Xs, Ye, Ys; };
@@ -102,7 +105,7 @@ static int zoom_level = 0;
 static int ncpus = 1; /* just to be safe */
 
 /* GLOBAL DATA */
-unsigned int** glb_bytearray; /* this will contain an array of bytearrays
+unsigned char** glb_bytearray; /* this will contain an array of bytearrays
                       * ncpus x (num points in array) */ 
 
 
@@ -111,7 +114,7 @@ unsigned int** glb_bytearray; /* this will contain an array of bytearrays
  */
 static struct Color setRgb(int r, int g, int b)
 {
-    Color c = {r, g, b};
+    Color c = {(unsigned char)r, (unsigned char)g, (unsigned char)b};
     return c;
 }
 
@@ -382,7 +385,7 @@ void mpfr_zoom_in_via_mouse(
                 const unsigned int zoom_factor /* +ve int repr of percent */
                )
 {
-    printf("mpfr_zoom_in_via_mouse()\n");
+    std::cout << "mpfr_zoom_in_via_mouse()\n";
     /* 1	scale mouse pos PX,PY to the data	
      * 	MX =	((mouse_x / screen_width) * (XE - XS)) + XS
      * 	MY =	((mouse_y / screen_height) * (YE - YS)) + YS
@@ -415,8 +418,8 @@ void mpfr_zoom_in(
     printf("mpfr_zoom_in()\n");
   
     /*printf("MX, MY ");
-    mpfr_out_str(stdout, 10, 10, MX, MPFR_RNDN); printf(", ");
-    mpfr_out_str(stdout, 10, 10, MY, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 10, MX, MPFR_RNDN); std::cout << ", ";
+    mpfr_out_str(stdout, 10, 10, MY, MPFR_RNDN); std::cout << "\n";
     */
     /* 2	find centre of existing square	
      * 	CX =	((XE - XS) / 2) + XS
@@ -432,8 +435,8 @@ void mpfr_zoom_in(
     mpfr_add(CY, CY, Ys, MPFR_RNDN);
   
     /*printf("2. Centre CX, CY ");
-    mpfr_out_str(stdout, 10, 10, CX, MPFR_RNDN); printf(", ");
-    mpfr_out_str(stdout, 10, 10, CY, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 10, CX, MPFR_RNDN); std::cout << ", ";
+    mpfr_out_str(stdout, 10, 10, CY, MPFR_RNDN); std::cout << "\n";
     */
   
     /* 3	using mouse pos find new corners of square
@@ -455,10 +458,10 @@ void mpfr_zoom_in(
     mpfr_sub(Ye, Ye, CY, MPFR_RNDN);
   
     /*printf("3. New Corners Xs, Xe, Ys, Ye ");
-    mpfr_out_str(stdout, 10, 10, Xs, MPFR_RNDN); printf(", ");
-    mpfr_out_str(stdout, 10, 10, Xe, MPFR_RNDN); printf(", ");
-    mpfr_out_str(stdout, 10, 10, Ys, MPFR_RNDN); printf(", ");
-    mpfr_out_str(stdout, 10, 10, Ye, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 10, Xs, MPFR_RNDN); std::cout << ", ";
+    mpfr_out_str(stdout, 10, 10, Xe, MPFR_RNDN); std::cout << ", ";
+    mpfr_out_str(stdout, 10, 10, Ys, MPFR_RNDN); std::cout << ", ";
+    mpfr_out_str(stdout, 10, 10, Ye, MPFR_RNDN); std::cout << "\n";
     */
 
     /* 4	scale new square - get new corners factor is a percentage reduction (eg reduce by 10%)	
@@ -475,11 +478,11 @@ void mpfr_zoom_in(
     //printf("zoom in factor = %f\n", (1.0-((double)zoom_factor/100.0))/2.0 );
   
     /*printf("Xe_Xs = ");
-    mpfr_out_str(stdout, 10, 10, Xe_Xs, MPFR_RNDN); printf(", Ye_Ys = ");
-    mpfr_out_str(stdout, 10, 10, Ye_Ys, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 10, Xe_Xs, MPFR_RNDN); std::cout << ", Ye_Ys = ";
+    mpfr_out_str(stdout, 10, 10, Ye_Ys, MPFR_RNDN); std::cout << "\n";
     printf("CX = ");
-    mpfr_out_str(stdout, 10, 10, CX, MPFR_RNDN); printf(", CY = ");
-    mpfr_out_str(stdout, 10, 10, CY, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 10, CX, MPFR_RNDN); std::cout << ", CY = ";
+    mpfr_out_str(stdout, 10, 10, CY, MPFR_RNDN); std::cout << "\n";
     */
     mpfr_add(Xs, Xs, CX, MPFR_RNDN);
     mpfr_sub(Xe, Xe, CX, MPFR_RNDN);
@@ -487,10 +490,10 @@ void mpfr_zoom_in(
     mpfr_sub(Ye, Ye, CY, MPFR_RNDN);
 
     /*printf("4. scale new square Xs, Xe, Ys, Ye ");
-    mpfr_out_str(stdout, 10, 10, Xs, MPFR_RNDN); printf(", ");
-    mpfr_out_str(stdout, 10, 10, Xe, MPFR_RNDN); printf(", ");
-    mpfr_out_str(stdout, 10, 10, Ys, MPFR_RNDN); printf(", ");
-    mpfr_out_str(stdout, 10, 10, Ye, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 10, Xs, MPFR_RNDN); std::cout << ", ";
+    mpfr_out_str(stdout, 10, 10, Xe, MPFR_RNDN); std::cout << ", ";
+    mpfr_out_str(stdout, 10, 10, Ys, MPFR_RNDN); std::cout << ", ";
+    mpfr_out_str(stdout, 10, 10, Ye, MPFR_RNDN); std::cout << "\n";
     */
 
     /* 5	push square back into bound of x(-2, 1) y(-1.5, 1.5) */
@@ -541,11 +544,11 @@ void mpfr_zoom_out( const unsigned int zoom_factor )
     mpfr_div_d(CY, CY, 2.0, MPFR_RNDN);
   
     /*printf("Xe_Xs = ");
-    mpfr_out_str(stdout, 10, 10, Xe_Xs, MPFR_RNDN); printf(", Ye_Ys = ");
-    mpfr_out_str(stdout, 10, 10, Ye_Ys, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 10, Xe_Xs, MPFR_RNDN); std::cout << ", Ye_Ys = ";
+    mpfr_out_str(stdout, 10, 10, Ye_Ys, MPFR_RNDN); std::cout << "\n";
     printf("CX = ");
-    mpfr_out_str(stdout, 10, 10, CX, MPFR_RNDN); printf(", CY = ");
-    mpfr_out_str(stdout, 10, 10, CY, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 10, CX, MPFR_RNDN); std::cout << ", CY = ";
+    mpfr_out_str(stdout, 10, 10, CY, MPFR_RNDN); std::cout << "\n";
     */
     mpfr_sub(Xs, Xs, CX, MPFR_RNDN);
     mpfr_add(Xe, Xe, CX, MPFR_RNDN);
@@ -553,10 +556,10 @@ void mpfr_zoom_out( const unsigned int zoom_factor )
     mpfr_add(Ye, Ye, CY, MPFR_RNDN);
 
     /*printf("4. scale new square Xs, Xe, Ys, Ye ");
-    mpfr_out_str(stdout, 10, 10, Xs, MPFR_RNDN); printf(", ");
-    mpfr_out_str(stdout, 10, 10, Xe, MPFR_RNDN); printf(", ");
-    mpfr_out_str(stdout, 10, 10, Ys, MPFR_RNDN); printf(", ");
-    mpfr_out_str(stdout, 10, 10, Ye, MPFR_RNDN); putchar('\n');
+    mpfr_out_str(stdout, 10, 10, Xs, MPFR_RNDN); std::cout << ", ";
+    mpfr_out_str(stdout, 10, 10, Xe, MPFR_RNDN); std::cout << ", ";
+    mpfr_out_str(stdout, 10, 10, Ys, MPFR_RNDN); std::cout << ", ";
+    mpfr_out_str(stdout, 10, 10, Ye, MPFR_RNDN); std::cout << "\n";
     */
 
     /* 2	push square back into bound of x(-2, 1) y(-1.5, 1.5) */
@@ -675,7 +678,9 @@ static void *worker_process_slice(void* arg)
     TRACE_DEBUGV("Exit Thread %d\n",cp->tid);
     if (cp->cpus > 1)
     {
+#ifndef STD_THREADS
         pthread_exit(&glb_bytearray[cp->tid]);
+#endif
     }
 #endif
     return NULL;
@@ -706,7 +711,7 @@ static void mandelbrot_mpfr_main_c(
                 const unsigned int ysize,   /* height of screen/display/window */
                 const unsigned int maxiter, /* max iterations before escape */
                 const BOOLEAN use_threads,  /* use threads or not*/
-                unsigned int **bytearray /* reference/pointer to result list of color values*/
+                unsigned char **bytearray /* reference/pointer to result list of color values*/
                )
 {
     unsigned int bc = 0;
@@ -721,11 +726,11 @@ static void mandelbrot_mpfr_main_c(
     TRACE_DEBUG("mandelbrot_mpfr_main_c (Single) Entry\n");
 #endif
 #ifdef TRACE
-    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
-    putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); std::cout << "\n";
+    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); std::cout << "\n";
+    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); std::cout << "\n";
+    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); std::cout << "\n";
+    std::cout << "\n";
 #endif
     
     unsigned int core_count = 1;
@@ -739,7 +744,11 @@ static void mandelbrot_mpfr_main_c(
 
     printf("core_count = %d\n", core_count);
 #ifdef USES_THREADS
+#ifdef STD_THREADS
+    std::vector<std::thread> threads;
+#else
     pthread_t tid[core_count];
+#endif
 #endif
     worker_args wargs[core_count];
     
@@ -748,10 +757,10 @@ static void mandelbrot_mpfr_main_c(
     mpfr_div_ui(yslice, yslice, nslice, MPFR_RNDN);
 
     /* initialise the global bytearray*/
-    glb_bytearray = (unsigned int**)malloc(core_count*sizeof(unsigned int*));
+    glb_bytearray = (unsigned char**)malloc(core_count*sizeof(unsigned char*));
     for(unsigned int slice=0; slice<core_count; slice++)
     {
-        glb_bytearray[slice] = (unsigned int*)calloc((size_t)(xsize * ysize/core_count * 3), sizeof(unsigned int));
+        glb_bytearray[slice] = (unsigned char*)calloc((size_t)(xsize * ysize/core_count * 3), sizeof(unsigned char));
 
         wargs[slice].tid = slice;
         wargs[slice].cpus = core_count;
@@ -780,17 +789,21 @@ static void mandelbrot_mpfr_main_c(
             mpfr_set(wargs[slice].Ye, Ye, MPFR_RNDN);
         }
 #ifdef TRACE
-    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); putchar('\n');
-    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); putchar('\n');
-    putchar('\n');
+    mpfr_out_str(stdout, 10, 0, Xs, MPFR_RNDN); std::cout << "\n";
+    mpfr_out_str(stdout, 10, 0, Xe, MPFR_RNDN); std::cout << "\n";
+    mpfr_out_str(stdout, 10, 0, Ys, MPFR_RNDN); std::cout << "\n";
+    mpfr_out_str(stdout, 10, 0, Ye, MPFR_RNDN); std::cout << "\n";
+    std::cout << "\n";
 #endif
         
         if (use_threads == TRUE)
         {
 #ifdef USES_THREADS
+#ifdef STD_THREADS
+            threads.push_back(std::thread(worker_process_slice, &(wargs[slice])));
+#else
             pthread_create(&tid[slice], NULL, worker_process_slice, &(wargs[slice]));
+#endif
 #endif
         } 
         else 
@@ -803,18 +816,22 @@ static void mandelbrot_mpfr_main_c(
     /* ------------------------------------------------------------------------- */
 
     /*wait for all the threads to complete */
+#ifdef USES_THREADS
+#ifdef STD_THREADS
+    for (auto& th : threads) th.join();
+#else
     int** ptr;
     ptr = (int**)malloc(core_count*sizeof(int*));
     for(unsigned int slice=0; slice<core_count; slice++)
     {
-#ifdef USES_THREADS
         if (use_threads == TRUE)
         {
             pthread_join(tid[slice], (void**)&ptr[slice]);
-        }
-#endif
+       }
     }
-    
+#endif
+#endif
+        
     /* populate the returned bytearray from the global one */
     TRACE_DEBUG("Combining Results\n");
     bc = 0;
@@ -834,8 +851,11 @@ static void mandelbrot_mpfr_main_c(
         free(glb_bytearray[slice]); /* = (int*)calloc((size_t)(xsize/2 * ysize/2 * 3), sizeof(int));*/
     }
     free(glb_bytearray);
+#ifdef USES_THREADS
+#ifndef STD_THREADS
     free(ptr);
-    
+#endif
+#endif
     /* clear (free) mpfr data */
     mpfr_clears(lx, ly, yslice, ys1, ye1, (mpfr_ptr)NULL);
     
@@ -855,7 +875,7 @@ void mandelbrot_mpfr_thread_c(
                 const unsigned int xsize,   /* width of screen/display/window */
                 const unsigned int ysize,   /* height of screen/display/window */
                 const unsigned int maxiter, /* max iterations before escape */
-                unsigned int **bytearray /* reference/pointer to result list of color values*/
+                unsigned char **bytearray /* reference/pointer to result list of color values*/
                )
 {
     mandelbrot_mpfr_main_c(xsize, ysize, maxiter, TRUE, bytearray);
@@ -868,7 +888,7 @@ void mandelbrot_mpfr_c(
                 const unsigned int xsize,   /* width of screen/display/window */
                 const unsigned int ysize,   /* height of screen/display/window */
                 const unsigned int maxiter, /* max iterations before escape */
-                unsigned int **bytearray /* reference/pointer to result list of color values*/
+                unsigned char **bytearray /* reference/pointer to result list of color values*/
                )
 {
     mandelbrot_mpfr_main_c(xsize, ysize, maxiter, FALSE, bytearray);
