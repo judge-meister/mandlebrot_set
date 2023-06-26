@@ -9,7 +9,7 @@ class Shader {
   public:
     Shader();
     Shader(const std::string vertexFilename, const std::string fragmentFilename);
-    ~Shader(){}
+    virtual ~Shader(){}
 
     void createVertexShaderFromFile(const std::string filename);
     void createFragmentShaderFromFile(const std::string filename);

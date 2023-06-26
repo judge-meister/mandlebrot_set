@@ -40,10 +40,6 @@ Window::Window(const std::string title, const int width, const int height)
   create(title);
 }
 
-// --------------------------------------------------------------------------------------
-Window::~Window()
-{}
-
 // PUBLIC METHODS ------------------------------------------------------------------------
 void Window::setFramebufferSizeCB(GLFWframebuffersizefun framebufferSizeCB)
 {

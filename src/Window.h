@@ -35,7 +35,7 @@ class Window {
   protected:
     Window();
     Window(const std::string title, const int width, const int height);
-    ~Window();
+    virtual ~Window(){}
 
     // singleton reference
     static Window* instance;
