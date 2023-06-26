@@ -53,7 +53,7 @@ CXXFLAGS = -g -O3 -Wall -fPIC
 
 # -----------------------------------------------------------------------------
 
-all: clean pybind11 test mandelbrot_main
+all: clean test mandelbrot_main
 
 
 .PHONY: test
@@ -82,16 +82,16 @@ coverage: $(TEST_EXE)
 debug: DEBUG=-DTRACE
 debug: $(TEST_EXE) mandelbrot_main
 
-threaded: USES_THREADS=-DUSES_THREADS
+threaded: USES_THREADS=-DUSES_THREADS -DSTD_THREADS
 threaded: DEBUG=-DTRACE
-threaded: clean $(TEST_EXE) mandelbrot_main pybind11
+threaded: clean $(TEST_EXE) mandelbrot_main
 
 .PHONY: valgrind
 valgrind: $(TEST_EXE)
 	valgrind --leak-check=full ./$(TEST_EXE)
 
-$(SHARED_LIB): $(NAME).o
-	$(CC) -o $@ $^ $(DEBUG) $(LD_SHARED) $(SONAME) $(MPFR_INCL) $(MPFR_LIBS) -lgcov -lm -lpthread
+$(SHARED_LIB): $(NAME)_mpfr.o
+	$(CXX) -o $@ $^ $(DEBUG) $(LD_SHARED) $(SONAME) $(MPFR_INCL) $(MPFR_LIBS) -lgcov -lm -lpthread
 	
 
 .PHONY: pybind11

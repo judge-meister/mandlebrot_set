@@ -6,12 +6,10 @@
 class MandelbrotAdapter
 {
   public:
-    //MandelbrotAdapter(const int width, const int height);
     MandelbrotAdapter(const int width, const int height, const char* real, const char* imag, const int factor);
-    ~MandelbrotAdapter();
+    virtual ~MandelbrotAdapter(){}
 
     void zoomIn(const double mouseX, const double mouseY);
-    //void zoomIn(const int factor);
     void zoomOut();
     void reset(const char* real, const char* imag);
     void reset();
@@ -23,7 +21,7 @@ class MandelbrotAdapter
     unsigned int texture() { return m_texture; }
     
   private:
-    void writeImage(unsigned int **rgb);
+    void writeImage(unsigned char **rgb);
     
     bool m_fixedCentre;
     unsigned int m_width, m_height;
