@@ -71,8 +71,8 @@ test_$(NAME)_main.o: test_$(NAME)_main.c
 	$(CC) $(CCFLAGS) $(DEBUG) $(USES_THREADS) -c -I../include $< -o $@
 
 .PHONY: coverage
-coverage: CXXFLAGS += --coverage -DUSES_THREADS
-coverage: CCFLAGS += --coverage -DUSES_THREADS
+coverage: CXXFLAGS += --coverage -DUSES_THREADS -DSTD_THREADS
+coverage: CCFLAGS += --coverage -DUSES_THREADS -DSTD_THREADS
 coverage: LDFLAGS += --coverage
 coverage: $(TEST_EXE)
 	./$(TEST_EXE)
@@ -90,7 +90,8 @@ threaded: clean $(TEST_EXE) mandelbrot_main
 valgrind: $(TEST_EXE)
 	valgrind --leak-check=full ./$(TEST_EXE)
 
-$(SHARED_LIB): $(NAME)_mpfr.o
+SHARED_LIB_OBJS = $(NAME)_mpfr.o
+$(SHARED_LIB): $(SHARED_LIB_OBJS)
 	$(CXX) -o $@ $^ $(DEBUG) $(LD_SHARED) $(SONAME) $(MPFR_INCL) $(MPFR_LIBS) -lgcov -lm -lpthread
 	
 
@@ -115,7 +116,7 @@ clean_mandelbrot_main:
 
 # -----------------------------------------------------------------------------
 clean_lib:
-	-$(RM) $(NAME).o $(SHARED_LIB)
+	-$(RM) $(SHARED_LIB_OBJS) $(SHARED_LIB)
 
 clean_test:
 	-$(RM) $(TEST_EXE) testlib.a test_$(NAME)_main.o
