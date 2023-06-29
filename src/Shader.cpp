@@ -10,13 +10,16 @@
 #include "Shader.h"
 
 // CONSTRUCTORS --------------------------------------------------------------------------
-Shader::Shader(const std::string vertexFilename, const std::string fragmentFilename)
-  : m_shaderProgram(0), m_vertexShader(0), m_fragmentShader(0)
+Shader::Shader(
+                const std::string vertexFilename, 
+                const std::string fragmentFilename)
+  : 
+  m_shaderProgram(0), 
+  m_vertexShader(0), 
+  m_fragmentShader(0)
 {
   createVertexShaderFromFile(vertexFilename);
-  //std::cout << "create frag shader\n";
   createFragmentShaderFromFile(fragmentFilename);
-  //std::cout << "create shader\n";
   createShaderProgram();
 }
 // --------------------------------------------------------------------------------------
@@ -51,14 +54,12 @@ void Shader::uniformResolution(const int width, const int height)
 // --------------------------------------------------------------------------------------
 void Shader::createVertexShaderFromFile(const std::string filename)
 {
-  //std::cout << "call createShaderFromFile(vert)\n";
   m_vertexShader = createShaderFromFile(filename, GL_VERTEX_SHADER, "VERTEX");
 }
 
 // --------------------------------------------------------------------------------------
 void Shader::createFragmentShaderFromFile(const std::string filename)
 {
-  //std::cout << "call createShaderFromFile(frag)\n";
   m_fragmentShader = createShaderFromFile(filename, GL_FRAGMENT_SHADER, "FRAGMENT");
 }
 
@@ -90,9 +91,10 @@ void Shader::createShaderProgram()
 }
 
 // PRIVATE METHODS -----------------------------------------------------------------------
-unsigned int Shader::createShaderFromFile(const std::string filename, 
-                                          unsigned int shaderType, 
-                                          const char* shaderTypeName)
+unsigned int Shader::createShaderFromFile(
+                const std::string filename, 
+                const unsigned int shaderType, 
+                const char* shaderTypeName)
 {
   std::fstream newfile;
   std::string shaderSource;
@@ -111,12 +113,9 @@ unsigned int Shader::createShaderFromFile(const std::string filename,
 
   //std::cout << shaderSource << "\n";
 
-  //std::cout << "glCreateShader\n";
   unsigned int shader = glCreateShader(shaderType);
   char const *shaderSourcePtr = shaderSource.c_str();
-  //std::cout << "glShaderSource\n";
   glShaderSource(shader, 1, &shaderSourcePtr, NULL);
-  //std::cout << "glCompileShader\n";
   glCompileShader(shader);
   
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
@@ -124,7 +123,8 @@ unsigned int Shader::createShaderFromFile(const std::string filename,
   if(!success)
   {
     glGetShaderInfoLog(shader, logsize, NULL, infoLog);
-    std::cout << "ERROR::SHADER::" << shaderTypeName << "::COMPILATION_FAILED\n" << infoLog << std::endl;
+    std::cout << "ERROR::SHADER::" << shaderTypeName << "::COMPILATION_FAILED ";
+    std::cout << filename <<"\n" << infoLog << std::endl;
     exit(1);
   }
 

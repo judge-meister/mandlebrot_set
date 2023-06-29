@@ -24,7 +24,7 @@ class Shader {
     
   private:
     unsigned int createShaderFromFile(const std::string filename, 
-                                      unsigned int shaderType, 
+                                      const unsigned int shaderType, 
                                       const char* shaderTypeName);
     unsigned int m_shaderProgram;
     unsigned int m_vertexShader;

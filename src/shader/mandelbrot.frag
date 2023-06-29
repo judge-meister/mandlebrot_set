@@ -5,6 +5,7 @@ precision highp float;
 #endif
 
 in vec2 fCoord;
+out vec4 FragColor;
 
 uniform vec2 resolution;
 uniform float time;
@@ -76,6 +77,6 @@ void main() {
         }
     }
 
-    gl_FragColor = ultra_fractal_colors(k);
+    FragColor = ultra_fractal_colors(k);
 }
 

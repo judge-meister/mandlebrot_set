@@ -8,7 +8,10 @@ Window* Window::instance = nullptr;
 
 
 // CONSTRUCTORS --------------------------------------------------------------------------
-Window *Window::GetInstance(const std::string title, const int width, const int height)
+Window *Window::GetInstance(
+                const std::string title, 
+                const int width, 
+                const int height)
 {
   if (instance == nullptr)
   {
@@ -17,6 +20,7 @@ Window *Window::GetInstance(const std::string title, const int width, const int 
   return instance;
 }
 
+// --------------------------------------------------------------------------------------
 Window *Window::GetInstance()
 {
   if (instance == nullptr)
@@ -27,6 +31,7 @@ Window *Window::GetInstance()
   return instance;
 }
 
+// --------------------------------------------------------------------------------------
 Window::Window()
   : m_screenWidth(160), m_screenHeight(160), m_window(nullptr)
 {
@@ -34,7 +39,10 @@ Window::Window()
 }
 
 // --------------------------------------------------------------------------------------
-Window::Window(const std::string title, const int width, const int height)
+Window::Window(
+                const std::string title, 
+                const int width, 
+                const int height)
   : m_screenWidth(width), m_screenHeight(height), m_window(nullptr)
 {
   create(title);
@@ -153,6 +161,7 @@ void Window::create(std::string title)
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+  glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
 #endif
   //glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
   m_window = glfwCreateWindow(m_screenWidth, m_screenHeight, title.c_str(), NULL, NULL);

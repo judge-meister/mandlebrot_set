@@ -4,10 +4,15 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <filesystem>
 
 #include <cstring>
 
+#ifdef __APPLE__
+#include <SOIL2/SOIL2.h>
+#else
 #include <SOIL/SOIL.h>
+#endif
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -18,8 +23,19 @@ extern "C" {
 }
 
 // CONSTRUCTORS --------------------------------------------------------------------------
-MandelbrotAdapter::MandelbrotAdapter(const int width, const int height, const char* real, const char* imag, const int factor)
-    : m_fixedCentre(false), m_width(width), m_height(height), m_maxiter(1000), m_framecount(0), m_factor(factor)
+MandelbrotAdapter::MandelbrotAdapter(
+                const int width, 
+                const int height, 
+                const char* real, 
+                const char* imag, 
+                const int factor)
+    : 
+    m_fixedCentre(false), 
+    m_width(width), 
+    m_height(height), 
+    m_maxiter(1000), 
+    m_framecount(0), 
+    m_factor(factor)
 {
   setup_c();
   reset(real, imag);
@@ -109,6 +125,7 @@ void MandelbrotAdapter::writeImage(unsigned char **rgb)
   sprintf(idx, "%04d", m_framecount);
   strcat(filename, idx);
   strcat(filename, ".bmp");
+  std::filesystem::create_directories("images");
   (void)SOIL_save_image(filename, SOIL_SAVE_TYPE_BMP, m_width, m_height, 3, *rgb);
   printf("Soil save image = %s\n", filename);
   

@@ -34,16 +34,23 @@ SHARED_LIB_SRCS=$(NAME).c
 SHARED_LIB=lib$(NAME)$(SO)
 MANDELBROT_LIBS=-L./ -l$(NAME)
 
-LD_SHARED=-shared -Wl,-rpath=./,-rpath-link=./ -Wl,--no-undefined
+LD_SHARED=-shared -Wl,-rpath=./,-rpath-link=./ -Wl,--no-undefined -lm -lpthread
 SONAME=-Wl,-soname=$(SHARED_LIB)
+LDFLAGS=-Wl,-rpath=./
 
-INCLUDES = ../include $(MPFR_INCL)
-LOCAL_LIBS = 
+ifeq ($(OS),Darwin)
+LD_SHARED=-shared
+SONAME=
+LDFLAGS=
+endif
 
-CC = gcc
-CCFLAGS = -g -O3 -Wall -fPIC 
+INCLUDES= ../include $(MPFR_INCL)
+LOCAL_LIBS= 
 
-CXXFLAGS = -g -O3 -Wall -fPIC 
+CC= gcc
+CCFLAGS= -g -O3 -Wall -fPIC -std=c17
+
+CXXFLAGS= -g -O3 -Wall -fPIC -std=c++17
 
 %.o: %.c
 	$(CC) $(CCFLAGS) $(DEBUG) $(USES_THREADS) -c -I../include $< -o $@
@@ -65,7 +72,7 @@ testlib.a: test_$(NAME)_main.o
 
 $(TEST_EXE): testlib.a $(SHARED_LIB)
 	$(CXX) $(DEBUG) $(USES_THREADS) testlib.a $(MANDELBROT_LIBS) $(MPFR_INCL) $(MPFR_LIBS) \
-		$(LDFLAGS)  -Wl,-rpath=./  -o $(TEST_EXE)
+		$(LDFLAGS) -o $(TEST_EXE)
 
 test_$(NAME)_main.o: test_$(NAME)_main.c
 	$(CC) $(CCFLAGS) $(DEBUG) $(USES_THREADS) -c -I../include $< -o $@
@@ -92,7 +99,7 @@ valgrind: $(TEST_EXE)
 
 SHARED_LIB_OBJS = $(NAME)_mpfr.o
 $(SHARED_LIB): $(SHARED_LIB_OBJS)
-	$(CXX) -o $@ $^ $(DEBUG) $(LD_SHARED) $(SONAME) $(MPFR_INCL) $(MPFR_LIBS) -lgcov -lm -lpthread
+	$(CXX) -o $@ $^ $(DEBUG) $(LD_SHARED) $(SONAME) $(MPFR_INCL) $(MPFR_LIBS)
 	
 
 .PHONY: pybind11
@@ -106,9 +113,13 @@ OBJS = Shader.o Window.o MandelbrotAdapter.o mandelbrot_main.o glad.o
 main.a: $(OBJS)
 	ar -r main.a $^
 
+REMOTE_LIBS=-lglfw -lGL -lSOIL -lX11 -lpthread -lXrandr -lXi -ldl -Wl,-rpath=./
+ifeq ($(OS),Darwin)
+REMOTE_LIBS=-lglfw -lpthread -ldl -lsoil2-debug
+endif
+
 mandelbrot_main: main.a $(SHARED_LIB)
-	$(CXX) $(DEBUG) $(USES_THREADS) -o $@ main.a $(MANDELBROT_LIBS) $(MPFR_LIBS) \
-	    -lglfw -lGL -lSOIL -lX11 -lpthread -lXrandr -lXi -ldl -Wl,-rpath=./
+	$(CXX) $(DEBUG) $(USES_THREADS) -o $@ main.a $(MANDELBROT_LIBS) $(MPFR_LIBS) $(REMOTE_LIBS)
 
 clean_mandelbrot_main:
 	-$(RM) $(OBJS) mandelbrot_main main.a
