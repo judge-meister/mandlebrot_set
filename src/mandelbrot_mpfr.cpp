@@ -67,9 +67,6 @@
 #include "mandelbrot.h"
 
 /* DEFINES */
-#define TRUE 1
-#define FALSE 0
-#define BOOLEAN unsigned int
 
 //#define TRACE 1
 // TRACE DEBUG macro
@@ -252,7 +249,7 @@ void setup_c()
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
     ncpus = sysinfo.dwNumberOfProcessors;
-#elif MACOS
+#elif __APPLE__
     int nm[2];
     size_t len = 4;
     uint32_t count;
@@ -711,7 +708,7 @@ static void mandelbrot_mpfr_main_c(
                 const unsigned int xsize,   /* width of screen/display/window */
                 const unsigned int ysize,   /* height of screen/display/window */
                 const unsigned int maxiter, /* max iterations before escape */
-                const BOOLEAN use_threads,  /* use threads or not*/
+                const bool use_threads,  /* use threads or not*/
                 unsigned char **bytearray /* reference/pointer to result list of color values*/
                )
 {
@@ -737,7 +734,7 @@ static void mandelbrot_mpfr_main_c(
     unsigned int core_count = 1;
     unsigned int nslice = 1;
     
-    if (use_threads == TRUE)
+    if (use_threads == true)
     {
         core_count = ncpus;
         nslice = core_count;
@@ -797,7 +794,7 @@ static void mandelbrot_mpfr_main_c(
     std::cout << "\n";
 #endif
         
-        if (use_threads == TRUE)
+        if (use_threads == true)
         {
 #ifdef USES_THREADS
 #ifdef STD_THREADS
@@ -879,7 +876,7 @@ void mandelbrot_mpfr_thread_c(
                 unsigned char **bytearray /* reference/pointer to result list of color values*/
                )
 {
-    mandelbrot_mpfr_main_c(xsize, ysize, maxiter, TRUE, bytearray);
+    mandelbrot_mpfr_main_c(xsize, ysize, maxiter, true, bytearray);
 }
 
 /* ----------------------------------------------------------------------------
@@ -892,5 +889,5 @@ void mandelbrot_mpfr_c(
                 unsigned char **bytearray /* reference/pointer to result list of color values*/
                )
 {
-    mandelbrot_mpfr_main_c(xsize, ysize, maxiter, FALSE, bytearray);
+    mandelbrot_mpfr_main_c(xsize, ysize, maxiter, false, bytearray);
 }

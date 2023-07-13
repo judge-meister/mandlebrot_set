@@ -81,7 +81,8 @@ test_$(NAME)_main.o: test_$(NAME)_main.c
 coverage: CXXFLAGS += --coverage -DUSES_THREADS -DSTD_THREADS
 coverage: CCFLAGS += --coverage -DUSES_THREADS -DSTD_THREADS
 coverage: LDFLAGS += --coverage
-coverage: $(TEST_EXE)
+coverage: LD_SHARED += -lgcov
+coverage: clean $(TEST_EXE)
 	./$(TEST_EXE)
 	lcov -c --directory . --output-file $(TEST_EXE).info
 	genhtml $(TEST_EXE).info --output-directory lcovhtml
