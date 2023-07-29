@@ -36,6 +36,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <cassert>
 
 #ifdef USES_THREADS
 #ifdef STD_THREADS
@@ -82,8 +83,6 @@
 
 
 #define PRECISION 256
-/* if PRECISION is increased then NUMLEN needs to increase */
-//#define NUMLEN 50
 
 #define MAXITER 1000
 
@@ -124,7 +123,7 @@ static struct Color setRgb(int r, int g, int b)
  * Return
  * color (struct of 3 int vals) - RGB color value
  */
-static struct Color grayscale(int it, int maxiter)
+[[maybe_unused]] static struct Color grayscale(int it, int maxiter)
 {
     Color c = { 0, 0, 0 };
 
@@ -145,7 +144,7 @@ static struct Color grayscale(int it, int maxiter)
  * Returns
  * color (struct if 3 ints) - RGB color value
  */
-static struct Color sqrt_gradient(int it, int maxiter)
+[[maybe_unused]] static struct Color sqrt_gradient(int it, int maxiter)
 {
     Color c;
     if (it < maxiter)

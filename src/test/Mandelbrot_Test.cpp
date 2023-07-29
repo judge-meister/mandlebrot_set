@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
- * Test program to exercise the functions in mandelbrot.c
+ * Test program to exercise the functions in libmandelbrot.so
  *
  * This is currently enough to provide over 99% branch coverage.
  * - use 'make coverage' to generate the results

@@ -115,12 +115,12 @@ void createShaders()
 {
     mainShader = new Shader();
     initShader = new Shader();
-    mainShader->createVertexShaderFromFile("shader/texshader.vert");
-    mainShader->createFragmentShaderFromFile("shader/texshader.frag");
+    mainShader->createVertexShaderFromFile("../shader/texshader.vert");
+    mainShader->createFragmentShaderFromFile("../shader/texshader.frag");
     mainShader->createShaderProgram();
     
-    initShader->createVertexShaderFromFile("shader/mandelbrot.vert");
-    initShader->createFragmentShaderFromFile("shader/mandelbrot.frag");
+    initShader->createVertexShaderFromFile("../shader/mandelbrot.vert");
+    initShader->createFragmentShaderFromFile("../shader/mandelbrot.frag");
     initShader->createShaderProgram();
 }
 
