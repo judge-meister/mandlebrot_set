@@ -5,16 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <filesystem>
-
 #include <cstring>
-
-#ifdef __APPLE__
-#include <SOIL2/SOIL2.h>
-#else
-#include <SOIL/SOIL.h>
-#endif
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 
 #include "MandelbrotAdapter.h"
 
@@ -70,27 +61,21 @@ void MandelbrotAdapter::cleanUp()
 { 
   free_mpfr_mem_c(); 
 }
+
 // ---------------------------------------------------------------------------------------
-void MandelbrotAdapter::createTextureFromData()
+// pixels char array is allocated here, caller is responsible for freeing it.
+void MandelbrotAdapter::getTextureData(unsigned char **pixels)
 {
-  unsigned char *pixels = NULL;
-  pixels = (unsigned char*)calloc((size_t)(m_width * m_height * 3), sizeof(unsigned char));
+  *pixels = (unsigned char*)calloc((size_t)(m_width * m_height * 3), sizeof(unsigned char));
   
 #ifdef USES_THREADS
-  mandelbrot_mpfr_thread_c(m_width, m_height, m_maxiter, &pixels);
+  mandelbrot_mpfr_c(m_width, m_height, m_maxiter, true, pixels);
 #else
-  mandelbrot_mpfr_c(m_width, m_height, m_maxiter, &pixels);
+  mandelbrot_mpfr_c(m_width, m_height, m_maxiter, false, pixels);
 #endif
-  
-  writeImage(&pixels);
 
-  glGenTextures(1, &m_texture);
-  glBindTexture(GL_TEXTURE_2D, m_texture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-  glGenerateMipmap(GL_TEXTURE_2D);
-
-  free(pixels);
 }
+
 // ---------------------------------------------------------------------------------------
 void MandelbrotAdapter::zoomIn(const double mouseX, const double mouseY)
 {
@@ -105,6 +90,7 @@ void MandelbrotAdapter::zoomIn(const double mouseX, const double mouseY)
       mpfr_zoom_in_via_mouse(mouseX, mouseY, m_width, m_height, m_factor);
     }
 }
+
 // ---------------------------------------------------------------------------------------
 void MandelbrotAdapter::zoomOut()
 {
@@ -113,23 +99,6 @@ void MandelbrotAdapter::zoomOut()
     printf("Cursor Pos %d, %d factor %d  screen %d\n", m_width/2, m_width/2, m_factor, m_width);
     mpfr_zoom_out(m_factor);
 }
+
 // PRIVATE METHODS -----------------------------------------------------------------------
-void MandelbrotAdapter::writeImage(unsigned char **rgb)
-{
-  char* filename = NULL;
-  char* idx = NULL;
-  
-  filename = (char*)calloc((size_t)100, sizeof(char));
-  idx = (char*)calloc((size_t)10, sizeof(char));
-  strcpy(filename, "images/image");
-  sprintf(idx, "%04d", m_framecount);
-  strcat(filename, idx);
-  strcat(filename, ".bmp");
-  std::filesystem::create_directories("images");
-  (void)SOIL_save_image(filename, SOIL_SAVE_TYPE_BMP, m_width, m_height, 3, *rgb);
-  printf("Soil save image = %s\n", filename);
-  
-  free(filename);
-  free(idx);
-}
-  
+

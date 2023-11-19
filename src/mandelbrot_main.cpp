@@ -12,6 +12,8 @@
 
 #include "Window.h"
 #include "Shader.h"
+#include "Texture.h"
+#include "ImageFile.h"
 #include "MandelbrotAdapter.h"
 
 // GLOBALS - for the time being
@@ -25,11 +27,15 @@ class Options
       char *imag;
 };
 
+// class instance pointers
 Shader* mainShader = nullptr;
 Shader* initShader = nullptr;
 Shader* currentShader = nullptr;
 Window* window = nullptr;
 MandelbrotAdapter* mandAdapter = nullptr;
+Texture* texture = nullptr;
+ImageFile* image = nullptr;
+
 
 Options options;
 
@@ -49,6 +55,29 @@ Options options;
 }*/
 
 // ----------------------------------------------------------------------------
+static void updateDisplay()
+{
+    unsigned char *pixels;
+    mandAdapter->getTextureData(&pixels);
+    texture->createTexture(&pixels);
+    currentShader = mainShader;
+    image->writeImage(mandAdapter->framecount(), pixels);
+    free(pixels);
+}
+// ----------------------------------------------------------------------------
+static void zoomIn(const double pX, const double pY)
+{
+    mandAdapter->zoomIn(pX, pY);
+    updateDisplay();
+}
+
+// ----------------------------------------------------------------------------
+static void zoomOut(double pX, double pY)
+{
+    mandAdapter->zoomOut();
+    updateDisplay();
+}
+// ----------------------------------------------------------------------------
 // react to the mouse clicks in the display
 //
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -57,18 +86,14 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
   {
     double pX, pY;
     glfwGetCursorPos(window, &pX, &pY);
-    mandAdapter->zoomIn(pX, pY);
-    mandAdapter->createTextureFromData();
-    currentShader = mainShader;
+    zoomIn(pX, pY);
   }
 
   if(button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
   {
     double pX, pY;
     glfwGetCursorPos(window, &pX, &pY);
-    mandAdapter->zoomOut();
-    mandAdapter->createTextureFromData();
-    currentShader = mainShader;
+    zoomOut(pX, pY);
   }
 }
   
@@ -84,20 +109,17 @@ void processInput(GLFWwindow *window)
     mandAdapter->reset();
     currentShader = initShader;
   }
-  if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) { // zoom out
+  if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) // zoom out
+  {
     double pX, pY;
     glfwGetCursorPos(window, &pX, &pY);
-    mandAdapter->zoomOut();
-    mandAdapter->createTextureFromData();
-    currentShader = mainShader;
+    zoomOut(pX, pY);
   }
-  if(glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) { // zoom in
+  if(glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) // zoom in
+  {
     double pX, pY;
     glfwGetCursorPos(window, &pX, &pY);
-
-    mandAdapter->zoomIn(pX, pY);
-    mandAdapter->createTextureFromData();
-    currentShader = mainShader;
+    zoomIn(pX, pY);
   }
   if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) { // move up
   }
@@ -177,13 +199,13 @@ unsigned int createVertexArray()
 static void usage()
 {
   printf("Usage: mandelbrot_main  \n");
-  printf("   -h  this help");
-  printf("   -z  zoom level to start with");
-  printf("   -r  real value of point to zoom in to");
-  printf("   -i  imaginary value of point to zoom in to");
-  printf("   -d  display size (assumes a square)");
-  printf("   -a  which algorithm (float, centre, mpfr, thread)");
-  printf("   -f  zoom factor");
+  printf("   -h  this help\n");
+  printf("   -z  zoom level to start with\n");
+  printf("   -r  real value of point to zoom in to\n");
+  printf("   -i  imaginary value of point to zoom in to\n");
+  printf("   -d  display size (assumes a square)\n");
+  printf("   -a  which algorithm (float, centre, mpfr, thread)\n");
+  printf("   -f  zoom factor\n");
   exit(1);
 }
 
@@ -203,13 +225,16 @@ static int run_shader()//const char* vert_shader, const char* frag_shader)//, in
 
     unsigned int VAO = createVertexArray();
  
+    texture = new Texture(options.ScreenWidth, options.ScreenHeight);
+    image = new ImageFile(options.ScreenWidth, options.ScreenHeight);
+
     // initialise mandelbrot library
     mandAdapter = new MandelbrotAdapter(options.ScreenWidth, options.ScreenHeight, options.real, options.imag, options.factor);
     
     //window->eventLoop();
     while(!window->shouldClose())
     {
-        // forca the image to stay the same size
+        // force the image to stay the same size
         glfwSetWindowSize(window->ptr(), options.ScreenWidth, options.ScreenHeight);
         
         // input - keyboard
@@ -220,7 +245,7 @@ static int run_shader()//const char* vert_shader, const char* frag_shader)//, in
         glClear(GL_COLOR_BUFFER_BIT);
 
         // bind texture
-        glBindTexture(GL_TEXTURE_2D, mandAdapter->texture());
+        glBindTexture(GL_TEXTURE_2D, texture->texture());
         
         // draw stuff
         currentShader->useProgram();

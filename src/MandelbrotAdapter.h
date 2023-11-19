@@ -22,19 +22,17 @@ class MandelbrotAdapter
     void useFixed() { m_fixedCentre = true; }
     void useMouse() { m_fixedCentre = false; }
     
-    void createTextureFromData();
+    void getTextureData(unsigned char **pixels);
     void cleanUp();
-    unsigned int texture() { return m_texture; }
+    unsigned int framecount() { return m_framecount; }
     
   private:
-    void writeImage(unsigned char **rgb);
     
     bool m_fixedCentre;
     unsigned int m_width, m_height;
     unsigned int m_maxiter;
     unsigned int m_framecount;
     unsigned int m_factor;
-    unsigned int m_texture;
 };
 
 #endif /* MANDELBROTADAPTER_H */

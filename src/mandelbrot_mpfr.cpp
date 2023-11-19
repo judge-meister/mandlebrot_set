@@ -39,11 +39,11 @@
 #include <cassert>
 
 #ifdef USES_THREADS
-#ifdef STD_THREADS
+//#ifdef STD_THREADS
 #include <thread>
-#else
-#include <pthread.h>
-#endif
+//#else
+//#include <pthread.h>
+//#endif
 #endif
 
 #ifdef _WIN32
@@ -675,9 +675,9 @@ static void *worker_process_slice(void* arg)
     TRACE_DEBUGV("Exit Thread %d\n",cp->tid);
     if (cp->cpus > 1)
     {
-#ifndef STD_THREADS
-        pthread_exit(&glb_bytearray[cp->tid]);
-#endif
+//#ifndef STD_THREADS
+//        pthread_exit(&glb_bytearray[cp->tid]);
+//#endif
     }
 #endif
     return NULL;
@@ -698,17 +698,18 @@ static void *worker_process_slice(void* arg)
  * Params
  * xsize, ysize   - width and height of fractal
  * maxiter        - the maximum iterations before escaping the algorithm
+ * use_threads    - decide whether to use threading to improve performance
  *
  * (out)bytearray - a bytearray of ints storing the color values of calculated points
  *
  * Return void (not status returned)
  */
-static void mandelbrot_mpfr_main_c( 
+void mandelbrot_mpfr_c( 
                 const unsigned int xsize,   /* width of screen/display/window */
                 const unsigned int ysize,   /* height of screen/display/window */
                 const unsigned int maxiter, /* max iterations before escape */
-                const bool use_threads,  /* use threads or not*/
-                unsigned char **bytearray /* reference/pointer to result list of color values*/
+                const bool use_threads,     /* use threads or not */
+                unsigned char **bytearray   /* reference/pointer to result list of color values */
                )
 {
     unsigned int bc = 0;
@@ -741,11 +742,11 @@ static void mandelbrot_mpfr_main_c(
 
     printf("core_count = %d\n", core_count);
 #ifdef USES_THREADS
-#ifdef STD_THREADS
+//#ifdef STD_THREADS
     std::vector<std::thread> threads;
-#else
-    pthread_t tid[core_count];
-#endif
+//#else
+//    pthread_t tid[core_count];
+//#endif
 #endif
     worker_args wargs[core_count];
     
@@ -753,7 +754,7 @@ static void mandelbrot_mpfr_main_c(
     mpfr_sub(yslice, Ye, Ys, MPFR_RNDN);
     mpfr_div_ui(yslice, yslice, nslice, MPFR_RNDN);
 
-    /* initialise the global bytearray*/
+    /* initialise the global bytearray */
     glb_bytearray = (unsigned char**)malloc(core_count*sizeof(unsigned char*));
     for(unsigned int slice=0; slice<core_count; slice++)
     {
@@ -796,11 +797,11 @@ static void mandelbrot_mpfr_main_c(
         if (use_threads == true)
         {
 #ifdef USES_THREADS
-#ifdef STD_THREADS
+//#ifdef STD_THREADS
             threads.push_back(std::thread(worker_process_slice, &(wargs[slice])));
-#else
-            pthread_create(&tid[slice], NULL, worker_process_slice, &(wargs[slice]));
-#endif
+//#else
+//            pthread_create(&tid[slice], NULL, worker_process_slice, &(wargs[slice]));
+//#endif
 #endif
         } 
         else 
@@ -814,10 +815,10 @@ static void mandelbrot_mpfr_main_c(
 
     /*wait for all the threads to complete */
 #ifdef USES_THREADS
-#ifdef STD_THREADS
+//#ifdef STD_THREADS
     for (auto& th : threads) th.join();
-#else
-    int** ptr;
+//#else
+/*    int** ptr;
     ptr = (int**)malloc(core_count*sizeof(int*));
     for(unsigned int slice=0; slice<core_count; slice++)
     {
@@ -825,8 +826,8 @@ static void mandelbrot_mpfr_main_c(
         {
             pthread_join(tid[slice], (void**)&ptr[slice]);
        }
-    }
-#endif
+    }*/
+//#endif
 #endif
         
     /* populate the returned bytearray from the global one */
@@ -840,7 +841,7 @@ static void mandelbrot_mpfr_main_c(
         }
     }
 
-    /* free the global bytearray*/
+    /* free the global bytearray */
     TRACE_DEBUG("Freeing glb_bytearray\n");
     for(unsigned int slice=0; slice<core_count; slice++)
     {
@@ -848,11 +849,11 @@ static void mandelbrot_mpfr_main_c(
         free(glb_bytearray[slice]); /* = (int*)calloc((size_t)(xsize/2 * ysize/2 * 3), sizeof(int));*/
     }
     free(glb_bytearray);
-#ifdef USES_THREADS
-#ifndef STD_THREADS
-    free(ptr);
-#endif
-#endif
+//#ifdef USES_THREADS
+//#ifndef STD_THREADS
+//    free(ptr);
+//#endif
+//#endif
     /* clear (free) mpfr data */
     mpfr_clears(lx, ly, yslice, ys1, ye1, (mpfr_ptr)NULL);
     
@@ -865,28 +866,3 @@ static void mandelbrot_mpfr_main_c(
 #endif
 }
 
-/* ----------------------------------------------------------------------------
- * call mandelbrot_mpfr_main_c above with threading enabled
- */
-void mandelbrot_mpfr_thread_c( 
-                const unsigned int xsize,   /* width of screen/display/window */
-                const unsigned int ysize,   /* height of screen/display/window */
-                const unsigned int maxiter, /* max iterations before escape */
-                unsigned char **bytearray /* reference/pointer to result list of color values*/
-               )
-{
-    mandelbrot_mpfr_main_c(xsize, ysize, maxiter, true, bytearray);
-}
-
-/* ----------------------------------------------------------------------------
- * call mandelbrot_mpfr_main_c above with threading disabled
- */
-void mandelbrot_mpfr_c( 
-                const unsigned int xsize,   /* width of screen/display/window */
-                const unsigned int ysize,   /* height of screen/display/window */
-                const unsigned int maxiter, /* max iterations before escape */
-                unsigned char **bytearray /* reference/pointer to result list of color values*/
-               )
-{
-    mandelbrot_mpfr_main_c(xsize, ysize, maxiter, false, bytearray);
-}

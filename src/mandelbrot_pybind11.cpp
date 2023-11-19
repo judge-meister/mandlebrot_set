@@ -39,8 +39,8 @@ py::list mpfr( const unsigned int wsize,   // width of screen/display/window
     unsigned char *bytearray; //[wsize * hsize * 3];
     bytearray = (unsigned char*)calloc((size_t)(wsize * hsize * 3), sizeof(unsigned char));
 
-    // call mandelbrot_bytearray 
-    mandelbrot_mpfr_c(wsize, hsize, maxiter, &bytearray);
+    // call mandelbrot_bytearray (non-threaded)
+    mandelbrot_mpfr_c(wsize, hsize, maxiter, false, &bytearray);
 
     // transfer returned values into PyList for return 
     for(unsigned int i = 0; i < (wsize * hsize * 3); i++)
@@ -70,8 +70,8 @@ py::list mpfr_thread( const unsigned int wsize,   // width of screen/display/win
     unsigned char *bytearray; //[wsize * hsize * 3];
     bytearray = (unsigned char*)calloc((size_t)(wsize * hsize * 3), sizeof(unsigned char));
 
-    // call mandelbrot_bytearray 
-    mandelbrot_mpfr_thread_c(wsize, hsize, maxiter, &bytearray);
+    // call mandelbrot_bytearray (threaded) 
+    mandelbrot_mpfr_c(wsize, hsize, maxiter, true, &bytearray);
 
     // transfer returned values into PyList for return 
     for(unsigned int i = 0; i < (wsize * hsize * 3); i++)
