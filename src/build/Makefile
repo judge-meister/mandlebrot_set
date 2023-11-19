@@ -17,7 +17,7 @@ LDFLAGS = -Wl,-rpath=./,-rpath-link=./ -Wl,--no-undefined
 LD_SHARED = -shared $(LDFLAGS)
 
 DEBUG=-DTRACE
-USES_THREADS=-DUSES_THREADS -DSTD_THREADS
+USES_THREADS=-DUSES_THREADS
 
 
 # -----------------------------------------------------------------------------
@@ -74,10 +74,12 @@ pybind11: $(LIB_MAND_SO)
 PROG_SRCS = ../MandelbrotAdapter.cpp \
             ../Shader.cpp \
             ../Window.cpp \
+			../Texture.cpp \
+			../ImageFile.cpp \
             ../mandelbrot_main.cpp
 PROG_OBJS = $(patsubst %.cpp,%.o,$(notdir $(PROG_SRCS)))
 PROG_NAME = mandelbrot_main
-PROG_LIBS = -L. -lmandelbrot -lglad -lglfw -lGL -lSOIL -lm -lpthread
+PROG_LIBS = -L. -lmandelbrot -lglad -lglfw -lGL -lSOIL -lm -lpng
 CLEAN_LIST += $(PROG_NAME) $(PROG_OBJS)
 
 $(PROG_NAME): $(PROG_OBJS) $(LIB_GLAD_SO) $(LIB_MAND_SO)
@@ -122,8 +124,8 @@ $(WINDOW_TEST_NAME): $(WINDOW_TEST_OBJS) $(LIB_GLAD_SO)
 .PHONY: coverage
 CLEAN_LIST += *.gcda *.gcno $(TEST_NAME).info
 CLEAN_DIRS += lcovhtml
-coverage: CXXFLAGS += --coverage -DUSES_THREADS -DSTD_THREADS
-coverage: CCFLAGS += --coverage -DUSES_THREADS -DSTD_THREADS
+coverage: CXXFLAGS += --coverage -DUSES_THREADS
+coverage: CCFLAGS += --coverage -DUSES_THREADS
 coverage: LDFLAGS += --coverage
 coverage: LD_SHARED += -lgcov
 coverage: clean $(TEST_NAME) $(SHADER_TEST_NAME) $(WINDOW_TEST_NAME)
