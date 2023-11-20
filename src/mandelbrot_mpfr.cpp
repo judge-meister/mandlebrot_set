@@ -39,11 +39,7 @@
 #include <cassert>
 
 #ifdef USES_THREADS
-//#ifdef STD_THREADS
 #include <thread>
-//#else
-//#include <pthread.h>
-//#endif
 #endif
 
 #ifdef _WIN32
@@ -673,12 +669,6 @@ static void *worker_process_slice(void* arg)
 
 #ifdef USES_THREADS
     TRACE_DEBUGV("Exit Thread %d\n",cp->tid);
-    if (cp->cpus > 1)
-    {
-//#ifndef STD_THREADS
-//        pthread_exit(&glb_bytearray[cp->tid]);
-//#endif
-    }
 #endif
     return NULL;
 }
@@ -742,11 +732,7 @@ void mandelbrot_mpfr_c(
 
     printf("core_count = %d\n", core_count);
 #ifdef USES_THREADS
-//#ifdef STD_THREADS
     std::vector<std::thread> threads;
-//#else
-//    pthread_t tid[core_count];
-//#endif
 #endif
     worker_args wargs[core_count];
     
@@ -797,11 +783,7 @@ void mandelbrot_mpfr_c(
         if (use_threads == true)
         {
 #ifdef USES_THREADS
-//#ifdef STD_THREADS
             threads.push_back(std::thread(worker_process_slice, &(wargs[slice])));
-//#else
-//            pthread_create(&tid[slice], NULL, worker_process_slice, &(wargs[slice]));
-//#endif
 #endif
         } 
         else 
@@ -815,19 +797,7 @@ void mandelbrot_mpfr_c(
 
     /*wait for all the threads to complete */
 #ifdef USES_THREADS
-//#ifdef STD_THREADS
     for (auto& th : threads) th.join();
-//#else
-/*    int** ptr;
-    ptr = (int**)malloc(core_count*sizeof(int*));
-    for(unsigned int slice=0; slice<core_count; slice++)
-    {
-        if (use_threads == TRUE)
-        {
-            pthread_join(tid[slice], (void**)&ptr[slice]);
-       }
-    }*/
-//#endif
 #endif
         
     /* populate the returned bytearray from the global one */
@@ -849,11 +819,7 @@ void mandelbrot_mpfr_c(
         free(glb_bytearray[slice]); /* = (int*)calloc((size_t)(xsize/2 * ysize/2 * 3), sizeof(int));*/
     }
     free(glb_bytearray);
-//#ifdef USES_THREADS
-//#ifndef STD_THREADS
-//    free(ptr);
-//#endif
-//#endif
+
     /* clear (free) mpfr data */
     mpfr_clears(lx, ly, yslice, ys1, ye1, (mpfr_ptr)NULL);
     

@@ -6,8 +6,7 @@
 #include "Texture.h"
 
 // CONSTRUCTORS --------------------------------------------------------------------------
-Texture::Texture(const int width, const int height)
-  : m_texture(0), m_width(width), m_height(height)
+Texture::Texture()
 {}
 
 // --------------------------------------------------------------------------------------
@@ -18,11 +17,16 @@ Texture::~Texture()
 // PUBLIC METHODS ------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-void Texture::createTexture(unsigned char **pixels)
+void Texture::createTexture(ImageData *imageData)
 {
+  unsigned char *pixels = NULL;
+  imageData->getByteArray(&pixels);
+  m_width = imageData->getWidth();
+  m_height = imageData->getHeight();
+
   glGenTextures(1, &m_texture);
   glBindTexture(GL_TEXTURE_2D, m_texture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, *pixels);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
   glGenerateMipmap(GL_TEXTURE_2D);
 }
 

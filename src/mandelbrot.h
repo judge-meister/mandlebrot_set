@@ -1,3 +1,8 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+// mandelbrot.h
+
+// main interface to the mpfr mandelbrot library
+
 #ifndef MANDELBROT_MODULE_H
 #define MANDELBROT_MODULE_H
 

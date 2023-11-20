@@ -3,12 +3,14 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
+#include "ImageData.h"
+
 class Texture {
   public:
-    Texture(const int width, const int height);
+    Texture();
     ~Texture();
     
-    void createTexture(unsigned char **pixels);
+    void createTexture(ImageData *imageData);
     unsigned int texture() { return m_texture; }
 
   private:

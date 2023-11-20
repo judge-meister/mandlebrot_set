@@ -13,44 +13,40 @@ extern "C" {
 #include "mandelbrot.h"
 }
 
+#define FIXED_FLOAT(x) std::fixed <<std::setprecision(2)<<(x)
+
 // CONSTRUCTORS --------------------------------------------------------------------------
-MandelbrotAdapter::MandelbrotAdapter(
-                const int width, 
-                const int height, 
-                const char* real, 
-                const char* imag, 
-                const int factor)
-    : 
-    m_fixedCentre(false), 
-    m_width(width), 
-    m_height(height), 
-    m_maxiter(1000), 
-    m_framecount(0), 
-    m_factor(factor)
+MandelbrotAdapter::MandelbrotAdapter(CmdOptions *options)
+: m_fixedCentre(false),  m_maxiter(1000),  m_framecount(0)
 {
+  m_width = options->getWidth(); 
+  m_height = options->getHeight(); 
+  m_factor = options->getFactor();
+
   setup_c();
-  reset(real, imag);
-  if ((real != NULL) && (imag != NULL))
-  {
-    m_fixedCentre = true;
-  }
+  reset(options->getReal(), options->getImag());
 }
+
 // PUBLIC METHODS -------------------------------------------------------------------------
-void MandelbrotAdapter::reset(const char* real, const char* imag)
+void MandelbrotAdapter::reset(const std::string &real, const std::string &imag)
 {
-  if ((real != NULL) && (imag != NULL)) {
+  if ((real != "") && (imag != "")) {
     //            Xs      Xe     Ys      Ye     Cx      Cy
-    initialize_c("-2.0", "1.0", "-1.5", "1.5", real, imag);
+    initialize_c("-2.0", "1.0", "-1.5", "1.5", real.c_str(), imag.c_str());
     std::cout << "Using provided zoom point\n";
+    m_fixedCentre = true;
   } else {
     //            Xs      Xe     Ys      Ye     Cx      Cy
     initialize_c("-2.0", "1.0", "-1.5", "1.5", "99.9", "99.9");
   }
   m_framecount = 1;
 }
+
+// ---------------------------------------------------------------------------------------
 void MandelbrotAdapter::reset()
 {
-  printf("Cursor Pos %d, %d factor %d  screen %d\n", m_width/2, m_height/2, m_factor, m_width);
+  std::cout << "Cursor Pos " << m_width/2 << ", " << m_height/2 << " factor ";
+  std::cout << m_factor << " screen " << m_width << "\n";
   //            Xs      Xe     Ys      Ye     Cx      Cy
   initialize_c("-2.0", "1.0", "-1.5", "1.5", "99.9", "99.9");
   m_framecount = 1;
@@ -64,14 +60,15 @@ void MandelbrotAdapter::cleanUp()
 
 // ---------------------------------------------------------------------------------------
 // pixels char array is allocated here, caller is responsible for freeing it.
-void MandelbrotAdapter::getTextureData(unsigned char **pixels)
+void MandelbrotAdapter::getTextureData(ImageData *imageData)
 {
-  *pixels = (unsigned char*)calloc((size_t)(m_width * m_height * 3), sizeof(unsigned char));
-  
+  unsigned char *pixels = NULL;
+  imageData->getByteArray(&pixels);
+
 #ifdef USES_THREADS
-  mandelbrot_mpfr_c(m_width, m_height, m_maxiter, true, pixels);
+  mandelbrot_mpfr_c(m_width, m_height, m_maxiter, true, &pixels);
 #else
-  mandelbrot_mpfr_c(m_width, m_height, m_maxiter, false, pixels);
+  mandelbrot_mpfr_c(m_width, m_height, m_maxiter, false, &pixels);
 #endif
 
 }
@@ -86,7 +83,7 @@ void MandelbrotAdapter::zoomIn(const double mouseX, const double mouseY)
     }
     else
     {
-      printf("Cursor Pos %0.2f, %0.2f factor %d  screen %d\n", mouseX, mouseY, m_factor, m_width);
+      std::cout << "Cursor Pos " << FIXED_FLOAT(mouseX) << ", " << FIXED_FLOAT(mouseY) << " factor " << m_factor << "  screen " << m_width << "\n";
       mpfr_zoom_in_via_mouse(mouseX, mouseY, m_width, m_height, m_factor);
     }
 }
@@ -96,7 +93,7 @@ void MandelbrotAdapter::zoomOut()
 {
     m_framecount--;
     if (m_framecount < 0) { m_framecount = 0; }
-    printf("Cursor Pos %d, %d factor %d  screen %d\n", m_width/2, m_width/2, m_factor, m_width);
+    std::cout << "Cursor Pos " << FIXED_FLOAT(m_width/2) << ", " << FIXED_FLOAT(m_width/2) << " factor " << m_factor << " screen " << m_width << "\n";
     mpfr_zoom_out(m_factor);
 }
 

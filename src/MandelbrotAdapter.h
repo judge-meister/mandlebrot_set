@@ -1,28 +1,29 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 // Mandelbrot Adapter
 
+// adapter class for interfacing with the mpfr mandelbrot library
+
 #ifndef MANDELBROTADAPTER_H
 #define MANDELBROTADAPTER_H
+
+#include <string>
+#include "ImageData.h"
+#include "CmdOptions.h"
 
 class MandelbrotAdapter
 {
   public:
-    MandelbrotAdapter(
-                const int width, 
-                const int height, 
-                const char* real, 
-                const char* imag, 
-                const int factor);
+    MandelbrotAdapter(CmdOptions *options);
     virtual ~MandelbrotAdapter(){}
 
     void zoomIn(const double mouseX, const double mouseY);
     void zoomOut();
-    void reset(const char* real, const char* imag);
+    void reset(const std::string &real, const std::string &imag);
     void reset();
     void useFixed() { m_fixedCentre = true; }
     void useMouse() { m_fixedCentre = false; }
     
-    void getTextureData(unsigned char **pixels);
+    void getTextureData(ImageData *imageData);
     void cleanUp();
     unsigned int framecount() { return m_framecount; }
     

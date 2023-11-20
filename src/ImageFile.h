@@ -1,16 +1,23 @@
+//////////////////////////////////////////////////////////////////////////////////////////
+// ImageFile.h
+
+// class to handle writing png images
 
 #ifndef IMAGEFILE_H
 #define IMAGEFILE_H
 
+// class to write a png image file given some image data
+
 #include <string>
+#include "ImageData.h"
 
 class ImageFile {
   public:
-    ImageFile(const int width, const int height);
+    ImageFile();
     ~ImageFile();
 
     void writeImage(const int framecount,
-                    unsigned char* data);
+                    ImageData *imageData);
 
   private:
     int save_png(std::string filename,

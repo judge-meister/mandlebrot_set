@@ -72,11 +72,17 @@ pybind11: $(LIB_MAND_SO)
 # -----------------------------------------------------------------------------
 # prog
 PROG_SRCS = ../MandelbrotAdapter.cpp \
+            ../MandelbrotWindow.cpp \
+			../MandelbrotOpenGL.cpp \
             ../Shader.cpp \
             ../Window.cpp \
 			../Texture.cpp \
 			../ImageFile.cpp \
+			../ImageData.cpp \
+			../CmdOptions.cpp \
+			../KeyboardMouseHandler.cpp \
             ../mandelbrot_main.cpp
+
 PROG_OBJS = $(patsubst %.cpp,%.o,$(notdir $(PROG_SRCS)))
 PROG_NAME = mandelbrot_main
 PROG_LIBS = -L. -lmandelbrot -lglad -lglfw -lGL -lSOIL -lm -lpng
