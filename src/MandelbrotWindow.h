@@ -21,11 +21,11 @@ class MandelbrotWindow {
     ~MandelbrotWindow();
 
     void initialise(CmdOptions* cmdOptions);
-    void createShaders();
+    void createShaders();          //GL
     void updateDisplay();
     void zoomIn(const double pX, const double pY);
     void zoomOut(double pX, double pY);
-    void setCurrentShaderToInit();
+    void setCurrentShaderToInit(); //GL
 
     Texture* getTexture(){return m_texture;}
     Window* getWindow(){return m_window;}

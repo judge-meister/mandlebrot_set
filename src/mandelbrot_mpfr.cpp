@@ -78,7 +78,7 @@
 #endif
 
 
-#define PRECISION 256
+#define PRECISION 512
 
 #define MAXITER 1000
 
@@ -408,7 +408,7 @@ void mpfr_zoom_in(
                 const unsigned int zoom_factor /* +ve int repr of percent */
                )
 {
-    printf("mpfr_zoom_in()\n");
+    //printf("mpfr_zoom_in()\n");
   
     /*printf("MX, MY ");
     mpfr_out_str(stdout, 10, 10, MX, MPFR_RNDN); std::cout << ", ";
@@ -514,7 +514,7 @@ void mpfr_zoom_in(
  */
 void mpfr_zoom_out( const unsigned int zoom_factor )
 {
-    printf("mpfr_zoom_out()\n");
+    //printf("mpfr_zoom_out()\n");
   
     /* 1	scale new square - get new corners factor is a percentage increase (eg reduce by 10%)	
      *
@@ -707,10 +707,10 @@ void mandelbrot_mpfr_c(
     mpfr_inits2(PRECISION, lx, ly, yslice, ys1, ye1, (mpfr_ptr)NULL);
 
 #ifdef USES_THREADS
-    printf("mandelbrot_mpfr_main_c (%s) Entry\n", use_threads?"Threaded":"Single");
+    //printf("mandelbrot_mpfr_main_c (%s) Entry\n", use_threads?"Threaded":"Single");
     TRACE_DEBUGV("mandelbrot_mpfr_main_c (%s) Entry\n", use_threads?"Threaded":"Single");
 #else
-    printf("mandelbrot_mpfr_main_c (Single) Entry\n");
+    //printf("mandelbrot_mpfr_main_c (Single) Entry\n");
     TRACE_DEBUG("mandelbrot_mpfr_main_c (Single) Entry\n");
 #endif
 #ifdef TRACE
@@ -730,7 +730,7 @@ void mandelbrot_mpfr_c(
         nslice = core_count;
     }
 
-    printf("core_count = %d\n", core_count);
+    //printf("core_count = %d\n", core_count);
 #ifdef USES_THREADS
     std::vector<std::thread> threads;
 #endif
@@ -825,9 +825,9 @@ void mandelbrot_mpfr_c(
     
 #ifdef USES_THREADS
     TRACE_DEBUGV("mandelbrot_mpfr_main_c (%s) Exit\n", use_threads?"Threaded":"Single");
-    printf("mandelbrot_mpfr_main_c (%s) Exit\n", use_threads?"Threaded":"Single");
+    //printf("mandelbrot_mpfr_main_c (%s) Exit\n", use_threads?"Threaded":"Single");
 #else
-    printf("mandelbrot_mpfr_main_c (Single) Exit\n");
+    //printf("mandelbrot_mpfr_main_c (Single) Exit\n");
     TRACE_DEBUG("mandelbrot_mpfr_main_c (Single) Exit\n");
 #endif
 }

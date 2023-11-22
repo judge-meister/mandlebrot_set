@@ -131,7 +131,8 @@ void ImageFile::writeImage(const int framecount,
   sstm << prefix << std::setfill('0') << std::setw(4) << framecount << ".png";
   std::string filename = sstm.str();
   std::filesystem::create_directories("images");
-
+  std::cout << filename << "\n";
+  
   save_png(filename, 8, PNG_COLOR_TYPE_RGB, data, pitch, PNG_TRANSFORM_IDENTITY);
 }
 

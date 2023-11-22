@@ -149,3 +149,6 @@ test_mandelbrot_main
 Debug
 *.filters
 *.user
+
+# image files
+*.png

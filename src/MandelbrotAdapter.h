@@ -17,6 +17,7 @@ class MandelbrotAdapter
     virtual ~MandelbrotAdapter(){}
 
     void zoomIn(const double mouseX, const double mouseY);
+    void zoomIn();
     void zoomOut();
     void reset(const std::string &real, const std::string &imag);
     void reset();

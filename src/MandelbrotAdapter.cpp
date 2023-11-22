@@ -89,6 +89,16 @@ void MandelbrotAdapter::zoomIn(const double mouseX, const double mouseY)
 }
 
 // ---------------------------------------------------------------------------------------
+void MandelbrotAdapter::zoomIn()
+{
+  m_framecount++;
+  if (m_fixedCentre)
+  {
+    mpfr_zoom_in(m_width, m_height, m_factor);
+  }
+}
+
+// ---------------------------------------------------------------------------------------
 void MandelbrotAdapter::zoomOut()
 {
     m_framecount--;

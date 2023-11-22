@@ -16,13 +16,14 @@ CC = gcc
 LDFLAGS = -Wl,-rpath=./,-rpath-link=./ -Wl,--no-undefined
 LD_SHARED = -shared $(LDFLAGS)
 
-DEBUG=-DTRACE
+#DEBUG=-DTRACE
+DEBUG=
 USES_THREADS=-DUSES_THREADS
 
 
 # -----------------------------------------------------------------------------
 # top level rules
-all :  libmandelbrot.so libglad.so mandelbrot_main pybind11
+all :  libmandelbrot.so libglad.so mandelbrot_main mandelbrot_image pybind11
 .PHONY : all
 
 clean: 
@@ -85,11 +86,26 @@ PROG_SRCS = ../MandelbrotAdapter.cpp \
 
 PROG_OBJS = $(patsubst %.cpp,%.o,$(notdir $(PROG_SRCS)))
 PROG_NAME = mandelbrot_main
-PROG_LIBS = -L. -lmandelbrot -lglad -lglfw -lGL -lSOIL -lm -lpng
+PROG_LIBS = -L. -lmandelbrot -lglad -lglfw -lGL -lm -lpng
 CLEAN_LIST += $(PROG_NAME) $(PROG_OBJS)
 
 $(PROG_NAME): $(PROG_OBJS) $(LIB_GLAD_SO) $(LIB_MAND_SO)
 	g++ $(LDFLAGS) $(PROG_OBJS) $(PROG_LIBS) -o $@ 
+
+# -----------------------------------------------------------------------------
+IMAGE_SRCS = ../mandelbrot_image.cpp \
+             ../MandelbrotAdapter.cpp \
+			 ../CmdOptions.cpp \
+			 ../ImageFile.cpp \
+			 ../ImageData.cpp
+
+IMAGE_OBJS = $(patsubst %.cpp,%.o,$(notdir $(IMAGE_SRCS)))
+IMAGE_NAME = mandelbrot_image
+IMAGE_LIBS = -L. -lmandelbrot -lm -lpng
+CLEAN_LIST += $(IMAGE_NAME) $(IMAGE_OBJS)
+
+$(IMAGE_NAME): $(IMAGE_OBJS) $(LIB_MAND_SO)
+	g++ $(LDFLAGS) $(IMAGE_OBJS) $(IMAGE_LIBS) -o $@ 
 
 # -----------------------------------------------------------------------------
 # mandelbrot test

@@ -16,6 +16,7 @@ class ImageData {
     ~ImageData();
 
     bool getByteArray(unsigned char **ba); // output param to write stored bytearrray into
+    bool isNotBottomedOut(const int framecount);
 
     int getWidth() {return m_width;}
     int getHeight() {return m_height;}
@@ -27,6 +28,7 @@ class ImageData {
     int m_width;
     int m_height;
     int m_depth;
+    bool m_bottomingOut;
 };
 
 #endif // IMAGE_DATA_H
