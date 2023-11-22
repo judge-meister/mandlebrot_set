@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <cstdio>
+#include <iostream>
 #include "ImageData.h"
 
 ImageData::ImageData(const int width, const int height, const int depth)
@@ -38,8 +39,10 @@ bool ImageData::isNotBottomedOut(const int framecount)
   int w = m_width*m_depth;
   int h = m_height;
   int r=-1, g=-1, b=-1;
+  int rc=0, gc=0, bc=0;
   bool ok = true;
 
+  //std::cout << std::boolalpha << "ok: " << ok << " (init)" << std::endl;
   if(framecount < 10)
   {
     return true;
@@ -57,24 +60,17 @@ bool ImageData::isNotBottomedOut(const int framecount)
       }
       else 
       {
-        if ((0 != m_bytearray[x+(y*w)]) &&
-            (0 != m_bytearray[x+(y*w)+1]) &&
-            (0 != m_bytearray[x+(y*w)+2]))
-        {
-          if((r != m_bytearray[x+(y*w)]) ||
-             (g != m_bytearray[x+(y*w)+1]) ||
-             (b != m_bytearray[x+(y*w)+2]))
-          {
-            ok = false;
-          }
-        }
+          if(r == m_bytearray[x+(y*w)]) { rc++; }
+          if(g == m_bytearray[x+(y*w)+1]) { gc++; }
+          if(b == m_bytearray[x+(y*w)+2]) { bc++; }
       }
     }
   }
-  m_bottomingOut = !ok;
-  if (!ok)
+  if((rc > 250)&&(gc > 250)&&(bc > 250))
   {
-    printf("Bottoming Out - %s\n", m_bottomingOut?"False":"True");
+    ok = false;
   }
+  std::cout << std::boolalpha << "ok: " << ok << "  rc " << rc << " gc " << gc << " bc " << bc << std::endl;
+
   return ok;
 }
