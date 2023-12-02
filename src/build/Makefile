@@ -1,6 +1,6 @@
 
 # a single makefile to rule them all !
-
+OS=$(shell uname)
 
 # -----------------------------------------------------------------------------
 # common pkconfig
@@ -13,7 +13,9 @@ CXXFLAGS= -g -O3 -Wall -fPIC -std=c++17
 CCFLAGS= -g -O3 -Wall -fPIC -std=c17
 CC = gcc
 
+ifneq ($(OS),Darwin)
 LDFLAGS = -Wl,-rpath=./,-rpath-link=./ -Wl,--no-undefined
+endif
 LD_SHARED = -shared $(LDFLAGS)
 
 #DEBUG=-DTRACE
@@ -23,7 +25,8 @@ USES_THREADS=-DUSES_THREADS
 
 # -----------------------------------------------------------------------------
 # top level rules
-all :  libmandelbrot.so libglad.so mandelbrot_main mandelbrot_image pybind11
+all :  libmandelbrot.so libglad.so mandelbrot_main mandelbrot_image 
+#pybind11
 .PHONY : all
 
 clean: 
@@ -34,7 +37,8 @@ clean:
 
 # -----------------------------------------------------------------------------
 # libmandelbrot.so
-LIB_MAND_SRCS = ../mandelbrot_mpfr.cpp
+#LIB_MAND_SRCS = ../mandelbrot_mpfr.cpp
+LIB_MAND_SRCS = ../MandelbrotMpfr.cpp
 LIB_MAND_OBJS = $(patsubst %.cpp,%.o,$(notdir $(LIB_MAND_SRCS)))
 #$(warning MAND_OBJS $(LIB_MAND_OBJS))
 LIB_MAND_SO = libmandelbrot.so
@@ -73,6 +77,7 @@ pybind11: $(LIB_MAND_SO)
 # -----------------------------------------------------------------------------
 # prog
 PROG_SRCS = ../MandelbrotAdapter.cpp \
+            ../MandelbrotMpfr.cpp \
             ../MandelbrotWindow.cpp \
 			../MandelbrotOpenGL.cpp \
             ../Shader.cpp \
@@ -82,14 +87,20 @@ PROG_SRCS = ../MandelbrotAdapter.cpp \
 			../ImageData.cpp \
 			../CmdOptions.cpp \
 			../KeyboardMouseHandler.cpp \
-            ../mandelbrot_main.cpp
+
+#            ../mandelbrot_main.cpp
 
 PROG_OBJS = $(patsubst %.cpp,%.o,$(notdir $(PROG_SRCS)))
 PROG_NAME = mandelbrot_main
-PROG_LIBS = -L. -lmandelbrot -lglad -lglfw -lGL -lm -lpng
+PROG_LIBS = -L. -lmandelbrot -lglad -lglfw -lm -lpng $(MPFR_LIBS)
+ifeq ($(OS),Darwin)
+PROG_LIBS += -lglew
+else
+PROG_LIBS += -lGL 
+endif 
 CLEAN_LIST += $(PROG_NAME) $(PROG_OBJS)
 
-$(PROG_NAME): $(PROG_OBJS) $(LIB_GLAD_SO) $(LIB_MAND_SO)
+$(PROG_NAME): $(PROG_OBJS) $(LIB_GLAD_SO) $(LIB_MAND_SO) 
 	g++ $(LDFLAGS) $(PROG_OBJS) $(PROG_LIBS) -o $@ 
 
 # -----------------------------------------------------------------------------
