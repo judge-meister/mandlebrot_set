@@ -28,7 +28,7 @@ class ImageData {
     int m_width;
     int m_height;
     int m_depth;
-    bool m_bottomingOut;
+    //bool m_bottomingOut;
 };
 
 #endif // IMAGE_DATA_H

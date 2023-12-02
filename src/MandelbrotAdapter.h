@@ -9,6 +9,7 @@
 #include <string>
 #include "ImageData.h"
 #include "CmdOptions.h"
+#include "MandelbrotMpfr.h"
 
 class MandelbrotAdapter
 {
@@ -35,6 +36,7 @@ class MandelbrotAdapter
     unsigned int m_maxiter;
     unsigned int m_framecount;
     unsigned int m_factor;
+    MandelbrotMpfr *mpfr;
 };
 
 #endif /* MANDELBROTADAPTER_H */

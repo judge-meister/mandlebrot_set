@@ -7,7 +7,7 @@
 #include "ImageData.h"
 
 ImageData::ImageData(const int width, const int height, const int depth)
- : m_bottomingOut(false)
+// : m_bottomingOut(false)
 {
     // create memory for bytearray
     m_width = width;

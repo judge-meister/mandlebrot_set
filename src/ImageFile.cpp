@@ -4,6 +4,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <filesystem>
 #include <png.h>
@@ -127,10 +128,11 @@ void ImageFile::writeImage(const int framecount,
   imageData->getByteArray(&data);
 
   std::stringstream sstm;
-  std::string prefix = "images/image";
-  sstm << prefix << std::setfill('0') << std::setw(4) << framecount << ".png";
+  std::filesystem::path impath("images");
+  std::string prefix("image");
+  sstm << impath << "/" << prefix << std::setfill('0') << std::setw(4) << framecount << ".png";
   std::string filename = sstm.str();
-  std::filesystem::create_directories("images");
+  std::filesystem::create_directories(impath);
   std::cout << filename << "\n";
   
   save_png(filename, 8, PNG_COLOR_TYPE_RGB, data, pitch, PNG_TRANSFORM_IDENTITY);
